@@ -1,4 +1,4 @@
-// TriviaMania Live API & Question Engine
+// TriviaMania Verified Music & Trivia Engine
 async function fetchTriviaQuestions(amount = 10, category = '') {
     try {
         let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
@@ -29,41 +29,44 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
     return getFallbackTrivia();
 }
 
-async function fetchMusicPreviewRound(amount = 10, searchTerm = 'classic+rock+hits') {
+async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock') {
     try {
-        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=${Math.max(amount, 10)}`);
+        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=25`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
             const validSongs = data.results.filter(song => song.previewUrl && song.artistName);
             
-            // Choose appropriate decoy artists based on the genre searched
-            let decoyPool = ["The Beatles", "Queen", "Led Zeppelin", "The Rolling Stones", "Fleetwood Mac", "Elton John", "David Bowie", "U2", "Coldplay", "AC/DC", "Pink Floyd", "Aerosmith"];
+            // Define targeted decoy pools matching specific musical categories
+            let decoyPool = ["Duran Duran", "Tears for Fears", "Spandau Ballet", "Culture Club", "Wham!", "Simple Minds", "Eurythmics", "Phil Collins"];
             
             const lowerSearch = searchTerm.toLowerCase();
-            if (lowerSearch.includes('disney') || lowerSearch.includes('kids') || lowerSearch.includes('cartoon') || lowerSearch.includes('nursery')) {
-                decoyPool = ["Phil Collins", "Elton John", "Idina Menzel", "Kristen Bell", "Alan Menken", "Randy Newman", "Lin-Manuel Miranda", "Beyoncé", "Justin Timberlake", "Bruno Mars", "Josh Gad", "Sarah McLachlan"];
-            } else if (lowerSearch.includes('pop') || lowerSearch.includes('dance') || lowerSearch.includes('90s dance')) {
-                decoyPool = ["Madonna", "Britney Spears", "Backstreet Boys", "Spice Girls", "Michael Jackson", "Katy Perry", "Lady Gaga", "Rihanna", "Justin Bieber", "Dua Lipa", "Ariana Grande", "Ed Sheeran"];
-            } else if (lowerSearch.includes('hip hop') || lowerSearch.includes('r&b')) {
-                decoyPool = ["Eminem", "Tupac Shakur", "The Notorious B.I.G.", "Jay-Z", "Snoop Dogg", "Drake", "Kanye West", "Beyoncé", "Usher", "Alicia Keys", "Dr. Dre", "Outkast"];
+            if (lowerSearch.includes('90s')) {
+                decoyPool = ["Oasis", "Blur", "Pulp", "Radiohead", "Spice Girls", "Backstreet Boys", "Take That", "All Saints", "Suede", "The Verve"];
+            } else if (lowerSearch.includes('rock') || lowerSearch.includes('metal')) {
+                decoyPool = ["AC/DC", "Led Zeppelin", "Deep Purple", "Black Sabbath", "Guns N' Roses", "Aerosmith", "Metallica", "Iron Maiden", "Van Halen", "Def Leppard"];
+            } else if (lowerSearch.includes('motown') || lowerSearch.includes('disco') || lowerSearch.includes('70s')) {
+                decoyPool = ["Stevie Wonder", "Marvin Gaye", "The Supremes", "Jackson 5", "Earth, Wind & Fire", "Bee Gees", "ABBA", "Boney M.", "Chic", "Kool & The Gang"];
+            } else if (lowerSearch.includes('country')) {
+                decoyPool = ["Johnny Cash", "Willie Nelson", "Dolly Parton", "Kenny Rogers", "Garth Brooks", "Alan Jackson", "Shania Twain", "Tim McGraw"];
+            } else if (lowerSearch.includes('disney') || lowerSearch.includes('cartoon') || lowerSearch.includes('kids') || lowerSearch.includes('nursery')) {
+                decoyPool = ["Idina Menzel", "Phil Collins", "Elton John", "Kristen Bell", "Alan Menken", "Randy Newman", "Lin-Manuel Miranda", "Josh Gad", "Julie Andrews", "Sarah McLachlan"];
             }
 
             return validSongs.slice(0, amount).map(song => {
                 const correctArtist = song.artistName;
                 
-                // Filter out the correct artist from decoys, then pick 3
+                // Ensure correct artist is not in decoys, then pick 3 unique decoys
                 const wrongOptions = decoyPool.filter(a => a.toLowerCase() !== correctArtist.toLowerCase()).sort(() => 0.5 - Math.random()).slice(0, 3);
                 
-                // If we don't have enough decoys, pad with fallback names
                 while (wrongOptions.length < 3) {
-                    wrongOptions.push("Band " + Math.floor(Math.random() * 100));
+                    wrongOptions.push("Similar Artist " + Math.floor(Math.random() * 10));
                 }
 
                 const options = [...wrongOptions, correctArtist].sort(() => 0.5 - Math.random());
                 
                 return {
-                    q: `Name the artist performing this track! 🎵`,
+                    q: `Name the artist performing this track! 🎵 (${song.trackName})`,
                     a: correctArtist,
                     options: options,
                     audioUrl: song.previewUrl,
