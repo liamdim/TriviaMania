@@ -22,6 +22,8 @@ let gameState = {
   welcomeMessage: 'Welcome to the ultimate pub quiz experience!',
   bannerText: 'TriviaMania Live Pub Quiz Night',
   advertImage: null,
+  advertTitle: 'Featured Sponsor & Event Advert',
+  showAdvertQR: false,
   projectorAdvertActive: false,
   mobileAdvertActive: false,
   players: {},
@@ -71,6 +73,9 @@ io.on('connection', (socket) => {
       if (payload.bannerText !== undefined) gameState.bannerText = payload.bannerText;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
+      if (payload.advertTitle !== undefined) gameState.advertTitle = payload.advertTitle;
+      if (payload.showAdvertQR !== undefined) gameState.showAdvertQR = payload.showAdvertQR;
+
       if (payload.target === 'projector') {
         gameState.projectorAdvertActive = true;
       } else if (payload.target === 'mobile') {
