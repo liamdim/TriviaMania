@@ -5,26 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriviaMania - Player Controller</title>
     <style>
-        :root { --bg: #0b0b10; --card: #15151c; --primary: #bb86fc; --accent: #03dac6; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; justify-content: center; align-items: center; }
-        .card { background: var(--card); border: 1px solid #2a2a35; border-radius: 14px; padding: 25px; width: 100%; max-width: 400px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); text-align: center; }
-        h1 { color: var(--primary); font-size: 24px; margin-top: 0; }
-        input { width: 100%; padding: 14px; margin: 10px 0 20px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
-        button { width: 100%; padding: 16px; background: var(--accent); color: black; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; }
+        :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; justify-content: center; align-items: center; }
+        .card { background: var(--card); border: 1px solid var(--primary); border-radius: 16px; padding: 25px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(156, 39, 176, 0.4); text-align: center; }
+        h1 { color: var(--accent); font-size: 26px; margin-top: 0; text-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
+        input { width: 100%; padding: 14px; margin: 10px 0 20px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        button { width: 100%; padding: 16px; background: var(--accent); color: black; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
         
         .game-screen { display: none; width: 100%; max-width: 400px; text-align: center; }
         .options-container { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
-        .choice-btn { background: #22222e; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
-        .choice-btn:hover { background: var(--primary); color: black; }
-        .score-badge { background: #22222e; padding: 8px 15px; border-radius: 20px; border: 1px solid #03dac6; display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
-        .donate-btn { background: #ff9800; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 14px; }
+        .choice-btn { background: #1a1d2d; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
+        .choice-btn:hover { background: var(--primary); color: white; }
+        .score-badge { background: #1a1d2d; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
+        .paypal-btn { background: #ff9100; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; }
+
+        .advert-banner-mobile { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--accent); padding: 8px; border-radius: 8px; margin-top: 15px; font-size: 13px; color: var(--accent); display: none; }
     </style>
 </head>
 <body>
 
     <div id="joinScreen" class="card">
         <h1>TriviaMania</h1>
-        <p style="color: #aaa; font-size: 14px;">Enter your team name to join:</p>
+        <p style="color: #8a8d9f; font-size: 14px;">Enter your team name to join:</p>
         <input type="text" id="playerName" placeholder="Team Name" maxlength="20">
         <button onclick="joinGame()">Join Game</button>
     </div>
@@ -33,14 +35,15 @@
         <div class="card">
             <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0;"></h2>
             <div class="score-badge">Score: <span id="playerScore">0</span> pts</div>
-            <p id="gameStatusText" style="color: #aaa; font-size: 14px;">Waiting for host to start...</p>
+            <p id="gameStatusText" style="color: #8a8d9f; font-size: 14px;">Waiting for host to start...</p>
             
             <div id="answerSection" style="display:none;">
                 <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 10px;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
 
-            <a id="donateLink" href="#" target="_blank" class="donate-btn">💛 Donate to Charity</a>
+            <a id="paypalLink" href="#" target="_blank" class="paypal-btn">💳 Pay Game Entry / Tip via PayPal</a>
+            <div id="mobileAdvertNotice" class="advert-banner-mobile">📢 Special Featured Sponsor Active on Screen!</div>
         </div>
     </div>
 
@@ -62,11 +65,9 @@
         }
 
         function selectAnswer(optionText) {
-            // Trigger physical haptic phone vibration on click
             if ("vibrate" in navigator) {
                 navigator.vibrate(60);
             }
-
             socket.emit('submitAnswer', { answer: optionText });
             document.getElementById('answerSection').style.display = 'none';
             document.getElementById('gameStatusText').textContent = `Locked in: "${optionText}"! Waiting for reveal...`;
@@ -77,10 +78,17 @@
             const answerSection = document.getElementById('answerSection');
             const promptEl = document.getElementById('currentQuestionPrompt');
             const optionsGrid = document.getElementById('playerOptionsGrid');
-            const donateLink = document.getElementById('donateLink');
+            const paypalLink = document.getElementById('paypalLink');
+            const mobileAdvertNotice = document.getElementById('mobileAdvertNotice');
 
-            if (state.charityUrl) {
-                donateLink.href = state.charityUrl;
+            if (state.paypalUrl) {
+                paypalLink.href = state.paypalUrl;
+            }
+
+            if (state.advertActive) {
+                mobileAdvertNotice.style.display = 'block';
+            } else {
+                mobileAdvertNotice.style.display = 'none';
             }
 
             if (state.status === 'active' && state.currentRound && state.currentRound.questions) {
@@ -98,7 +106,7 @@
                         const letter = ['A', 'B', 'C', 'D'][idx];
                         const btn = document.createElement('button');
                         btn.className = 'choice-btn';
-                        btn.innerHTML = `<strong>${letter}:</strong> ${opt}`;
+                        btn.innerHTML = `<strong style="color:var(--accent);">${letter}:</strong> ${opt}`;
                         btn.onclick = () => selectAnswer(opt);
                         optionsGrid.appendChild(btn);
                     });
