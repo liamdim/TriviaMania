@@ -70,7 +70,7 @@
         </div>
 
         <div class="panel">
-            <h2>Separate Screen Advert Controls</h2>
+            <h2>Interactive Lobby & Screen Controls</h2>
             <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector Only</button>
             <button class="btn-api" style="background:#ff9100; color:black;" onclick="pushAdvert('mobile')">📱 Push Ad to Mobile Phones Only</button>
             <button class="btn-api" style="background:var(--primary);" onclick="pushAdvert('both')">📢 Push Ad to BOTH Screens</button>
@@ -80,7 +80,8 @@
             </div>
             
             <hr style="border:0; border-top:1px solid #222538; margin:15px 0;">
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="toggleTipJar()">🎁 Toggle Tip Jar / Support Link on Phones</button>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="toggleTipJar()">🎁 Toggle Tip Jar on Phones</button>
+            <button class="btn-api" style="background:#00e676; color:black; margin-top:10px;" onclick="togglePoll()">📊 Toggle Pre-Game Icebreaker Poll</button>
         </div>
 
         <div class="panel full-width">
@@ -295,6 +296,11 @@
             alert('Tip Jar toggled on/off for players!');
         }
 
+        function togglePoll() {
+            socket.emit('hostAction', { action: 'togglePoll' });
+            alert('Pre-Game Poll toggled on/off!');
+        }
+
         function saveSettings() {
             const eventTitle = document.getElementById('eventTitleInput').value.trim();
             const welcomeMessage = document.getElementById('welcomeMessageInput').value.trim();
@@ -432,7 +438,7 @@
                 const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
                 listEl.innerHTML += `
                     <div class="score-row">
-                        <span>${medal} ${p.avatar} <strong>${p.name}</strong></span>
+                        <span>${medal} ${p.avatar} <strong>${p.name}</strong> <em style="color:var(--muted); font-size:12px;">"${p.motto}"</em></span>
                         <span style="color: var(--accent); font-weight:bold; font-size:16px;">${p.score} pts</span>
                     </div>
                 `;
