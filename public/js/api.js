@@ -1,7 +1,12 @@
 // TriviaMania Live API & Question Engine
-async function fetchTriviaQuestions(amount = 10) {
+async function fetchTriviaQuestions(amount = 10, category = '') {
     try {
-        const response = await fetch(`https://opentdb.com/api.php?amount=${amount}&type=multiple`);
+        let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
+        if (category) {
+            url += `&category=${category}`;
+        }
+        
+        const response = await fetch(url);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
@@ -21,9 +26,9 @@ async function fetchTriviaQuestions(amount = 10) {
     return getFallbackTrivia();
 }
 
-async function fetchMusicPreviewRound() {
+async function fetchMusicPreviewRound(amount = 10) {
     try {
-        const response = await fetch(`https://itunes.apple.com/search?term=classic+rock+hits&entity=song&limit=5`);
+        const response = await fetch(`https://itunes.apple.com/search?term=classic+rock+hits&entity=song&limit=${amount}`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
@@ -36,7 +41,7 @@ async function fetchMusicPreviewRound() {
                     q: `Name the artist performing this track! 🎵`,
                     a: song.artistName,
                     options: options,
-                    audioUrl: song.previewUrl, // Instant HTML5 audio stream!
+                    audioUrl: song.previewUrl,
                     type: 'music'
                 };
             });
