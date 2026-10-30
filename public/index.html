@@ -101,22 +101,29 @@
     <div id="tab-playlist" class="tab-content">
         <!-- SECTION 1: STANDARD TRIVIA -->
         <div class="panel">
-            <h2>🧠 Standard Trivia Rounds</h2>
-            <label>Select Genre / Category:</label>
-            <select id="triviaGenreSelect">
-                <option value="">General Knowledge (Mixed)</option>
-                <option value="9">General Knowledge</option>
-                <option value="17">Science & Nature</option>
-                <option value="23">History & World Events</option>
-                <option value="22">Geography & Landmarks</option>
-                <option value="11">Movies & Cinema</option>
-                <option value="12">Music & Pop Culture</option>
-                <option value="15">Video Games & Tech</option>
-                <option value="21">Sports & Athletics</option>
-                <option value="25">Art & Literature</option>
-                <option value="24">Politics & Government</option>
-            </select>
-            <button class="btn-api" onclick="addTriviaRound()">➕ Add Standard Trivia Round</button>
+            <h2>🧠 British Standard Trivia Rounds</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label>Question Count:</label>
+                    <select id="questionCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Genre / Category:</label>
+                    <select id="triviaGenreSelect">
+                        <option value="general">British General Knowledge</option>
+                        <option value="sports">British Sports & Football</option>
+                        <option value="history">British History & Monarchy</option>
+                        <option value="tv_movies">British TV & Films</option>
+                        <option value="music">British Music & Rock Anthems</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-api" onclick="addTriviaRound()">➕ Add British Trivia Round</button>
         </div>
 
         <!-- SECTION 2: PICTURE ROUNDS -->
