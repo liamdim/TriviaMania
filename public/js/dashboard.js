@@ -240,10 +240,11 @@ function togglePoll() {
 }
 
 function saveSettings() {
+    const titleInput = document.getElementById('eventTitleInput');
     socket.emit('hostAction', { 
         action: 'updateSettings', 
         payload: { 
-            eventTitle: document.getElementById('eventTitleInput') ? document.getElementById('eventTitleInput': '').value : '' 
+            eventTitle: titleInput ? titleInput.value : '' 
         } 
     });
     alert('Settings saved.');
@@ -266,7 +267,7 @@ function exportLeaderboardCSV() {
     a.click();
 }
 
-// Section placeholders for Kids and Music
+// Section placeholders
 function addKidsRound() { alert('Kids round ready next.'); }
 function addMusicRound() { alert('Music round ready next.'); }
 
