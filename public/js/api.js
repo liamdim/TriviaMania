@@ -41,24 +41,24 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock'
                 const movieDecoys = ["The Lion King", "Frozen", "Moana", "Toy Story", "Aladdin", "Tangled", "Shrek", "Cars", "Finding Nemo", "Beauty and the Beast", "Cinderella", "The Little Mermaid", "Up", "Encanto", "Harry Potter", "Star Wars", "Jurassic Park", "Batman", "Spider-Man", "Doctor Who", "The Incredibles", "Monsters, Inc.", "Mulan", "Hercules"];
 
                 return validSongs.slice(0, amount).map(song => {
-                    // Clean up song title to look like a clean movie/show theme entry
-                    let cleanTitle = song.trackName
+                    // Clean up song title to be the correct answer
+                    let cleanSongTitle = song.trackName
                         .replace(/\(.*?\)/g, '')
                         .replace(/from.*$/i, '')
                         .replace(/theme.*$/i, '')
                         .trim();
                     
-                    if (cleanTitle.length < 2) cleanTitle = "Favorite Family Movie";
+                    if (cleanSongTitle.length < 2) cleanSongTitle = "Classic Theme Song";
 
                     // Pick 3 wrong movie decoys
-                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== cleanTitle.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
+                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== cleanSongTitle.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
                     
                     // Combine correct answer with decoys and truly randomize position
-                    const options = [...wrongOptions, cleanTitle].sort(() => Math.random() - 0.5);
+                    const options = [...wrongOptions, cleanSongTitle].sort(() => Math.random() - 0.5);
 
                     return {
-                        q: `What movie, show, or animation is this theme song from? 🎵`,
-                        a: cleanTitle,
+                        q: `What Disney or family movie features this song? 🎵`,
+                        a: cleanSongTitle,
                         options: options,
                         audioUrl: song.previewUrl,
                         type: 'music'
