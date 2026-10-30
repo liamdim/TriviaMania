@@ -4,44 +4,54 @@
     <meta charset="UTF-8">
     <title>TriviaMania Projector Display</title>
     <style>
-        body { font-family: sans-serif; background: #0b0b10; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
-        .container { width: 90%; max-width: 1200px; padding: 40px; background: #15151c; border: 2px solid #bb86fc; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: grid; grid-template-columns: 1fr 300px; gap: 30px; align-items: center; }
+        :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
+        .container { width: 90%; max-width: 1200px; padding: 40px; background: var(--card); border: 2px solid var(--primary); border-radius: 20px; box-shadow: 0 10px 40px rgba(156, 39, 176, 0.3); display: grid; grid-template-columns: 1fr 300px; gap: 30px; align-items: center; position: relative; }
         .main-col { text-align: left; }
-        .qr-col { background: #22222e; padding: 20px; border-radius: 12px; border: 1px solid #444; text-align: center; }
-        h1 { font-size: 44px; color: #bb86fc; margin-bottom: 10px; }
+        .qr-col { background: #1a1d2d; padding: 20px; border-radius: 14px; border: 1px solid #333852; text-align: center; }
+        h1 { font-size: 48px; color: var(--accent); margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
         .question { font-size: 32px; margin-bottom: 20px; color: #fff; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 22px; }
-        .pill { background: #22222e; padding: 15px; border-radius: 10px; border: 1px solid #444; }
-        .answer { font-size: 28px; color: #03dac6; margin-top: 15px; font-weight: bold; display: none; }
-        .leaderboard { margin-top: 15px; display: none; background: #1f1f2b; padding: 15px; border-radius: 10px; border: 1px solid #03dac6; max-height: 180px; overflow-y: auto; }
-        .leaderboard-row { display: flex; justify-content: space-between; font-size: 18px; padding: 4px 0; border-bottom: 1px solid #333; }
+        .pill { background: #1a1d2d; padding: 18px; border-radius: 12px; border: 1px solid #333852; }
+        .answer { font-size: 28px; color: var(--accent); margin-top: 15px; font-weight: bold; display: none; }
+        .leaderboard { margin-top: 15px; display: none; background: #1a1d2d; padding: 15px; border-radius: 12px; border: 1px solid var(--accent); max-height: 180px; overflow-y: auto; text-align: left; }
+        .leaderboard-row { display: flex; justify-content: space-between; font-size: 18px; padding: 6px 0; border-bottom: 1px solid #222538; }
         
-        /* Podium View Styles */
+        /* Podium View */
         .podium-view { display: none; text-align: center; }
         .podium-grid { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-top: 20px; height: 260px; }
-        .podium-pillar { background: #22222e; border: 2px solid var(--primary); border-radius: 10px 10px 0 0; width: 140px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 15px; }
+        .podium-pillar { background: #1a1d2d; border: 2px solid var(--primary); border-radius: 12px 12px 0 0; width: 140px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 15px; }
         .podium-1 { height: 240px; border-color: #ffd700; background: rgba(255, 215, 0, 0.15); }
         .podium-2 { height: 180px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
         .podium-3 { height: 130px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
 
-        .fundraising-banner { position: absolute; bottom: 15px; font-size: 18px; color: #03dac6; background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 20px; border: 1px solid #03dac6; }
-        .audio-btn { background: #03dac6; color: black; font-size: 18px; font-weight: bold; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; }
-        #qrImage { width: 180px; height: 180px; border-radius: 8px; background: white; padding: 8px; margin-top: 10px; }
+        /* Advert Overlay */
+        .advert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .advert-overlay img { max-width: 80vw; max-height: 80vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 50px rgba(0, 229, 255, 0.5); }
+
+        .fundraising-banner { position: absolute; bottom: 15px; font-size: 18px; color: var(--accent); background: rgba(19, 21, 32, 0.9); padding: 12px 35px; border-radius: 25px; border: 1px solid var(--accent); }
+        .audio-btn { background: var(--accent); color: black; font-size: 18px; font-weight: bold; padding: 14px 28px; border: none; border-radius: 10px; cursor: pointer; margin-top: 15px; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+        #qrImage { width: 170px; height: 170px; border-radius: 10px; background: white; padding: 6px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
+    <!-- Advert Pop-up Overlay -->
+    <div id="advertOverlay" class="advert-overlay">
+        <h2 style="color:var(--accent); font-size:32px; margin-bottom:20px;">📢 Featured Sponsor & Venue Advert</h2>
+        <img id="advertImageDisplay" src="" alt="Advert">
+    </div>
+
     <div class="container" id="screenBox">
-        <!-- Main Question / Waiting / Podium Area -->
         <div class="main-col">
             <div id="waitingView">
-                <h1>TriviaMania Live 🍻</h1>
-                <p style="font-size: 22px; color: #aaa;">Join on your phone at: <br><strong id="joinLinkDisplay" style="color:#03dac6;"></strong></p>
+                <h1 id="eventTitleDisplay">TriviaMania Live 🍻</h1>
+                <p style="font-size: 22px; color: #8a8d9f;">Join on your phone at: <br><strong id="joinLinkDisplay" style="color:var(--accent);"></strong></p>
                 <button class="audio-btn" onclick="unlockAudio()">🔊 Click to Enable Sound & Music</button>
             </div>
 
             <div id="gameView" style="display:none;">
-                <div id="roundTitle" style="font-size: 20px; color: #bb86fc; text-transform: uppercase; margin-bottom: 8px;"></div>
+                <div id="roundTitle" style="font-size: 20px; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; font-weight:bold;"></div>
                 <div class="question" id="questionText">Loading question...</div>
                 
                 <div id="audioContainer" style="margin-bottom: 12px;"></div>
@@ -50,29 +60,27 @@
                 <div class="answer" id="answerBox">Answer: <span id="answerText"></span></div>
                 
                 <div class="leaderboard" id="leaderboardBox">
-                    <h3 style="margin-top:0; color:#03dac6; font-size:16px;">🏆 Live Leaderboard</h3>
+                    <h3 style="margin-top:0; color:var(--accent); font-size:16px;">🏆 Live Leaderboard</h3>
                     <div id="leaderboardList"></div>
                 </div>
             </div>
 
-            <!-- Grand Victory Podium Celebration View -->
             <div id="podiumView" class="podium-view">
-                <h1 style="color: #ffd700; margin: 0 0 10px 0;">🎉 ROUND COMPLETE! 🎉</h1>
-                <p style="font-size: 20px; color: #aaa; margin: 0;">Congratulations to our top fundraising pub teams:</p>
+                <h1 style="color: #ffd700; margin: 0 0 10px 0;">🎉 GAME OVER - WINNERS! 🎉</h1>
+                <p style="font-size: 20px; color: #8a8d9f; margin: 0;">Top performing pub teams:</p>
                 <div class="podium-grid" id="podiumContainer"></div>
             </div>
         </div>
 
-        <!-- Right Column: Charity QR Code Box -->
         <div class="qr-col">
-            <h3 style="margin:0 0 5px 0; color:#bb86fc; font-size:18px;">Support Charity</h3>
-            <p style="font-size: 12px; color: #aaa; margin:0 0 10px 0;">Scan to donate directly:</p>
-            <img id="qrImage" src="" alt="Charity QR Code">
-            <div id="sponsorDisplay" style="font-size: 13px; color: #03dac6; margin-top: 10px; font-weight:bold;"></div>
+            <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:18px;">Pay / Tip via PayPal</h3>
+            <p style="font-size: 12px; color: #8a8d9f; margin:0 0 10px 0;">Scan to pay game fee:</p>
+            <img id="qrImage" src="" alt="PayPal QR">
+            <div id="paypalTextDisplay" style="font-size: 12px; color: var(--accent); margin-top: 10px; word-break:break-all;"></div>
         </div>
     </div>
 
-    <div class="fundraising-banner" id="bannerText">🌟 TriviaMania Charity Event | Scan Table QR to Donate</div>
+    <div class="fundraising-banner" id="bannerText">🌟 TriviaMania Live Pub Quiz | Scan Table QR to Pay</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -86,32 +94,7 @@
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const dummyAudio = new Audio();
             dummyAudio.play().catch(() => {});
-            playFanfare();
-            alert('Sound effects & music enabled!');
-        }
-
-        function playBeep(frequency, duration, type = 'sine') {
-            if (!audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.value = frequency;
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
-            } catch (e) {}
-        }
-
-        function playFanfare() {
-            if (!audioCtx) return;
-            setTimeout(() => playBeep(523.25, 0.2), 0);
-            setTimeout(() => playBeep(659.25, 0.2), 200);
-            setTimeout(() => playBeep(783.99, 0.2), 400);
-            setTimeout(() => playBeep(1046.50, 0.6), 600);
+            alert('Sound effects enabled!');
         }
 
         socket.on('syncState', (state) => {
@@ -125,14 +108,25 @@
             const answerText = document.getElementById('answerText');
             const audioContainer = document.getElementById('audioContainer');
             const leaderboardBox = document.getElementById('leaderboardBox');
+            const advertOverlay = document.getElementById('advertOverlay');
 
-            if (state.charityUrl) {
-                const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(state.charityUrl)}`;
-                document.getElementById('qrImage').src = qrSrc;
+            if (state.eventTitle) {
+                document.getElementById('eventTitleDisplay').textContent = state.eventTitle;
+                document.getElementById('bannerText').textContent = `🌟 ${state.eventTitle} | Scan Table QR to Pay`;
             }
-            if (state.sponsorText) {
-                document.getElementById('sponsorDisplay').textContent = state.sponsorText;
-                document.getElementById('bannerText').textContent = `🌟 ${state.sponsorText} | Scan QR to Donate`;
+
+            if (state.paypalUrl) {
+                const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(state.paypalUrl)}`;
+                document.getElementById('qrImage').src = qrSrc;
+                document.getElementById('paypalTextDisplay').textContent = state.paypalUrl;
+            }
+
+            // Advert Overlay Control
+            if (state.advertActive && state.advertImage) {
+                document.getElementById('advertImageDisplay').src = state.advertImage;
+                advertOverlay.style.display = 'flex';
+            } else {
+                advertOverlay.style.display = 'none';
             }
 
             if (state.status === 'podium') {
@@ -140,7 +134,6 @@
                 gameView.style.display = 'none';
                 podiumView.style.display = 'block';
                 audioContainer.innerHTML = '';
-                playFanfare();
             } else if (state.status === 'active' || state.status === 'revealed') {
                 waitingView.style.display = 'none';
                 podiumView.style.display = 'none';
@@ -155,7 +148,7 @@
                     optionsGrid.innerHTML = '';
                     q.options.forEach((opt, idx) => {
                         const letter = ['A', 'B', 'C', 'D'][idx];
-                        optionsGrid.innerHTML += `<div class="pill"><strong style="color:#bb86fc;">${letter}:</strong> ${opt}</div>`;
+                        optionsGrid.innerHTML += `<div class="pill"><strong style="color:var(--primary);">${letter}:</strong> ${opt}</div>`;
                     });
 
                     if (q.audioUrl && state.status === 'active') {
@@ -187,46 +180,44 @@
             const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
 
             if (sortedPlayers.length === 0) {
-                listEl.innerHTML = '<p style="color:#777; font-size:14px;">No players scored yet.</p>';
+                listEl.innerHTML = '<p style="color:#777; font-size:14px;">No teams scored yet.</p>';
                 podiumContainer.innerHTML = '<p style="color:#777;">No active teams.</p>';
                 return;
             }
 
-            // Update Projector Leaderboard
             listEl.innerHTML = '';
             sortedPlayers.slice(0, 5).forEach((p, idx) => {
                 const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
                 listEl.innerHTML += `
                     <div class="leaderboard-row">
                         <span>${medal} ${p.avatar} ${p.name}</span>
-                        <strong style="color: #bb86fc;">${p.score} pts</strong>
+                        <strong style="color: var(--accent);">${p.score} pts</strong>
                     </div>
                 `;
             });
 
-            // Update Grand Podium Display
-            const p1 = sortedPlayers[0] || { name: '-', score: 0, avatar: '👑' };
-            const p2 = sortedPlayers[1] || { name: '-', score: 0, avatar: '🥈' };
-            const p3 = sortedPlayers[2] || { name: '-', score: 0, avatar: '🥉' };
+            const p1 = sortedPlayers[0] || { name: '-', score: 0 };
+            const p2 = sortedPlayers[1] || { name: '-', score: 0 };
+            const p3 = sortedPlayers[2] || { name: '-', score: 0 };
 
             podiumContainer.innerHTML = `
                 <div class="podium-pillar podium-2">
                     <span style="font-size:28px;">🥈</span>
-                    <strong style="color:#c0c0c0; font-size:16px; margin-top:5px;">2nd Place</strong>
-                    <div style="font-size:15px; margin-top:10px; font-weight:bold; color:#fff;">${p2.name}</div>
-                    <div style="font-size:14px; color:#bb86fc; margin-top:5px;">${p2.score} pts</div>
+                    <strong style="color:#c0c0c0; font-size:15px; margin-top:5px;">2nd</strong>
+                    <div style="font-size:14px; margin-top:10px; font-weight:bold; color:#fff;">${p2.name}</div>
+                    <div style="font-size:13px; color:var(--accent); margin-top:3px;">${p2.score} pts</div>
                 </div>
                 <div class="podium-pillar podium-1">
                     <span style="font-size:36px;">👑</span>
-                    <strong style="color:#ffd700; font-size:18px; margin-top:5px;">1st Place</strong>
-                    <div style="font-size:18px; margin-top:10px; font-weight:bold; color:#fff;">${p1.name}</div>
-                    <div style="font-size:15px; color:#bb86fc; margin-top:5px;">${p1.score} pts</div>
+                    <strong style="color:#ffd700; font-size:16px; margin-top:5px;">1st</strong>
+                    <div style="font-size:16px; margin-top:10px; font-weight:bold; color:#fff;">${p1.name}</div>
+                    <div style="font-size:14px; color:var(--accent); margin-top:3px;">${p1.score} pts</div>
                 </div>
                 <div class="podium-pillar podium-3">
                     <span style="font-size:28px;">🥉</span>
-                    <strong style="color:#cd7f32; font-size:16px; margin-top:5px;">3rd Place</strong>
-                    <div style="font-size:15px; margin-top:10px; font-weight:bold; color:#fff;">${p3.name}</div>
-                    <div style="font-size:14px; color:#bb86fc; margin-top:5px;">${p3.score} pts</div>
+                    <strong style="color:#cd7f32; font-size:15px; margin-top:5px;">3rd</strong>
+                    <div style="font-size:14px; margin-top:10px; font-weight:bold; color:#fff;">${p3.name}</div>
+                    <div style="font-size:13px; color:var(--accent); margin-top:3px;">${p3.score} pts</div>
                 </div>
             `;
         });
