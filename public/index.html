@@ -18,6 +18,7 @@
         button:hover { opacity: 0.9; }
         .btn-play { background: #4caf50; }
         .btn-reveal { background: #03dac6; color: black; }
+        .btn-restart { background: #ff9800; color: black; }
         .btn-danger { background: var(--danger); width: auto; padding: 6px 10px; margin-top: 0; font-size: 12px; }
         .btn-api { background: var(--primary); color: black; font-size: 15px; }
 
@@ -43,9 +44,10 @@
         <div>
             <div class="panel">
                 <h2>Master Game Controls</h2>
-                <button class="btn-play" onclick="sendAction('resume')">▶ Resume Round</button>
+                <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
                 <button onclick="sendAction('pause')">⏸ Pause Game</button>
-                <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer on Screen</button>
+                <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
+                <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
             </div>
 
             <div class="panel">
@@ -58,10 +60,8 @@
 
         <!-- Right Column: Playlist & Round Generator -->
         <div>
-            <!-- Add Rounds to Queue -->
             <div class="panel">
                 <h2>Build Your Quiz Playlist</h2>
-                <p style="color: #aaa; font-size: 14px;">Select categories, decades, or kids rounds and add them to your queue.</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
@@ -74,69 +74,60 @@
                         </select>
                     </div>
                     <div>
-                        <label>Trivia Category:</label>
-                        <select id="categorySelect">
-                            <option value="">Random / General</option>
-                            <option value="9">General Knowledge</option>
-                            <option value="17">Science & Nature</option>
-                            <option value="18">Computers & Tech</option>
-                            <option value="20">Mythology</option>
-                            <option value="21">Sports</option>
-                            <option value="23">History</option>
-                            <option value="25">Art</option>
-                            <option value="27">Animals</option>
+                        <label>Question Timer:</label>
+                        <select id="timerSelect">
+                            <option value="5">5 Seconds</option>
+                            <option value="10" selected>10 Seconds</option>
+                            <option value="20">20 Seconds</option>
+                            <option value="30">30 Seconds</option>
                         </select>
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                    <div>
+                        <label>Delay Before Next Question:</label>
+                        <select id="delaySelect">
+                            <option value="2">2 Seconds</option>
+                            <option value="5" selected>5 Seconds</option>
+                            <option value="10">10 Seconds</option>
+                            <option value="15">15 Seconds</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label>Trivia Category:</label>
+                <select id="categorySelect">
+                    <option value="">Random / General</option>
+                    <option value="9">General Knowledge</option>
+                    <option value="17">Science & Nature</option>
+                    <option value="18">Computers & Tech</option>
+                    <option value="20">Mythology</option>
+                    <option value="21">Sports</option>
+                    <option value="23">History</option>
+                    <option value="25">Art</option>
+                    <option value="27">Animals</option>
+                </select>
+
                 <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Trivia Round</button>
 
-                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 20px 0;">
+                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <div>
-                    <label>Music / TV / Decades / Kids Genre:</label>
-                    <select id="musicGenreSelect">
-                        <!-- Decades -->
-                        <option value="1980s pop rock">1980s Pop & Rock Anthems</option>
-                        <option value="1980s synth wave">1980s Synthwave & New Wave</option>
-                        <option value="1980s dance hits">1980s Dance & Club Hits</option>
-                        <option value="1990s britpop">1990s Britpop & Indie</option>
-                        <option value="1990s dance pop">1990s Dance & Pop</option>
-                        <option value="1990s hip hop">1990s Hip Hop & R&B</option>
-                        <option value="2000s rock">2000s Alternative Rock</option>
-                        <option value="2000s pop hits">2000s Chart Pop</option>
-                        <option value="2010s hits">2010s Billboard Hits</option>
-                        
-                        <!-- Genres -->
-                        <option value="classic rock hits">Classic Rock Anthems</option>
-                        <option value="heavy metal classics">Heavy Metal & Hard Rock</option>
-                        <option value="motown soul legends">Motown & Soul Classics</option>
-                        <option value="disco groove 70s">1970s Disco & Funk</option>
-                        <option value="country music hits">Classic & Modern Country</option>
-                        <option value="indie alternative rock">Indie & Alternative Rock</option>
-                        <option value="electronic dance music edm">EDM & Dance Anthems</option>
-                        <option value="jazz blues club">Jazz & Blues Lounge</option>
-                        <option value="acoustic coffeehouse">Acoustic Unplugged</option>
-                        <option value="reggae dub classics">Reggae & Ska</option>
-                        
-                        <!-- TV & Movies -->
-                        <option value="tv theme songs">TV Show Theme Songs</option>
-                        <option value="epic movie soundtracks">Epic Movie Soundtracks</option>
-                        <option value="broadway musicals">Broadway & Musicals</option>
-                        <option value="sci fi themes">Sci-Fi & Fantasy Themes</option>
-                        
-                        <!-- Kids -->
-                        <option value="disney songs singalong">Kids Disney Singalong Hits</option>
-                        <option value="kids cartoon theme songs">Kids Cartoon Theme Songs</option>
-                        <option value="nursery rhymes kids">Kids Nursery Rhymes & Fun</option>
-                        <option value="family movie songs">Family Movie Songs</option>
-                    </select>
-                </div>
+                <label>Music / TV / Kids Genre:</label>
+                <select id="musicGenreSelect">
+                    <option value="1980s pop rock">1980s Pop & Rock Anthems</option>
+                    <option value="1990s britpop">1990s Britpop & Indie</option>
+                    <option value="classic rock hits">Classic Rock Anthems</option>
+                    <option value="motown soul legends">Motown & Soul Classics</option>
+                    <option value="disco groove 70s">1970s Disco & Funk</option>
+                    <option value="tv theme songs">TV Show Theme Songs</option>
+                    <option value="disney songs singalong">Kids Disney Singalong Hits</option>
+                    <option value="kids cartoon theme songs">Kids Cartoon Theme Songs</option>
+                </select>
 
                 <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / TV / Kids Round</button>
             </div>
 
-            <!-- Active Playlist Queue -->
             <div class="panel">
                 <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
                 <div id="playlistContainer">
@@ -153,6 +144,8 @@
 
         async function addTriviaToPlaylist() {
             const count = parseInt(document.getElementById('questionCountSelect').value);
+            const timer = parseInt(document.getElementById('timerSelect').value);
+            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const categorySelect = document.getElementById('categorySelect');
             const categoryId = categorySelect.value;
             const categoryName = categoryId ? categorySelect.options[categorySelect.selectedIndex].text : "General";
@@ -163,13 +156,15 @@
             const questions = await fetchTriviaQuestions(count, categoryId);
             const roundName = `Trivia: ${categoryName} (${questions.length} Qs)`;
 
-            playlist.push({ id: Date.now(), name: roundName, questions: questions });
+            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
             btn.textContent = "➕ Add Trivia Round";
             renderPlaylist();
         }
 
         async function addMusicToPlaylist() {
             const count = parseInt(document.getElementById('questionCountSelect').value);
+            const timer = parseInt(document.getElementById('timerSelect').value);
+            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const musicSelect = document.getElementById('musicGenreSelect');
             const searchTerm = musicSelect.value;
             const genreName = musicSelect.options[musicSelect.selectedIndex].text;
@@ -180,7 +175,7 @@
             const questions = await fetchMusicPreviewRound(count, searchTerm);
             const roundName = `Music: ${genreName} (${questions.length} Qs)`;
 
-            playlist.push({ id: Date.now(), name: roundName, questions: questions });
+            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
             btn.textContent = "➕ Add Music / TV / Kids Round";
             renderPlaylist();
         }
@@ -200,10 +195,10 @@
                     <div class="playlist-card">
                         <div>
                             <strong>${index + 1}. ${round.name}</strong>
-                            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ready to load</div>
+                            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Timer: ${round.timer}s | Delay: ${round.betweenDelay}s</div>
                         </div>
                         <div>
-                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadAndStartRound(${index})">▶ Load & Play</button>
+                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadRound(${index})">📂 Load</button>
                             <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
                         </div>
                     </div>
@@ -211,16 +206,13 @@
             });
         }
 
-        function loadAndStartRound(index) {
+        function loadRound(index) {
             const round = playlist[index];
-            const roundPayload = {
-                name: round.name,
-                questions: round.questions,
-                currentIndex: 0
-            };
-
-            socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
-            alert(`Loaded and started "${round.name}"!`);
+            socket.emit('hostAction', { 
+                action: 'loadRound', 
+                payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay } 
+            });
+            alert(`Loaded "${round.name}"! Now click "▶ Start / Resume Round" in Master Controls when ready.`);
         }
 
         function deleteRound(index) {
