@@ -194,7 +194,7 @@
             const btn = event.target;
             btn.textContent = "Fetching Audio Clips...";
 
-            const questions = await fetchMusicPreviewRound(count, searchTerm);
+            const questions = await fetchMusicPreviewRound(count, searchTerm, true);
             const roundName = `Music: ${genreName} (${questions.length} Qs)`;
 
             playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
