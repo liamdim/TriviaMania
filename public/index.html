@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TriviaMania - Host Dashboard</title>
+    <style>
+        :root { --bg: #0b0b10; --card: #15151c; --primary: #bb86fc; --accent: #03dac6; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a35; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 24px; color: var(--primary); }
+        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 15px; font-weight: bold; }
+        
+        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        .panel { background: var(--card); border: 1px solid #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #2a2a35; color: white; width: 100%; margin-top: 10px; }
+        .btn-play { background: #4caf50; }
+        .btn-reveal { background: #03dac6; color: black; }
+        .btn-api { background: var(--primary); color: black; font-size: 16px; margin-bottom: 10px; }
+    </style>
+    <script src="/js/api.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>TriviaMania Host Dashboard</h1>
+        <div class="nav-links">
+            <a href="/display.html" target="_blank">Open Projector Display</a>
+            <a href="/player.html" target="_blank">Player Join Link</a>
+        </div>
+    </header>
+
+    <div class="grid">
+        <div>
+            <div class="panel">
+                <h2>Master Controls</h2>
+                <button class="btn-play" onclick="sendAction('resume')">▶ Resume / Start Round</button>
+                <button onclick="sendAction('pause')">⏸ Pause Game</button>
+                <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer on Screen</button>
+            </div>
+
+            <div class="panel">
+                <h2>Connected Players (<span id="playerCount">0</span>)</h2>
+                <div id="playerList" style="max-height: 200px; overflow-y: auto;">
+                    <p style="color: #777;">No players connected yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <h2>Live Online Round Generator</h2>
+                <p style="color: #aaa; font-size: 14px;">Pull fresh, non-repeating questions directly from online databases instantly!</p>
+                
+                <button class="btn-api" onclick="loadOnlineTriviaRound()">🌐 Load 10 Live Trivia Questions (API)</button>
+                <button class="btn-api" style="background:#ff9800; color:black;" onclick="loadOnlineMusicRound()">🎵 Load Live Music Preview Round (API)</button>
+                
+                <div id="loadedStatus" style="margin-top: 15px; color: #03dac6; font-weight: bold;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        async function loadOnlineTriviaRound() {
+            document.getElementById('loadedStatus').textContent = "Fetching fresh questions from online database...";
+            const questions = await fetchTriviaQuestions(10);
+            
+            const roundPayload = {
+                name: "Live Online Trivia Round",
+                questions: questions,
+                currentIndex: 0
+            };
+
+            socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
+            document.getElementById('loadedStatus').textContent = `Success! Loaded ${questions.length} live trivia questions and pushed to projector.`;
+        }
+
+        async function loadOnlineMusicRound() {
+            document.getElementById('loadedStatus').textContent = "Fetching live music preview clips...";
+            const questions = await fetchMusicPreviewRound();
+            
+            const roundPayload = {
+                name: "Live Music Audio Round",
+                questions: questions,
+                currentIndex: 0
+            };
+
+            socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
+            document.getElementById('loadedStatus').textContent = `Success! Loaded ${questions.length} music tracks with auto-play audio previews.`;
+        }
+
+        socket.on('updatePlayers', (players) => {
+            const listEl = document.getElementById('playerList');
+            const countEl = document.getElementById('playerCount');
+            const playerIds = Object.keys(players);
+            countEl.textContent = playerIds.length;
+            
+            if (playerIds.length === 0) {
+                listEl.innerHTML = '<p style="color: #777;">No players connected yet.</p>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            playerIds.forEach(id => {
+                const p = players[id];
+                listEl.innerHTML += `<div style="padding: 6px; border-bottom:1px solid #333;">${p.avatar} ${p.name}</div>`;
+            });
+        });
+    </script>
+</body>
+</html>
