@@ -26,14 +26,17 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
     return getFallbackTrivia();
 }
 
-async function fetchMusicPreviewRound(amount = 10) {
+async function fetchMusicPreviewRound(amount = 10, searchTerm = 'classic+rock+hits') {
     try {
-        const response = await fetch(`https://itunes.apple.com/search?term=classic+rock+hits&entity=song&limit=${amount}`);
+        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=${Math.max(amount, 5)}`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
-            return data.results.map(song => {
-                const wrongArtists = ["The Beatles", "Queen", "Led Zeppelin", "The Rolling Stones", "Fleetwood Mac", "Elton John"].filter(a => a !== song.artistName);
+            // Filter only results that have a valid preview URL
+            const validSongs = data.results.filter(song => song.previewUrl);
+            
+            return validSongs.slice(0, amount).map(song => {
+                const wrongArtists = ["The Beatles", "Queen", "Led Zeppelin", "The Rolling Stones", "Fleetwood Mac", "Elton John", "Madonna", "Michael Jackson", "Prince", "David Bowie", "ABBA", "Ed Sheeran", "Taylor Swift"].filter(a => a !== song.artistName);
                 const shuffledWrong = wrongArtists.sort(() => 0.5 - Math.random()).slice(0, 3);
                 const options = [...shuffledWrong, song.artistName].sort(() => 0.5 - Math.random());
                 
