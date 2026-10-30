@@ -7,7 +7,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.json({ limit: '10mb' }));
+// Increase JSON body limit to 50mb so high-res sponsor images upload instantly
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let gameState = {
@@ -15,10 +17,7 @@ let gameState = {
   currentRound: null,
   timerSeconds: 10,
   betweenDelay: 5,
-  paypalUrl: '',
-  entryPrice: '0',
   eventTitle: 'TriviaMania Live Event',
-  qrVisible: false,
   advertImage: null,
   advertActive: false,
   players: {},
@@ -62,11 +61,7 @@ io.on('connection', (socket) => {
       };
       gameState.status = 'paused';
     } else if (action === 'updateSettings' && payload) {
-      if (payload.paypalUrl !== undefined) gameState.paypalUrl = payload.paypalUrl;
-      if (payload.entryPrice !== undefined) gameState.entryPrice = payload.entryPrice;
       if (payload.eventTitle !== undefined) gameState.eventTitle = payload.eventTitle;
-    } else if (action === 'toggleQR') {
-      gameState.qrVisible = !gameState.qrVisible;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
       gameState.advertActive = true;
@@ -92,7 +87,6 @@ io.on('connection', (socket) => {
       gameState.status = 'revealed';
     }
     
-    // Broadcast updated state to ALL connected clients immediately
     io.emit('syncState', gameState);
     io.emit('updatePlayers', gameState.players);
   });
