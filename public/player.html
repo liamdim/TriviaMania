@@ -16,7 +16,7 @@
         .options-container { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
         .choice-btn { background: #22222e; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
         .choice-btn:hover { background: var(--primary); color: black; }
-        .score-badge { background: #22222e; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
+        .score-badge { background: #22222e; padding: 8px 15px; border-radius: 20px; border: 1px solid #03dac6; display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
         .donate-btn { background: #ff9800; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
@@ -62,6 +62,11 @@
         }
 
         function selectAnswer(optionText) {
+            // Trigger physical haptic phone vibration on click
+            if ("vibrate" in navigator) {
+                navigator.vibrate(60);
+            }
+
             socket.emit('submitAnswer', { answer: optionText });
             document.getElementById('answerSection').style.display = 'none';
             document.getElementById('gameStatusText').textContent = `Locked in: "${optionText}"! Waiting for reveal...`;
