@@ -47,6 +47,13 @@
         .advert-qr-corner { position: absolute; bottom: 30px; right: 30px; background: rgba(19, 21, 32, 0.9); padding: 12px; border-radius: 12px; border: 2px solid var(--accent); text-align: center; display: none; }
         .advert-qr-corner img { width: 110px; height: 110px; border-radius: 8px; background: white; padding: 4px; display: block; }
 
+        /* Floating Reactions Overlay */
+        .floating-emoji { position: fixed; bottom: 50px; font-size: 45px; animation: floatUp 3s ease-out forwards; z-index: 9999; pointer-events: none; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-70vh) scale(1.5); opacity: 0; }
+        }
+
         .fundraising-banner { position: absolute; bottom: 20px; font-size: 20px; color: var(--accent); background: rgba(19, 21, 32, 0.95); padding: 14px 40px; border-radius: 30px; border: 1px solid var(--accent); box-shadow: 0 0 20px var(--glow); letter-spacing: 0.5px; }
     </style>
 </head>
@@ -113,7 +120,6 @@
         
         const socket = io();
 
-        // Web Audio API Sound Synthesizer
         let audioCtx = null;
         function getAudioContext() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -138,15 +144,14 @@
                     osc.stop(now + 0.1);
                 } else if (type === 'reveal') {
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now); // C5
-                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    osc.frequency.setValueAtTime(783.99, now + 0.2);
                     gain.gain.setValueAtTime(0.2, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                     osc.start(now);
                     osc.stop(now + 0.5);
                 } else if (type === 'podium') {
-                    // Fanfare chord
                     [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
                         const o = ctx.createOscillator();
                         const g = ctx.createGain();
@@ -164,6 +169,15 @@
 
         socket.on('timerTick', (timeLeft) => {
             if (timeLeft <= 3 && timeLeft > 0) playSound('tick');
+        });
+
+        socket.on('triggerReaction', (data) => {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.textContent = data.emoji;
+            el.style.left = (Math.random() * 80 + 10) + 'vw';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
         });
 
         socket.on('syncState', (state) => {
