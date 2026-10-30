@@ -7,12 +7,7 @@
         :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
         
-        /* Dynamic Grid layout depending on QR visibility */
-        .container { width: 90%; max-width: 1200px; padding: 40px; background: var(--card); border: 2px solid var(--primary); border-radius: 20px; box-shadow: 0 10px 40px rgba(156, 39, 176, 0.3); display: grid; grid-template-columns: 1fr; gap: 30px; align-items: center; transition: all 0.3s ease; }
-        .container.show-qr { grid-template-columns: 1fr 300px; }
-
-        .main-col { text-align: left; }
-        .qr-col { background: #1a1d2d; padding: 20px; border-radius: 14px; border: 1px solid #333852; text-align: center; display: none; }
+        .container { width: 90%; max-width: 1200px; padding: 40px; background: var(--card); border: 2px solid var(--primary); border-radius: 20px; box-shadow: 0 10px 40px rgba(156, 39, 176, 0.3); text-align: left; }
         
         h1 { font-size: 48px; color: var(--accent); margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
         .question { font-size: 32px; margin-bottom: 20px; color: #fff; }
@@ -29,55 +24,45 @@
         .podium-2 { height: 180px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
         .podium-3 { height: 130px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
 
-        .advert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
-        .advert-overlay img { max-width: 80vw; max-height: 80vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 50px rgba(0, 229, 255, 0.5); }
+        /* Advert Fullscreen Overlay */
+        .advert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.98); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .advert-overlay img { max-width: 85vw; max-height: 85vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 60px rgba(0, 229, 255, 0.6); }
 
         .fundraising-banner { position: absolute; bottom: 15px; font-size: 18px; color: var(--accent); background: rgba(19, 21, 32, 0.9); padding: 12px 35px; border-radius: 25px; border: 1px solid var(--accent); }
         .audio-btn { background: var(--accent); color: black; font-size: 18px; font-weight: bold; padding: 14px 28px; border: none; border-radius: 10px; cursor: pointer; margin-top: 15px; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
-        #qrImage { width: 170px; height: 170px; border-radius: 10px; background: white; padding: 6px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div id="advertOverlay" class="advert-overlay">
-        <h2 style="color:var(--accent); font-size:32px; margin-bottom:20px;">📢 Featured Sponsor & Venue Advert</h2>
+        <h2 style="color:var(--accent); font-size:36px; margin-bottom:20px; text-shadow: 0 0 15px rgba(0,229,255,0.5);">📢 Featured Sponsor & Event Advert</h2>
         <img id="advertImageDisplay" src="" alt="Advert">
     </div>
 
     <div class="container" id="screenContainer">
-        <div class="main-col">
-            <div id="waitingView">
-                <h1 id="eventTitleDisplay">TriviaMania Live 🍻</h1>
-                <p style="font-size: 22px; color: #8a8d9f;">Join on your phone at: <br><strong id="joinLinkDisplay" style="color:var(--accent);"></strong></p>
-                <button class="audio-btn" onclick="unlockAudio()">🔊 Click to Enable Sound & Music</button>
-            </div>
+        <div id="waitingView">
+            <h1 id="eventTitleDisplay">TriviaMania Live 🍻</h1>
+            <p style="font-size: 22px; color: #8a8d9f;">Join on your phone at: <br><strong id="joinLinkDisplay" style="color:var(--accent);"></strong></p>
+            <button class="audio-btn" onclick="unlockAudio()">🔊 Click to Enable Sound & Music</button>
+        </div>
 
-            <div id="gameView" style="display:none;">
-                <div id="roundTitle" style="font-size: 20px; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; font-weight:bold;"></div>
-                <div class="question" id="questionText">Loading question...</div>
-                <div id="audioContainer" style="margin-bottom: 12px;"></div>
-                <div class="options" id="optionsGrid"></div>
-                <div class="answer" id="answerBox">Answer: <span id="answerText"></span></div>
-                
-                <div class="leaderboard" id="leaderboardBox">
-                    <h3 style="margin-top:0; color:var(--accent); font-size:16px;">🏆 Live Leaderboard</h3>
-                    <div id="leaderboardList"></div>
-                </div>
-            </div>
-
-            <div id="podiumView" class="podium-view">
-                <h1 style="color: #ffd700; margin: 0 0 10px 0;">🎉 GAME OVER - WINNERS! 🎉</h1>
-                <p style="font-size: 20px; color: #8a8d9f; margin: 0;">Top performing pub teams:</p>
-                <div class="podium-grid" id="podiumContainer"></div>
+        <div id="gameView" style="display:none;">
+            <div id="roundTitle" style="font-size: 20px; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; font-weight:bold;"></div>
+            <div class="question" id="questionText">Loading question...</div>
+            <div id="audioContainer" style="margin-bottom: 12px;"></div>
+            <div class="options" id="optionsGrid"></div>
+            <div class="answer" id="answerBox">Answer: <span id="answerText"></span></div>
+            
+            <div class="leaderboard" id="leaderboardBox">
+                <h3 style="margin-top:0; color:var(--accent); font-size:16px;">🏆 Live Leaderboard</h3>
+                <div id="leaderboardList"></div>
             </div>
         </div>
 
-        <!-- Right Column: PayPal QR Code -->
-        <div class="qr-col" id="qrColumn">
-            <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:18px;">Pay Entry / Tip</h3>
-            <p style="font-size: 12px; color: #8a8d9f; margin:0 0 10px 0;">Scan to pay via PayPal:</p>
-            <img id="qrImage" src="" alt="PayPal QR">
-            <div id="paypalTextDisplay" style="font-size: 12px; color: var(--accent); margin-top: 10px; word-break:break-all;"></div>
+        <div id="podiumView" class="podium-view">
+            <h1 style="color: #ffd700; margin: 0 0 10px 0;">🎉 GAME OVER - WINNERS! 🎉</h1>
+            <p style="font-size: 20px; color: #8a8d9f; margin: 0;">Top performing pub teams:</p>
+            <div class="podium-grid" id="podiumContainer"></div>
         </div>
     </div>
 
@@ -109,26 +94,13 @@
             const audioContainer = document.getElementById('audioContainer');
             const leaderboardBox = document.getElementById('leaderboardBox');
             const advertOverlay = document.getElementById('advertOverlay');
-            const screenContainer = document.getElementById('screenContainer');
-            const qrColumn = document.getElementById('qrColumn');
 
             if (state.eventTitle) {
                 document.getElementById('eventTitleDisplay').textContent = state.eventTitle;
                 document.getElementById('bannerText').textContent = `🌟 ${state.eventTitle}`;
             }
 
-            // Toggle QR visibility on Projector
-            if (state.qrVisible && state.paypalUrl) {
-                screenContainer.classList.add('show-qr');
-                qrColumn.style.display = 'block';
-                const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(state.paypalUrl)}`;
-                document.getElementById('qrImage').src = qrSrc;
-                document.getElementById('paypalTextDisplay').textContent = state.paypalUrl;
-            } else {
-                screenContainer.classList.remove('show-qr');
-                qrColumn.style.display = 'none';
-            }
-
+            // Advert Overlay Control
             if (state.advertActive && state.advertImage) {
                 document.getElementById('advertImageDisplay').src = state.advertImage;
                 advertOverlay.style.display = 'flex';
