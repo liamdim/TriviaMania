@@ -20,7 +20,6 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
     } catch (e) {
         console.error("Error fetching trivia:", e);
     }
-    // Fallback questions if offline
     return [
         { q: "What is the capital of France?", a: "Paris", options: ["London", "Paris", "Berlin", "Madrid"], type: 'trivia' }
     ];
@@ -28,11 +27,18 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
 
 async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
     try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=50`);
+        // If searching for female artists, let's target prominent female pop/rock icons specifically
+        let queryTerm = searchTerm;
+        const isFemaleRound = searchTerm.toLowerCase().includes('female');
+        if (isFemaleRound) {
+            const femaleIcons = ['Taylor Swift', 'Beyonce', 'Rihanna', 'Dua Lipa', 'Adele', 'Ariana Grande', 'Billie Eilish', 'Lady Gaga', 'Katy Perry', 'Miley Cyrus', 'Olivia Rodrigo', 'Britney Spears', 'Madonna', 'Whitney Houston', 'Alicia Keys', 'Pink', 'Shakira', 'Celine Dion', 'Amy Winehouse', 'Sia'];
+            queryTerm = femaleIcons[Math.floor(Math.random() * femaleIcons.length)];
+        }
+
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&entity=song&limit=40`);
         const data = await res.json();
         
         if (data.results && data.results.length > 0) {
-            // Filter songs that have valid audio preview URLs
             const validSongs = data.results.filter(song => song.previewUrl && song.artistName && song.trackName);
             validSongs.sort(() => Math.random() - 0.5);
 
@@ -44,7 +50,6 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
                 if (!usedArtists.has(song.artistName)) {
                     usedArtists.add(song.artistName);
                     
-                    // Create incorrect artist distractors from other tracks
                     const distractors = validSongs
                         .filter(s => s.artistName !== song.artistName)
                         .map(s => s.artistName)
@@ -68,9 +73,8 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
         console.error("Error fetching iTunes music round:", e);
     }
 
-    // Fallback music round if offline
     return [
-        { q: "Name the artist for this track", a: "Queen", options: ["The Beatles", "Queen", "Led Zeppelin", "Pink Floyd"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/36/53/b7/3653b7c8-7013-8898-7240-23a595c2f5d9/mza_10795287019777178351.m43.aac", type: 'music' }
+        { q: "Name the artist for this track", a: "Adele", options: ["Taylor Swift", "Adele", "Rihanna", "Dua Lipa"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/c6/8e/3c/c68e3c6a-4d2c-8824-3458-1f6b814674d8/mza_11674482098716327668.m43.aac", type: 'music' }
     ];
 }
 
