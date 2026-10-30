@@ -91,6 +91,8 @@ io.on('connection', (socket) => {
       processRoundScores();
       gameState.status = 'revealed';
     }
+    
+    // Broadcast updated state to ALL connected clients immediately
     io.emit('syncState', gameState);
     io.emit('updatePlayers', gameState.players);
   });
