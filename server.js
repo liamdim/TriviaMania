@@ -53,10 +53,11 @@ io.on('connection', (socket) => {
         timer: payload.timer || 10,
         betweenDelay: payload.betweenDelay || 5
       };
-      gameState.status = 'paused'; // Loaded, waiting for host to hit Play
+      gameState.status = 'paused';
     } else if (action === 'resume') {
       if (gameState.currentRound) {
         gameState.status = 'active';
+        gameState.answersSubmitted = {};
         startQuestionTimer();
       }
     } else if (action === 'pause') {
@@ -65,12 +66,15 @@ io.on('connection', (socket) => {
       if (gameState.currentRound) {
         gameState.currentRound.currentIndex = 0;
         gameState.status = 'active';
+        gameState.answersSubmitted = {};
         startQuestionTimer();
       }
     } else if (action === 'reveal') {
+      processRoundScores();
       gameState.status = 'revealed';
     }
     io.emit('syncState', gameState);
+    io.emit('updatePlayers', gameState.players);
   });
 
   socket.on('submitAnswer', (data) => {
@@ -87,11 +91,25 @@ io.on('connection', (socket) => {
   });
 });
 
+function processRoundScores() {
+  if (!gameState.currentRound) return;
+  const currentQ = gameState.currentRound.questions[gameState.currentRound.currentIndex];
+  const correctAnswer = currentQ.a.trim().toLowerCase();
+
+  for (const socketId in gameState.answersSubmitted) {
+    const playerAnswer = gameState.answersSubmitted[socketId].trim().toLowerCase();
+    if (playerAnswer === correctAnswer) {
+      if (gameState.players[socketId]) {
+        gameState.players[socketId].score += 10; // Award 10 points for correct answer
+      }
+    }
+  }
+}
+
 function startQuestionTimer() {
   clearQuizTimer();
   let timeLeft = gameState.currentRound.timer || 10;
   
-  // Broadcast initial time
   io.emit('timerTick', timeLeft);
 
   questionInterval = setInterval(() => {
@@ -100,11 +118,11 @@ function startQuestionTimer() {
 
     if (timeLeft <= 0) {
       clearQuizTimer();
-      // Auto-reveal answer when timer hits 0
+      processRoundScores();
       gameState.status = 'revealed';
       io.emit('syncState', gameState);
+      io.emit('updatePlayers', gameState.players);
 
-      // Wait for host-defined delay before moving to next question
       const delay = (gameState.currentRound.betweenDelay || 5) * 1000;
       setTimeout(() => {
         if (gameState.status === 'revealed' && gameState.currentRound) {
