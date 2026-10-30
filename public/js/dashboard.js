@@ -13,42 +13,68 @@ function switchTab(tabId, btn) {
 
 const socket = io();
 let playlist = [];
+let storedAdvertBase64 = null;
+let latestPlayersState = {};
 
-function sendAction(action) {
-    socket.emit('hostAction', { action: action });
-}
-
-function addTriviaRound() {
+// --- LIVE STANDARD TRIVIA GENERATOR ---
+async function addTriviaRound() {
     const select = document.getElementById('triviaGenreSelect');
+    const categoryId = select.value;
     const genreName = select.options[select.selectedIndex].text;
-    playlist.push({ id: Date.now(), name: "Trivia: " + genreName, type: 'trivia', questions: [] });
-    renderPlaylist();
-    alert('Added Standard Trivia Round: ' + genreName);
+    
+    let url = 'https://opentdb.com/api.php?amount=10&type=multiple';
+    if (categoryId) {
+        url += '&category=' + categoryId;
+    }
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+            const questions = data.results.map(function(item) {
+                const incorrect = item.incorrect_answers.map(function(ans) { return decodeHtml(ans); });
+                const correct = decodeHtml(item.correct_answer);
+                const uniqueOptions = [...new Set([...incorrect, correct])];
+                while (uniqueOptions.length < 4 && incorrect.length > 0) {
+                    uniqueOptions.push(incorrect[Math.floor(Math.random() * incorrect.length)]);
+                }
+                return {
+                    q: decodeHtml(item.question),
+                    a: correct,
+                    options: uniqueOptions.sort(function() { return Math.random() - 0.5; }),
+                    type: 'trivia'
+                };
+            });
+
+            playlist.push({ 
+                id: Date.now(), 
+                name: "Trivia: " + genreName + " (" + questions.length + " Qs)", 
+                questions: questions, 
+                timer: 10, 
+                betweenDelay: 5, 
+                speedBonus: true 
+            });
+            renderPlaylist();
+            alert('Successfully pulled 10 fresh questions for ' + genreName + '!');
+            return;
+        }
+    } catch (e) {
+        console.error("Error fetching trivia:", e);
+    }
+    alert('Could not fetch online trivia right now. Please try again!');
 }
 
-function addPictureRound() {
-    const select = document.getElementById('pictureGenreSelect');
-    const genreName = select.options[select.selectedIndex].text;
-    playlist.push({ id: Date.now(), name: "Picture: " + genreName, type: 'picture', questions: [] });
-    renderPlaylist();
-    alert('Added Picture Round: ' + genreName);
+function decodeHtml(html) {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
 }
 
-function addKidsRound() {
-    const select = document.getElementById('kidsGenreSelect');
-    const genreName = select.options[select.selectedIndex].text;
-    playlist.push({ id: Date.now(), name: "Kids & Family: " + genreName, type: 'kids', questions: [] });
-    renderPlaylist();
-    alert('Added Kids Round: ' + genreName);
-}
-
-function addMusicRound() {
-    const select = document.getElementById('musicGenreSelect');
-    const genreName = select.options[select.selectedIndex].text;
-    playlist.push({ id: Date.now(), name: "Music: " + genreName, type: 'music', questions: [] });
-    renderPlaylist();
-    alert('Added Music Round: ' + genreName);
-}
+// Placeholder functions for other tabs so they don't break
+function addPictureRound() { alert('Picture section coming up next!'); }
+function addKidsRound() { alert('Kids section coming up next!'); }
+function addMusicRound() { alert('Music section coming up next!'); }
 
 function renderPlaylist() {
     const container = document.getElementById('playlistContainer');
@@ -89,6 +115,17 @@ function saveSettings() { alert('Settings saved.'); }
 function exportLeaderboardCSV() { alert('Leaderboard exported.'); }
 
 socket.on('updatePlayers', function(players) {
+    latestPlayersState = players;
     var countEl = document.getElementById('playerCount');
     if (countEl) countEl.textContent = Object.keys(players).length;
+    
+    var listEl = document.getElementById('hostScoreList');
+    if (listEl && Object.keys(players).length > 0) {
+        var sorted = Object.values(players).sort(function(a, b) { return b.score - a.score; });
+        var html = '';
+        sorted.forEach(function(p, idx) {
+            html += '<div class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
+        });
+        listEl.innerHTML = html;
+    }
 });
