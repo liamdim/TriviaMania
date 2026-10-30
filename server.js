@@ -26,10 +26,14 @@ let gameState = {
   showAdvertQR: false,
   projectorAdvertActive: false,
   mobileAdvertActive: false,
+  tipJarActive: false,
+  tipJarUrl: '',
+  speedBonusEnabled: false,
   players: {},
   answersSubmitted: {}
 };
 
+let questionStartTime = 0;
 let questionInterval = null;
 
 function clearQuizTimer() {
@@ -64,13 +68,18 @@ io.on('connection', (socket) => {
         questions: payload.questions,
         currentIndex: 0,
         timer: payload.timer || 10,
-        betweenDelay: payload.betweenDelay || 5
+        betweenDelay: payload.betweenDelay || 5,
+        speedBonus: payload.speedBonus || false
       };
+      gameState.speedBonusEnabled = payload.speedBonus || false;
       gameState.status = 'paused';
     } else if (action === 'updateSettings' && payload) {
       if (payload.eventTitle !== undefined) gameState.eventTitle = payload.eventTitle;
       if (payload.welcomeMessage !== undefined) gameState.welcomeMessage = payload.welcomeMessage;
       if (payload.bannerText !== undefined) gameState.bannerText = payload.bannerText;
+      if (payload.tipJarUrl !== undefined) gameState.tipJarUrl = payload.tipJarUrl;
+    } else if (action === 'toggleTipJar') {
+      gameState.tipJarActive = !gameState.tipJarActive;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
       if (payload.advertTitle !== undefined) gameState.advertTitle = payload.advertTitle;
@@ -97,6 +106,7 @@ io.on('connection', (socket) => {
       if (gameState.currentRound) {
         gameState.status = 'active';
         gameState.answersSubmitted = {};
+        questionStartTime = Date.now();
         startQuestionTimer();
       }
     } else if (action === 'pause') {
@@ -106,6 +116,7 @@ io.on('connection', (socket) => {
         gameState.currentRound.currentIndex = 0;
         gameState.status = 'active';
         gameState.answersSubmitted = {};
+        questionStartTime = Date.now();
         startQuestionTimer();
       }
     } else if (action === 'reveal') {
@@ -120,7 +131,9 @@ io.on('connection', (socket) => {
   socket.on('submitAnswer', (data) => {
     if (gameState.status !== 'active') return;
     if (!gameState.answersSubmitted[socket.id]) {
-      gameState.answersSubmitted[socket.id] = data.answer;
+      const submitTime = Date.now();
+      const timeTaken = (submitTime - questionStartTime) / 1000; // seconds taken
+      gameState.answersSubmitted[socket.id] = { answer: data.answer, timeTaken };
       io.emit('answerUpdate', { count: Object.keys(gameState.answersSubmitted).length });
     }
   });
@@ -136,12 +149,22 @@ function processRoundScores() {
   if (!gameState.currentRound) return;
   const currentQ = gameState.currentRound.questions[gameState.currentRound.currentIndex];
   const correctAnswer = currentQ.a.trim().toLowerCase();
+  const maxTimer = gameState.currentRound.timer || 10;
 
   for (const socketId in gameState.answersSubmitted) {
-    const playerAnswer = gameState.answersSubmitted[socketId].trim().toLowerCase();
+    const sub = gameState.answersSubmitted[socketId];
+    const playerAnswer = sub.answer.trim().toLowerCase();
+    
     if (playerAnswer === correctAnswer) {
       if (gameState.players[socketId]) {
-        gameState.players[socketId].score += 10;
+        let points = 10;
+        // Calculate speed bonus if enabled (up to 5 extra points for fast responses)
+        if (gameState.currentRound.speedBonus) {
+          const timeRatio = Math.max(0, (maxTimer - sub.timeTaken) / maxTimer);
+          const bonus = Math.round(timeRatio * 5);
+          points += bonus;
+        }
+        gameState.players[socketId].score += points;
       }
     }
   }
@@ -171,6 +194,7 @@ function startQuestionTimer() {
             gameState.currentRound.currentIndex++;
             gameState.status = 'active';
             gameState.answersSubmitted = {};
+            questionStartTime = Date.now();
             io.emit('syncState', gameState);
             startQuestionTimer();
           } else {
