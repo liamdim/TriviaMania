@@ -24,7 +24,7 @@
 
         .playlist-card { background: #22222e; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
         
-        select { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
+        select, input[type="text"] { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
         label { font-size: 12px; color: #aaa; }
     </style>
     <script src="/js/api.js"></script>
@@ -40,7 +40,7 @@
     </header>
 
     <div class="grid">
-        <!-- Left Column: Master Controls & Players -->
+        <!-- Left Column: Master Controls, Charity Settings & Players -->
         <div>
             <div class="panel">
                 <h2>Master Game Controls</h2>
@@ -48,6 +48,18 @@
                 <button onclick="sendAction('pause')">⏸ Pause Game</button>
                 <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
                 <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
+            </div>
+
+            <!-- Charity & Fundraising Banner Settings -->
+            <div class="panel">
+                <h2>Charity & Sponsor Settings</h2>
+                <label>Charity / Donation URL:</label>
+                <input type="text" id="charityUrlInput" placeholder="https://justgiving.com/my-charity">
+                
+                <label>Sponsor / Event Name:</label>
+                <input type="text" id="sponsorInput" placeholder="Sponsored by The Local Pub & Brewery">
+                
+                <button class="btn-api" style="background:#03dac6; color:black;" onclick="updateCharitySettings()">📢 Update Projector Banner</button>
             </div>
 
             <div class="panel">
@@ -96,7 +108,7 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- 1. Standard Trivia Section -->
+                <!-- Standard Trivia -->
                 <label>Standard Trivia Category:</label>
                 <select id="categorySelect">
                     <option value="">Random / General Knowledge</option>
@@ -114,7 +126,7 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- 2. Music & Decades Section -->
+                <!-- Music / Decades -->
                 <label>Music & Decades Section:</label>
                 <select id="musicGenreSelect">
                     <option value="1980s pop rock">1980s Hits</option>
@@ -144,7 +156,7 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- 3. Dedicated Kids Music & Movie Section -->
+                <!-- Kids Music & Movie -->
                 <label>Kids & Family Theme Songs Section:</label>
                 <select id="kidsMusicGenreSelect">
                     <option value="disney songs singalong">Disney Movie Theme Songs</option>
@@ -158,7 +170,7 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- 4. Dedicated Kids Trivia Section -->
+                <!-- Kids Trivia -->
                 <label>Kids Trivia Section:</label>
                 <select id="kidsTriviaSelect">
                     <option value="disney">Disney Trivia</option>
@@ -182,6 +194,13 @@
     <script>
         const socket = io();
         let playlist = [];
+
+        function updateCharitySettings() {
+            const charityUrl = document.getElementById('charityUrlInput').value.trim();
+            const sponsorText = document.getElementById('sponsorInput').value.trim();
+            socket.emit('hostAction', { action: 'updateCharity', payload: { charityUrl, sponsorText } });
+            alert('Charity settings broadcasted to projector and player screens!');
+        }
 
         async function addTriviaToPlaylist() {
             const count = parseInt(document.getElementById('questionCountSelect').value);
