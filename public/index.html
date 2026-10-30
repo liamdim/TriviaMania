@@ -84,18 +84,19 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
-                    <div>
-                        <label>Delay Before Next Question:</label>
-                        <select id="delaySelect">
-                            <option value="2">2 Seconds</option>
-                            <option value="5" selected>5 Seconds</option>
-                            <option value="10">10 Seconds</option>
-                            <option value="15">15 Seconds</option>
-                        </select>
-                    </div>
+                <div>
+                    <label>Delay Before Next Question:</label>
+                    <select id="delaySelect">
+                        <option value="2">2 Seconds</option>
+                        <option value="5" selected>5 Seconds</option>
+                        <option value="10">10 Seconds</option>
+                        <option value="15">15 Seconds</option>
+                    </select>
                 </div>
 
+                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
+
+                <!-- Trivia Section -->
                 <label>Trivia Category:</label>
                 <select id="categorySelect">
                     <option value="">Random / General</option>
@@ -107,25 +108,46 @@
                     <option value="23">History</option>
                     <option value="25">Art</option>
                     <option value="27">Animals</option>
+                    <option value="22">Geography</option>
+                    <option value="10">Books & Literature</option>
+                    <option value="11">Film & Movies</option>
+                    <option value="12">Music & Pop Culture</option>
+                    <option value="15">Video Games</option>
                 </select>
-
                 <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Trivia Round</button>
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <label>Music / TV / Kids Genre:</label>
+                <!-- Music / Decades Section -->
+                <label>Music / Decades / TV Genre:</label>
                 <select id="musicGenreSelect">
                     <option value="1980s pop rock">1980s Pop & Rock Anthems</option>
+                    <option value="1980s synth wave">1980s Synthwave & New Wave</option>
                     <option value="1990s britpop">1990s Britpop & Indie</option>
+                    <option value="1990s dance pop">1990s Dance & Pop</option>
                     <option value="classic rock hits">Classic Rock Anthems</option>
+                    <option value="heavy metal classics">Heavy Metal & Hard Rock</option>
                     <option value="motown soul legends">Motown & Soul Classics</option>
                     <option value="disco groove 70s">1970s Disco & Funk</option>
+                    <option value="country music hits">Classic Country & Western</option>
+                    <option value="indie alternative rock">Indie & Alternative Rock</option>
+                    <option value="electronic dance music edm">EDM & Dance Anthems</option>
                     <option value="tv theme songs">TV Show Theme Songs</option>
-                    <option value="disney songs singalong">Kids Disney Singalong Hits</option>
-                    <option value="kids cartoon theme songs">Kids Cartoon Theme Songs</option>
+                    <option value="epic movie soundtracks">Epic Movie Soundtracks</option>
                 </select>
+                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / TV Round</button>
 
-                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / TV / Kids Round</button>
+                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
+
+                <!-- Dedicated Kids Section -->
+                <label>Kids & Family Section:</label>
+                <select id="kidsGenreSelect">
+                    <option value="disney songs singalong">Disney Singalong Hits</option>
+                    <option value="kids cartoon theme songs">Kids Cartoon Theme Songs</option>
+                    <option value="family movie songs">Family Movie Soundtracks</option>
+                    <option value="nursery rhymes kids">Kids Nursery Rhymes & Singalongs</option>
+                </select>
+                <button class="btn-api" style="background:#03dac6; color:black;" onclick="addKidsToPlaylist()">➕ Add Dedicated Kids Round</button>
             </div>
 
             <div class="panel">
@@ -176,7 +198,26 @@
             const roundName = `Music: ${genreName} (${questions.length} Qs)`;
 
             playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Music / TV / Kids Round";
+            btn.textContent = "➕ Add Music / TV Round";
+            renderPlaylist();
+        }
+
+        async function addKidsToPlaylist() {
+            const count = parseInt(document.getElementById('questionCountSelect').value);
+            const timer = parseInt(document.getElementById('timerSelect').value);
+            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+            const kidsSelect = document.getElementById('kidsGenreSelect');
+            const searchTerm = kidsSelect.value;
+            const genreName = kidsSelect.options[kidsSelect.selectedIndex].text;
+
+            const btn = event.target;
+            btn.textContent = "Fetching Kids Audio...";
+
+            const questions = await fetchMusicPreviewRound(count, searchTerm);
+            const roundName = `Kids: ${genreName} (${questions.length} Qs)`;
+
+            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
+            btn.textContent = "➕ Add Dedicated Kids Round";
             renderPlaylist();
         }
 
