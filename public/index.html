@@ -257,24 +257,30 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- TAB SWITCHING FUNCTION ---
         function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(function(el) {
+                el.classList.remove('active');
+            });
             document.getElementById('tab-' + tabId).classList.add('active');
-            if (btn) btn.classList.add('active');
+            if (btn) {
+                btn.classList.add('active');
+            }
         }
 
-        // --- HYBRID QUESTION & CURATED BANKS ---
-        async function fetchTriviaQuestions(amount = 10, category = '') {
-            let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
-            if (category) url += `&category=${category}`;
+        async function fetchTriviaQuestions(amount, category) {
+            let url = 'https://opentdb.com/api.php?amount=' + amount + '&type=multiple';
+            if (category) {
+                url += '&category=' + category;
+            }
             try {
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data.results && data.results.length > 0) {
-                    return data.results.map(item => {
-                        const incorrect = item.incorrect_answers.map(ans => decodeHtml(ans));
+                    return data.results.map(function(item) {
+                        const incorrect = item.incorrect_answers.map(function(ans) { return decodeHtml(ans); });
                         const correct = decodeHtml(item.correct_answer);
                         const uniqueOptions = [...new Set([...incorrect, correct])];
                         while (uniqueOptions.length < 4 && incorrect.length > 0) {
@@ -283,7 +289,7 @@
                         return {
                             q: decodeHtml(item.question),
                             a: correct,
-                            options: uniqueOptions.sort(() => Math.random() - 0.5),
+                            options: uniqueOptions.sort(function() { return Math.random() - 0.5; }),
                             type: 'trivia'
                         };
                     });
@@ -307,19 +313,22 @@
                 { q: "What superhero wears a red and blue suit and climbs walls?", a: "Spider-Man", options: ["Batman", "Superman", "Iron Man", "Spider-Man"] },
                 { q: "What color are the spots on a traditional ladybug?", a: "Black", options: ["White", "Yellow", "Black", "Blue"] }
             ];
-            kidsPool.sort(() => Math.random() - 0.5);
+            kidsPool.sort(function() { return Math.random() - 0.5; });
             const count = parseInt(document.getElementById('questionCountSelect').value);
-            const questions = kidsPool.slice(0, count).map(item => ({
-                ...item,
-                options: [...item.options].sort(() => Math.random() - 0.5),
-                type: 'trivia'
-            }));
+            const questions = kidsPool.slice(0, count).map(function(item) {
+                return {
+                    q: item.q,
+                    a: item.a,
+                    options: [...item.options].sort(function() { return Math.random() - 0.5; }),
+                    type: 'trivia'
+                };
+            });
 
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const speedBonus = document.getElementById('speedBonusCheckbox').checked;
 
-            playlist.push({ id: Date.now(), name: `Kids & Cartoons (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            playlist.push({ id: Date.now(), name: "Kids & Cartoons (" + questions.length + " Qs)", questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             renderHostQueue();
             alert('Added Kids & Cartoons round!');
@@ -353,20 +362,24 @@
             };
 
             let questions = musicLibraries[type] || musicLibraries.classic_rock;
-            questions = questions.map(item => ({
-                ...item,
-                options: [...item.options].sort(() => Math.random() - 0.5),
-                type: 'music'
-            }));
+            questions = questions.map(function(item) {
+                return {
+                    q: item.q,
+                    a: item.a,
+                    options: [...item.options].sort(function() { return Math.random() - 0.5; }),
+                    audioUrl: item.audioUrl,
+                    type: 'music'
+                };
+            });
 
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const speedBonus = document.getElementById('speedBonusCheckbox').checked;
 
-            playlist.push({ id: Date.now(), name: `Music: ${genreName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            playlist.push({ id: Date.now(), name: "Music: " + genreName + " (" + questions.length + " Qs)", questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             renderHostQueue();
-            alert(`Added curated music round "${genreName}"!`);
+            alert('Added curated music round "' + genreName + '"!');
         }
 
         function decodeHtml(html) {
@@ -408,12 +421,12 @@
                 action: 'pushAdvert', 
                 payload: { image: storedAdvertBase64, target, advertTitle, showAdvertQR } 
             });
-            alert(`Advert pushed to ${target}!`);
+            alert('Advert pushed to ' + target + '!');
         }
 
         function hideAdvert(target) {
             socket.emit('hostAction', { action: 'hideAdvert', payload: { target } });
-            alert(`Advert hidden from ${target}.`);
+            alert('Advert hidden from ' + target + '.');
         }
 
         function toggleTipJar() {
@@ -438,18 +451,18 @@
         function savePollSettings() {
             const pollQuestion = document.getElementById('pollQuestionInput').value.trim();
             const optionsRaw = document.getElementById('pollOptionsInput').value.trim();
-            const pollOptions = optionsRaw.split(',').map(o => o.trim()).filter(Boolean);
+            const pollOptions = optionsRaw.split(',').map(function(o) { return o.trim(); }).filter(Boolean);
             socket.emit('hostAction', { action: 'updateSettings', payload: { pollQuestion, pollOptions } });
             alert('Poll updated and broadcasted!');
         }
 
         function exportLeaderboardCSV() {
-            const sorted = Object.values(latestPlayersState).sort((a, b) => b.score - a.score);
+            const sorted = Object.values(latestPlayersState).sort(function(a, b) { return b.score - a.score; });
             if (sorted.length === 0) return alert('No players to export!');
             
             let csv = 'Rank,Team Name,Score\n';
-            sorted.forEach((p, idx) => {
-                csv += `${idx + 1},"${p.name}",${p.score}\n`;
+            sorted.forEach(function(p, idx) {
+                csv += (idx + 1) + ',"' + p.name + '",' + p.score + '\n';
             });
 
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -471,21 +484,21 @@
 
             const lines = rawText.split('\n');
             const questions = [];
-            lines.forEach(line => {
+            lines.forEach(function(line) {
                 const parts = line.split('|');
                 if (parts.length >= 3) {
                     const q = parts[0].trim();
                     const a = parts[1].trim();
-                    const options = parts[2].split(',').map(o => o.trim());
+                    const options = parts[2].split(',').map(function(o) { return o.trim(); });
                     if (!options.includes(a)) options.push(a);
-                    questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'trivia' });
+                    questions.push({ q, a, options: options.sort(function() { return Math.random() - 0.5; }), type: 'trivia' });
                 }
             });
 
-            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            playlist.push({ id: Date.now(), name: name + " (" + questions.length + " Qs)", questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             renderHostQueue();
-            alert(`Added custom round "${name}"!`);
+            alert('Added custom round "' + name + '"!');
         }
 
         function addPictureRoundToPlaylist() {
@@ -499,24 +512,24 @@
 
             const lines = rawText.split('\n');
             const questions = [];
-            lines.forEach(line => {
+            lines.forEach(function(line) {
                 const parts = line.split('|');
                 if (parts.length >= 3) {
                     const imageUrl = parts[0].trim();
                     const a = parts[1].trim();
-                    const options = parts[2].split(',').map(o => o.trim());
+                    const options = parts[2].split(',').map(function(o) { return o.trim(); });
                     if (!options.includes(a)) options.push(a);
                     
-                    const q = `<img src="${imageUrl}" style="max-height:280px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto;" alt="Picture Round"><div style="font-size:20px;">Identify what or who is shown above:</div>`;
+                    const q = '<img src="' + imageUrl + '" style="max-height:280px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto;" alt="Picture Round"><div style="font-size:20px;">Identify what or who is shown above:</div>';
                     
-                    questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'picture' });
+                    questions.push({ q, a, options: options.sort(function() { return Math.random() - 0.5; }), type: 'picture' });
                 }
             });
 
-            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            playlist.push({ id: Date.now(), name: name + " (" + questions.length + " Qs)", questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             renderHostQueue();
-            alert(`Added picture round "${name}"!`);
+            alert('Added picture round "' + name + '"!');
         }
 
         async function addTriviaToPlaylist() {
@@ -528,7 +541,7 @@
             const categoryName = categoryId ? document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text : "General";
             
             const questions = await fetchTriviaQuestions(count, categoryId);
-            playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            playlist.push({ id: Date.now(), name: "Trivia: " + categoryName + " (" + questions.length + " Qs)", questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             renderHostQueue();
         }
@@ -541,16 +554,8 @@
                 return;
             }
             container.innerHTML = '';
-            playlist.forEach((round, index) => {
-                container.innerHTML += `
-                    <div class="playlist-card">
-                        <div><strong>${index + 1}. ${round.name}</strong> ${round.speedBonus ? '⚡(Turbo)' : ''}</div>
-                        <div>
-                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px;" onclick="loadRound(${index})">📂 Load</button>
-                            <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
-                        </div>
-                    </div>
-                `;
+            playlist.forEach(function(round, index) {
+                container.innerHTML += '<div class="playlist-card"><div><strong>' + (index + 1) + '. ' + round.name + '</strong> ' + (round.speedBonus ? '⚡(Turbo)' : '') + '</div><div><button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px;" onclick="loadRound(' + index + ')">📂 Load</button><button class="btn-danger" onclick="deleteRound(' + index + ')">Delete</button></div></div>';
             });
         }
 
@@ -561,20 +566,15 @@
                 return;
             }
             queueEl.innerHTML = '';
-            playlist.forEach((round, index) => {
-                queueEl.innerHTML += `
-                    <div class="playlist-card">
-                        <div><strong>${index + 1}. ${round.name}</strong></div>
-                        <button class="btn-play" style="padding: 4px 10px; margin-top:0; font-size: 11px; width:auto;" onclick="loadRound(${index})">Load</button>
-                    </div>
-                `;
+            playlist.forEach(function(round, index) {
+                queueEl.innerHTML += '<div class="playlist-card"><div><strong>' + (index + 1) + '. ' + round.name + '</strong></div><button class="btn-play" style="padding: 4px 10px; margin-top:0; font-size: 11px; width:auto;" onclick="loadRound(' + index + ')">Load</button></div>';
             });
         }
 
         function loadRound(index) {
             const round = playlist[index];
             socket.emit('hostAction', { action: 'loadRound', payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay, speedBonus: round.speedBonus } });
-            alert(`Loaded "${round.name}"!`);
+            alert('Loaded "' + round.name + '"!');
         }
 
         function deleteRound(index) {
@@ -587,7 +587,7 @@
             socket.emit('hostAction', { action });
         }
 
-        socket.on('syncState', (state) => {
+        socket.on('syncState', function(state) {
             if (state.eventTitle) document.getElementById('eventTitleInput').value = state.eventTitle;
             if (state.welcomeMessage) document.getElementById('welcomeMessageInput').value = state.welcomeMessage;
             if (state.bannerText) document.getElementById('bannerTextInput').value = state.bannerText;
@@ -596,11 +596,11 @@
             if (state.pollOptions) document.getElementById('pollOptionsInput').value = state.pollOptions.join(', ');
         });
 
-        socket.on('updatePlayers', (players) => {
+        socket.on('updatePlayers', function(players) {
             latestPlayersState = players;
             const listEl = document.getElementById('hostScoreList');
             const countEl = document.getElementById('playerCount');
-            const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
+            const sortedPlayers = Object.values(players).sort(function(a, b) { return b.score - a.score; });
             countEl.textContent = sortedPlayers.length;
 
             if (sortedPlayers.length === 0) {
@@ -609,14 +609,9 @@
             }
 
             listEl.innerHTML = '';
-            sortedPlayers.forEach((p, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                listEl.innerHTML += `
-                    <div class="score-row">
-                        <span>${medal} ${p.avatar} <strong>${p.name}</strong> <em style="color:var(--muted); font-size:12px;">"${p.motto}"</em></span>
-                        <span style="color: var(--accent); font-weight:bold; font-size:16px;">${p.score} pts</span>
-                    </div>
-                `;
+            sortedPlayers.forEach(function(p, idx) {
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1) + '.';
+                listEl.innerHTML += '<div class="score-row"><span>' + medal + ' ' + p.avatar + ' <strong>' + p.name + '</strong> <em style="color:var(--muted); font-size:12px;">"' + p.motto + '"</em></span><span style="color: var(--accent); font-weight:bold; font-size:16px;">' + p.score + ' pts</span></div>';
             });
         });
     </script>
