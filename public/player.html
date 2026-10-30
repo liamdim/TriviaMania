@@ -17,6 +17,7 @@
         .choice-btn { background: #22222e; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
         .choice-btn:hover { background: var(--primary); color: black; }
         .score-badge { background: #22222e; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
+        .donate-btn { background: #ff9800; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -38,6 +39,8 @@
                 <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 10px;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
+
+            <a id="donateLink" href="#" target="_blank" class="donate-btn">💛 Donate to Charity</a>
         </div>
     </div>
 
@@ -69,6 +72,11 @@
             const answerSection = document.getElementById('answerSection');
             const promptEl = document.getElementById('currentQuestionPrompt');
             const optionsGrid = document.getElementById('playerOptionsGrid');
+            const donateLink = document.getElementById('donateLink');
+
+            if (state.charityUrl) {
+                donateLink.href = state.charityUrl;
+            }
 
             if (state.status === 'active' && state.currentRound && state.currentRound.questions) {
                 const round = state.currentRound;
