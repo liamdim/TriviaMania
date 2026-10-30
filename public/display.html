@@ -64,10 +64,44 @@
         document.getElementById('joinLinkDisplay').textContent = joinUrl;
         const socket = io();
 
+        // Web Audio API Sound Synthesizer for Game Show Effects
+        let audioCtx = null;
+
         function unlockAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const dummyAudio = new Audio();
             dummyAudio.play().catch(() => {});
-            alert('Audio enabled! Music rounds will now play automatically.');
+            playFanfare();
+            alert('Sound effects & music enabled!');
+        }
+
+        function playBeep(frequency, duration, type = 'sine') {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = frequency;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playFanfare() {
+            if (!audioCtx) return;
+            setTimeout(() => playBeep(523.25, 0.15), 0);   // C5
+            setTimeout(() => playBeep(659.25, 0.15), 150); // E5
+            setTimeout(() => playBeep(783.99, 0.15), 300); // G5
+            setTimeout(() => playBeep(1046.50, 0.4), 450);  // C6
+        }
+
+        function playBuzzer() {
+            if (!audioCtx) return;
+            playBeep(150, 0.4, 'sawtooth');
         }
 
         socket.on('syncState', (state) => {
@@ -81,7 +115,6 @@
             const audioContainer = document.getElementById('audioContainer');
             const leaderboardBox = document.getElementById('leaderboardBox');
 
-            // Update Charity QR Code and Banners dynamically
             if (state.charityUrl) {
                 const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(state.charityUrl)}`;
                 document.getElementById('qrImage').src = qrSrc;
@@ -117,6 +150,7 @@
                         answerBox.style.display = 'block';
                         answerText.textContent = q.a;
                         leaderboardBox.style.display = 'block';
+                        playFanfare(); // Play success fanfare on reveal
                     } else {
                         answerBox.style.display = 'none';
                         leaderboardBox.style.display = 'none';
