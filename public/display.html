@@ -23,7 +23,6 @@
         .qr-box { background: #1a1d2d; padding: 20px; border-radius: 16px; border: 1px solid rgba(0, 229, 255, 0.3); text-align: center; box-shadow: 0 0 20px rgba(0,229,255,0.1); }
         #joinQrImage { width: 180px; height: 180px; border-radius: 12px; background: white; padding: 6px; margin-top: 8px; }
 
-        /* Joined Teams Waiting Grid */
         .waiting-teams-box { margin-top: 20px; background: rgba(26, 29, 45, 0.6); padding: 15px; border-radius: 12px; border: 1px solid rgba(156, 39, 176, 0.3); max-height: 140px; overflow-y: auto; }
         .waiting-teams-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .team-pill { background: #1a1d2d; border: 1px solid var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 6px; }
@@ -43,7 +42,6 @@
         .podium-2 { height: 200px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
         .podium-3 { height: 140px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
 
-        /* Advert Overlay with Optional Corner QR */
         #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(7, 8, 12, 0.98); display: none; justify-content: center; align-items: center; z-index: 99999; flex-direction: column; }
         #advertOverlay img { max-width: 80vw; max-height: 75vh; border-radius: 18px; border: 3px solid var(--accent); box-shadow: 0 0 70px var(--glow); }
         .advert-qr-corner { position: absolute; bottom: 30px; right: 30px; background: rgba(19, 21, 32, 0.9); padding: 12px; border-radius: 12px; border: 2px solid var(--accent); text-align: center; display: none; }
@@ -58,7 +56,6 @@
         <h2 id="advertTitleDisplay" style="color:var(--accent); font-size:36px; margin-bottom:15px; text-shadow: 0 0 20px var(--glow);">Featured Sponsor & Event Advert</h2>
         <img id="advertImageDisplay" src="" alt="Advert">
         
-        <!-- Corner QR Code Badge -->
         <div id="advertQrCorner" class="advert-qr-corner">
             <span style="font-size:12px; color:var(--accent); font-weight:bold; display:block; margin-bottom:4px;">Scan to Join!</span>
             <img id="cornerQrImg" src="" alt="QR">
@@ -66,7 +63,6 @@
     </div>
 
     <div class="container" id="screenContainer">
-        <!-- Waiting Room View with QR Code & Joined Teams -->
         <div id="waitingView" class="waiting-layout">
             <div>
                 <h1 id="eventTitleDisplay">TriviaMania Live 🍻</h1>
@@ -85,7 +81,6 @@
             </div>
         </div>
 
-        <!-- Active Question View -->
         <div id="gameView" style="display:none;">
             <div id="roundTitle" style="font-size: 22px; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; font-weight:bold; letter-spacing:1px;"></div>
             <div class="question" id="questionText">Loading question...</div>
@@ -99,7 +94,6 @@
             </div>
         </div>
 
-        <!-- Podium View -->
         <div id="podiumView" class="podium-view">
             <h1 style="color: #ffd700; margin: 0 0 10px 0;">🎉 GAME OVER - WINNERS! 🎉</h1>
             <p style="font-size: 22px; color: #a4a8bc; margin: 0;">Top performing pub teams:</p>
@@ -119,12 +113,58 @@
         
         const socket = io();
 
+        // Web Audio API Sound Synthesizer
         let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
         }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+                if (type === 'tick') {
+                    osc.frequency.setValueAtTime(440, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'reveal') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } else if (type === 'podium') {
+                    // Fanfare chord
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        g.gain.setValueAtTime(0.15, now + idx * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+                        o.start(now + idx * 0.1);
+                        o.stop(now + 1.2);
+                    });
+                }
+            } catch(e) {}
+        }
+
+        socket.on('timerTick', (timeLeft) => {
+            if (timeLeft <= 3 && timeLeft > 0) playSound('tick');
+        });
 
         socket.on('syncState', (state) => {
             const waitingView = document.getElementById('waitingView');
@@ -148,11 +188,8 @@
                 document.getElementById('advertImageDisplay').src = state.advertImage;
                 if (state.advertTitle) document.getElementById('advertTitleDisplay').textContent = state.advertTitle;
                 
-                if (state.showAdvertQR) {
-                    advertQrCorner.style.display = 'block';
-                } else {
-                    advertQrCorner.style.display = 'none';
-                }
+                if (state.showAdvertQR) advertQrCorner.style.display = 'block';
+                else advertQrCorner.style.display = 'none';
 
                 advertOverlay.style.display = 'flex';
             } else {
@@ -164,8 +201,8 @@
                 gameView.style.display = 'none';
                 podiumView.style.display = 'block';
                 audioContainer.innerHTML = '';
+                playSound('podium');
             } else if (state.status === 'active' || state.status === 'revealed') {
-                initAudio();
                 waitingView.style.display = 'none';
                 podiumView.style.display = 'none';
                 gameView.style.display = 'block';
@@ -173,7 +210,7 @@
                 const round = state.currentRound;
                 if (round && round.questions && round.questions.length > 0) {
                     const q = round.questions[round.currentIndex || 0];
-                    roundTitle.textContent = round.name;
+                    roundTitle.textContent = `${round.name} ${round.speedBonus ? '⚡(Turbo)' : ''}`;
                     questionText.textContent = q.q;
 
                     optionsGrid.innerHTML = '';
@@ -192,6 +229,7 @@
                         answerBox.style.display = 'block';
                         answerText.textContent = q.a;
                         leaderboardBox.style.display = 'block';
+                        playSound('reveal');
                     } else {
                         answerBox.style.display = 'none';
                         leaderboardBox.style.display = 'none';
@@ -221,7 +259,6 @@
                 return;
             }
 
-            // Render joined team pills in waiting room
             waitingTeamsGrid.innerHTML = '';
             sortedPlayers.forEach(p => {
                 waitingTeamsGrid.innerHTML += `<div class="team-pill"><span>${p.avatar}</span> <strong>${p.name}</strong></div>`;
