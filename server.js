@@ -9,6 +9,11 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e8
 });
 
+// Health check endpoint for cron-job.org to keep Render alive
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
