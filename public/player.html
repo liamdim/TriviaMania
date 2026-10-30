@@ -23,8 +23,7 @@
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); font-size: 16px; }
         
-        /* Mobile Audio Unlock & Poll & Reactions */
-        .audio-unlock-btn { background: var(--success); color: black; margin-bottom: 12px; font-size: 14px; padding: 10px; }
+        .audio-unlock-btn { background: #00e676; color: black; margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; font-weight: bold; width: 100%; border: none; cursor: pointer; }
         .poll-container { background: #1a1d2d; border: 1px solid var(--accent); padding: 15px; border-radius: 10px; margin-bottom: 15px; display: none; text-align: left; }
         .poll-btn { background: #22263d; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; margin-top: 8px; width: 100%; text-align: center; font-weight: bold; cursor: pointer; font-size: 14px; }
         .poll-btn:hover { background: var(--primary); }
@@ -71,7 +70,6 @@
             <div class="score-badge">Score: <span id="playerScore">0</span> pts</div>
             <p id="gameStatusText" style="color: #a4a8bc; font-size: 15px; margin: 10px 0;">Waiting in lobby...</p>
             
-            <!-- Mobile Poll Box -->
             <div id="mobilePollBox" class="poll-container">
                 <div style="font-size:12px; color:var(--accent); font-weight:bold; text-transform:uppercase; margin-bottom:4px;">📊 Icebreaker Poll</div>
                 <div id="mobilePollQuestion" style="font-size:14px; font-weight:bold; margin-bottom:8px;"></div>
@@ -82,6 +80,9 @@
                 <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 12px; font-weight: bold;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
+
+            <!-- Audio element for mobile music previews -->
+            <div id="mobileAudioContainer" style="display:none;"></div>
 
             <div class="reaction-tray">
                 <button class="reaction-btn" onclick="sendReaction('🍻')">🍻</button>
@@ -106,6 +107,14 @@
         function unlockAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Play silent buffer to unlock mobile audio context completely
+            const buffer = audioCtx.createBuffer(1, 1, 22050);
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+
             alert('Phone audio enabled successfully!');
         }
 
@@ -126,6 +135,7 @@
             const mobilePollBox = document.getElementById('mobilePollBox');
             const mobilePollQuestion = document.getElementById('mobilePollQuestion');
             const mobilePollOptions = document.getElementById('mobilePollOptions');
+            const mobileAudioContainer = document.getElementById('mobileAudioContainer');
 
             if (state.tipJarActive && state.tipJarUrl) {
                 tipJarLink.href = state.tipJarUrl;
@@ -136,7 +146,6 @@
 
             const isJoined = document.getElementById('gameScreen').style.display === 'block';
 
-            // Poll management on mobile
             if (isJoined && state.pollActive && state.status === 'waiting') {
                 mobilePollBox.style.display = 'block';
                 mobilePollQuestion.textContent = state.pollQuestion;
@@ -178,13 +187,28 @@
                         optionsGrid.appendChild(btn);
                     });
                 }
+
+                // Play music preview on phone if available
+                if (currentQ.audioUrl) {
+                    mobileAudioContainer.innerHTML = `<audio autoplay src="${currentQ.audioUrl}"></audio>`;
+                    const phoneAudio = mobileAudioContainer.querySelector('audio');
+                    if (phoneAudio) {
+                        phoneAudio.play().catch(e => console.log("Phone audio autoplay restricted:", e));
+                    }
+                } else {
+                    mobileAudioContainer.innerHTML = '';
+                }
+
             } else if (isJoined && state.status === 'revealed') {
                 statusText.textContent = "Answer Revealed on Projector! Check leaderboard.";
                 answerSection.style.display = 'none';
+                mobileAudioContainer.innerHTML = '';
             } else if (isJoined && state.status === 'podium') {
                 statusText.textContent = "🎉 Game Over! Check projector for final podium winners!";
                 answerSection.style.display = 'none';
+                mobileAudioContainer.innerHTML = '';
             } else if (isJoined) {
+                mobileAudioContainer.innerHTML = '';
                 if (!state.mobileAdvertActive && !state.pollActive) {
                     statusText.textContent = "Waiting for host to start...";
                 } else if (state.pollActive) {
