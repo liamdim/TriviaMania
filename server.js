@@ -81,7 +81,7 @@ io.on('connection', (socket) => {
     const { action, payload } = actionData;
     clearQuizTimer();
     
-if (action === 'loadRound' && payload) {
+    if (action === 'loadRound' && payload) {
       gameState.currentRound = {
         name: payload.name,
         questions: payload.questions,
@@ -91,11 +91,10 @@ if (action === 'loadRound' && payload) {
         speedBonus: payload.speedBonus || false
       };
       gameState.speedBonusEnabled = payload.speedBonus || false;
-      gameState.status = 'active'; // Automatically set status to active so questions display!
+      gameState.status = 'active';
       gameState.answersSubmitted = {};
       questionStartTime = Date.now();
-      startQuestionTimer(); // Automatically start the timer and kick off the round!
-    }
+      startQuestionTimer();
     } else if (action === 'updateSettings' && payload) {
       if (payload.eventTitle !== undefined) gameState.eventTitle = payload.eventTitle;
       if (payload.welcomeMessage !== undefined) gameState.welcomeMessage = payload.welcomeMessage;
