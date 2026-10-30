@@ -18,15 +18,15 @@
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
         
-        /* Mobile Advert Popup Modal */
-        .mobile-advert-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; flex-direction: column; }
-        .mobile-advert-modal img { max-width: 90vw; max-height: 70vh; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.5); margin-bottom: 15px; }
+        /* Middle-Screen Mobile Advert Popup Modal */
+        #mobileAdvertModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 99999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; flex-direction: column; }
+        #mobileAdvertModal img { max-width: 90vw; max-height: 65vh; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.5); margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-    <!-- Mobile Advert Popup Modal -->
-    <div id="mobileAdvertModal" class="mobile-advert-modal">
+    <!-- Middle-Screen Mobile Advert Popup Modal -->
+    <div id="mobileAdvertModal">
         <h3 style="color:var(--accent); margin-top:0;">📢 Featured Sponsor Advert</h3>
         <img id="mobileAdvertImage" src="" alt="Advert">
         <button style="width:auto; padding: 10px 25px; background:var(--accent); color:black;" onclick="closeMobileAdvert()">Dismiss Advert</button>
@@ -66,8 +66,8 @@
             const mobileAdvertModal = document.getElementById('mobileAdvertModal');
             const mobileAdvertImage = document.getElementById('mobileAdvertImage');
 
-            // Handle Advert pop-up on phones
-            if (state.advertActive && state.advertImage) {
+            // Handle independent mobile advert pop-up in middle of screen
+            if (state.mobileAdvertActive && state.advertImage) {
                 if (!dismissedAdvert) {
                     mobileAdvertImage.src = state.advertImage;
                     mobileAdvertModal.style.display = 'flex';
@@ -101,7 +101,9 @@
                 statusText.textContent = "Answer Revealed on Projector! Check leaderboard.";
                 answerSection.style.display = 'none';
             } else {
-                statusText.textContent = "Waiting for next question...";
+                if (!state.mobileAdvertActive) {
+                    statusText.textContent = "Waiting for host to start...";
+                }
                 answerSection.style.display = 'none';
             }
         });
