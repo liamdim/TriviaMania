@@ -7,7 +7,7 @@
         body { font-family: sans-serif; background: #0b0b10; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
         .container { width: 90%; max-width: 1200px; padding: 50px; background: #15151c; border: 2px solid #bb86fc; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         h1 { font-size: 50px; color: #bb86fc; margin-bottom: 10px; }
-        .question { font-size: 40px; margin-bottom: 30px; color: #fff; }
+        .question { font-size: 36px; margin-bottom: 25px; color: #fff; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 24px; text-align: left; }
         .pill { background: #22222e; padding: 20px; border-radius: 10px; border: 1px solid #444; }
         .answer { font-size: 36px; color: #03dac6; margin-top: 30px; font-weight: bold; display: none; }
@@ -42,10 +42,8 @@
     <script>
         document.getElementById('joinLinkDisplay').textContent = window.location.origin + '/player.html';
         const socket = io();
-        let audioUnlocked = false;
 
         function unlockAudio() {
-            audioUnlocked = true;
             const dummyAudio = new Audio();
             dummyAudio.play().catch(() => {});
             alert('Audio enabled! Music rounds will now play automatically.');
