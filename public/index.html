@@ -192,6 +192,7 @@
             <label>Select Image File:</label>
             <input type="file" id="imageUploadInput" accept="image/*" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
             <br>
+            <div id="uploadStatus" style="color: var(--success); font-weight: bold; margin-top: 10px; display:none;">✅ Image loaded and ready to push!</div>
             <img id="imagePreview" class="preview-box" alt="Preview">
         </div>
     </div>
@@ -212,7 +213,6 @@
         let playlist = [];
         let storedAdvertBase64 = null;
 
-        // Automatically bind file input change listener
         document.getElementById('imageUploadInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
@@ -222,6 +222,7 @@
                     const preview = document.getElementById('imagePreview');
                     preview.src = storedAdvertBase64;
                     preview.style.display = 'block';
+                    document.getElementById('uploadStatus').style.display = 'block';
                 };
                 reader.readAsDataURL(file);
             }
