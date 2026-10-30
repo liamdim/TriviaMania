@@ -105,7 +105,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                 <div>
                     <label>Question Count:</label>
-                    <select id="questionCountSelect">
+                    <select id="triviaCountSelect">
                         <option value="5">5 Questions</option>
                         <option value="10" selected>10 Questions</option>
                         <option value="15">15 Questions</option>
@@ -123,16 +123,11 @@
                             <option value="uk_music">British Music & Rock Anthems</option>
                         </optgroup>
                         <optgroup label="🌍 Global Categories (Online/Backup)">
-                            <option value="">Random / General Knowledge</option>
                             <option value="9">General Knowledge (Global)</option>
                             <option value="17">Science & Nature</option>
                             <option value="23">World History</option>
                             <option value="22">Geography</option>
                             <option value="11">Movies & Cinema</option>
-                            <option value="12">Music & Pop Culture</option>
-                            <option value="15">Video Games</option>
-                            <option value="21">Sports (Global)</option>
-                            <option value="25">Art & Literature</option>
                         </optgroup>
                     </select>
                 </div>
@@ -143,45 +138,75 @@
         <!-- SECTION 2: PICTURE ROUNDS -->
         <div class="panel" style="border: 2px dashed var(--accent);">
             <h2>🖼️ Picture Rounds</h2>
-            <label>Select Picture Round Genre:</label>
-            <select id="pictureGenreSelect">
-                <option value="landmarks">Famous World Landmarks</option>
-                <option value="celebs">Celebrity Faces & Actors</option>
-                <option value="logos">Famous Corporate Logos</option>
-                <option value="movies">Movie Stills & Scenes</option>
-                <option value="flags">Flags of the World</option>
-                <option value="animals">Animals & Wildlife</option>
-            </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label>Question Count:</label>
+                    <select id="pictureCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Picture Category:</label>
+                    <select id="pictureGenreSelect">
+                        <option value="landmarks">Famous World Landmarks</option>
+                        <option value="animals">Animals & Wildlife</option>
+                        <option value="celebs">Celebrity Faces & Actors</option>
+                        <option value="logos">Famous Corporate Logos</option>
+                    </select>
+                </div>
+            </div>
             <button class="btn-api" style="background:var(--accent); color:black;" onclick="addPictureRound()">➕ Add Picture Round</button>
         </div>
 
         <!-- SECTION 3: KIDS & FAMILY -->
         <div class="panel">
             <h2>🧸 Kids & Family Section</h2>
-            <label>Select Kids Genre:</label>
-            <select id="kidsGenreSelect">
-                <option value="disney">Disney & Pixar Movies</option>
-                <option value="cartoons">Classic & Modern Cartoons</option>
-                <option value="pokemon">Pokémon & Gaming Trivia</option>
-                <option value="harrypotter">Harry Potter & Wizarding World</option>
-                <option value="fairytales">Fairy Tales & Nursery Rhymes</option>
-            </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label>Question Count:</label>
+                    <select id="kidsCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Kids Category:</label>
+                    <select id="kidsGenreSelect">
+                        <option value="disney">Disney & Pixar Movies</option>
+                        <option value="pokemon">Pokémon & Gaming Trivia</option>
+                    </select>
+                </div>
+            </div>
             <button class="btn-api" style="background:#00e676; color:black;" onclick="addKidsRound()">➕ Add Kids & Family Round</button>
         </div>
 
         <!-- SECTION 4: MUSIC ROUNDS -->
         <div class="panel" style="border: 2px dashed var(--primary);">
             <h2>🎵 Music Round Tab</h2>
-            <label>Select Music Genre:</label>
-            <select id="musicGenreSelect">
-                <option value="classic_rock">Classic Rock Anthems</option>
-                <option value="80s_hits">1980s Pop & Rock Hits</option>
-                <option value="90s_hits">1990s Chart & Britpop Hits</option>
-                <option value="00s_hits">2000s Pop & Dance Hits</option>
-                <option value="motown">Motown & Soul Legends</option>
-                <option value="tv_themes">TV Show Theme Songs</option>
-                <option value="movie_soundtracks">Epic Movie Soundtracks</option>
-            </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label>Question Count:</label>
+                    <select id="musicCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Music Category:</label>
+                    <select id="musicGenreSelect">
+                        <option value="classic_rock">Classic Rock Anthems</option>
+                        <option value="80s_hits">1980s Pop & Rock Hits</option>
+                        <option value="90s_hits">1990s Chart & Britpop Hits</option>
+                    </select>
+                </div>
+            </div>
             <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicRound()">➕ Add Music Round</button>
         </div>
 
@@ -218,7 +243,7 @@
             <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
             <label>Welcome Message:</label>
             <input type="text" id="welcomeMessageInput" value="Welcome to the ultimate pub quiz experience!">
-            <button class="btn-api" style="background:var(--success); color:black;" onclick="saveSettings()">💾 Save Settings</button>
+            <button class="btn-api" style="background:#00e676; color:black;" onclick="saveSettings()">💾 Save Settings</button>
         </div>
     </div>
 
