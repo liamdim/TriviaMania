@@ -18,20 +18,18 @@
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
         
-        .payment-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .paypal-btn { background: #ff9100; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 16px; text-align: center; }
-        .advert-banner-mobile { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--accent); padding: 8px; border-radius: 8px; margin-top: 15px; font-size: 13px; color: var(--accent); display: none; }
+        /* Mobile Advert Popup Modal */
+        .mobile-advert-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; flex-direction: column; }
+        .mobile-advert-modal img { max-width: 90vw; max-height: 70vh; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.5); margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-    <div id="paymentModal" class="payment-modal">
-        <div class="card">
-            <h2 style="color:var(--accent); margin-top:0;">💳 Entry Fee Required</h2>
-            <p style="color: #8a8d9f; font-size: 14px;">This game has a <strong id="priceDisplay" style="color:white;"></strong> entry fee. Please pay via PayPal before joining:</p>
-            <a id="modalPaypalLink" href="#" target="_blank" class="paypal-btn">Pay Entry via PayPal</a>
-            <button style="background:#22263d; color:white; margin-top:15px;" onclick="confirmPaymentDone()">I've Paid! Enter Game</button>
-        </div>
+    <!-- Mobile Advert Popup Modal -->
+    <div id="mobileAdvertModal" class="mobile-advert-modal">
+        <h3 style="color:var(--accent); margin-top:0;">📢 Featured Sponsor Advert</h3>
+        <img id="mobileAdvertImage" src="" alt="Advert">
+        <button style="width:auto; padding: 10px 25px; background:var(--accent); color:black;" onclick="closeMobileAdvert()">Dismiss Advert</button>
     </div>
 
     <div id="joinScreen" class="card">
@@ -51,8 +49,6 @@
                 <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 10px;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
-
-            <div id="mobileAdvertNotice" class="advert-banner-mobile">📢 Special Featured Sponsor Active on Screen!</div>
         </div>
     </div>
 
@@ -60,22 +56,25 @@
     <script>
         const socket = io();
         let myTeamName = "";
-        let globalSettings = { entryPrice: '0', paypalUrl: '' };
+        let dismissedAdvert = false;
 
         socket.on('syncState', (state) => {
-            globalSettings.entryPrice = state.entryPrice || '0';
-            globalSettings.paypalUrl = state.paypalUrl || '';
-
             const statusText = document.getElementById('gameStatusText');
             const answerSection = document.getElementById('answerSection');
             const promptEl = document.getElementById('currentQuestionPrompt');
             const optionsGrid = document.getElementById('playerOptionsGrid');
-            const mobileAdvertNotice = document.getElementById('mobileAdvertNotice');
+            const mobileAdvertModal = document.getElementById('mobileAdvertModal');
+            const mobileAdvertImage = document.getElementById('mobileAdvertImage');
 
-            if (state.advertActive) {
-                mobileAdvertNotice.style.display = 'block';
+            // Handle Advert pop-up on phones
+            if (state.advertActive && state.advertImage) {
+                if (!dismissedAdvert) {
+                    mobileAdvertImage.src = state.advertImage;
+                    mobileAdvertModal.style.display = 'flex';
+                }
             } else {
-                mobileAdvertNotice.style.display = 'none';
+                mobileAdvertModal.style.display = 'none';
+                dismissedAdvert = false; // Reset dismissal when host turns it off
             }
 
             if (state.status === 'active' && state.currentRound && state.currentRound.questions) {
@@ -107,29 +106,17 @@
             }
         });
 
+        function closeMobileAdvert() {
+            document.getElementById('mobileAdvertModal').style.display = 'none';
+            dismissedAdvert = true;
+        }
+
         function attemptJoin() {
-            myTeamName = document.getElementById('playerName').value.trim();
+            myTeamName = document.getElementById('playerName'].value.trim();
             if (!myTeamName) {
                 alert('Please enter a team name!');
                 return;
             }
-
-            const priceNum = parseFloat(globalSettings.entryPrice);
-            if (priceNum > 0 && globalSettings.paypalUrl) {
-                document.getElementById('priceDisplay').textContent = `£${priceNum.toFixed(2)}`;
-                document.getElementById('modalPaypalLink').href = globalSettings.paypalUrl;
-                document.getElementById('paymentModal').style.display = 'flex';
-            } else {
-                finalizeJoin();
-            }
-        }
-
-        function confirmPaymentDone() {
-            document.getElementById('paymentModal').style.display = 'none';
-            finalizeJoin();
-        }
-
-        function finalizeJoin() {
             socket.emit('playerJoin', { name: myTeamName });
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
