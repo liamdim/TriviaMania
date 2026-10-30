@@ -1,4 +1,4 @@
-// TriviaMania Verified Music & Trivia Engine
+// TriviaMania Live API & Question Engine
 async function fetchTriviaQuestions(amount = 10, category = '') {
     try {
         let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
@@ -29,34 +29,52 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
     return getFallbackTrivia();
 }
 
-async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock') {
+async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock', isKidsOrTv = false) {
     try {
         const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=25`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
-            const validSongs = data.results.filter(song => song.previewUrl && song.artistName);
+            const validSongs = data.results.filter(song => song.previewUrl && song.trackName);
             
-            // Define targeted decoy pools matching specific musical categories
-            let decoyPool = ["Duran Duran", "Tears for Fears", "Spandau Ballet", "Culture Club", "Wham!", "Simple Minds", "Eurythmics", "Phil Collins"];
+            // If it's a kids/Disney/TV round, test on Movie/Show titles instead of unknown artist names!
+            if (isKidsOrTv || searchTerm.includes('disney') || searchTerm.includes('cartoon') || searchTerm.includes('tv theme') || searchTerm.includes('soundtrack')) {
+                const movieDecoys = ["The Lion King", "Frozen", "Moana", "Toy Story", "Aladdin", "Tangled", "Shrek", "Cars", "Finding Nemo", "Beauty and the Beast", "Cinderella", "The Little Mermaid", "Up", "Encanto", "Harry Potter", "Star Wars", "Jurassic Park", "Batman", "Spider-Man", "Doctor Who"];
+
+                return validSongs.slice(0, amount).map(song => {
+                    // Extract a clean movie/show name or fallback to track name context
+                    let correctMovie = song.collectionName || song.trackName.replace(/\(.*?\)/g, '').trim();
+                    if (correctMovie.length > 25) correctMovie = "Classic Movie Soundtrack";
+
+                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== correctMovie.toLowerCase()).sort(() => 0.5 - Math.random()).slice(0, 3);
+                    const options = [...wrongOptions, correctMovie].sort(() => 0.5 - Math.random());
+
+                    return {
+                        q: `What movie, show, or animation is this theme song from? 🎵`,
+                        a: correctMovie,
+                        options: options,
+                        audioUrl: song.previewUrl,
+                        type: 'music'
+                    };
+                });
+            }
+
+            // Standard Music / Decades Round (Asking for Artist Name with genre-matched decoys)
+            let decoyPool = ["Duran Duran", "Tears for Fears", "Spandau Ballet", "Culture Club", "Wham!", "Simple Minds", "Eurythmics", "Bryan Adams", "Bon Jovi", "Queen", "The Police"];
             
             const lowerSearch = searchTerm.toLowerCase();
             if (lowerSearch.includes('90s')) {
-                decoyPool = ["Oasis", "Blur", "Pulp", "Radiohead", "Spice Girls", "Backstreet Boys", "Take That", "All Saints", "Suede", "The Verve"];
+                decoyPool = ["Oasis", "Blur", "Pulp", "Radiohead", "Spice Girls", "Backstreet Boys", "Take That", "All Saints", "Suede", "The Verve", "The Cranberries"];
             } else if (lowerSearch.includes('rock') || lowerSearch.includes('metal')) {
                 decoyPool = ["AC/DC", "Led Zeppelin", "Deep Purple", "Black Sabbath", "Guns N' Roses", "Aerosmith", "Metallica", "Iron Maiden", "Van Halen", "Def Leppard"];
             } else if (lowerSearch.includes('motown') || lowerSearch.includes('disco') || lowerSearch.includes('70s')) {
                 decoyPool = ["Stevie Wonder", "Marvin Gaye", "The Supremes", "Jackson 5", "Earth, Wind & Fire", "Bee Gees", "ABBA", "Boney M.", "Chic", "Kool & The Gang"];
             } else if (lowerSearch.includes('country')) {
                 decoyPool = ["Johnny Cash", "Willie Nelson", "Dolly Parton", "Kenny Rogers", "Garth Brooks", "Alan Jackson", "Shania Twain", "Tim McGraw"];
-            } else if (lowerSearch.includes('disney') || lowerSearch.includes('cartoon') || lowerSearch.includes('kids') || lowerSearch.includes('nursery')) {
-                decoyPool = ["Idina Menzel", "Phil Collins", "Elton John", "Kristen Bell", "Alan Menken", "Randy Newman", "Lin-Manuel Miranda", "Josh Gad", "Julie Andrews", "Sarah McLachlan"];
             }
 
             return validSongs.slice(0, amount).map(song => {
                 const correctArtist = song.artistName;
-                
-                // Ensure correct artist is not in decoys, then pick 3 unique decoys
                 const wrongOptions = decoyPool.filter(a => a.toLowerCase() !== correctArtist.toLowerCase()).sort(() => 0.5 - Math.random()).slice(0, 3);
                 
                 while (wrongOptions.length < 3) {
