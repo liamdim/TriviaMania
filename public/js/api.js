@@ -11,11 +11,16 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
         
         if (data.results && data.results.length > 0) {
             return data.results.map(item => {
-                const options = [...item.incorrect_answers, item.correct_answer].sort(() => 0.5 - Math.random());
+                const correct = decodeHTML(item.correct_answer);
+                const incorrects = item.incorrect_answers.map(decodeHTML);
+                
+                // Combine correct and incorrect answers cleanly, then shuffle
+                const options = [...incorrects, correct].sort(() => 0.5 - Math.random());
+                
                 return {
                     q: decodeHTML(item.question),
-                    a: decodeHTML(item.correct_answer),
-                    options: options.map(decodeHTML),
+                    a: correct,
+                    options: options,
                     type: 'trivia'
                 };
             });
@@ -28,21 +33,25 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
 
 async function fetchMusicPreviewRound(amount = 10, searchTerm = 'classic+rock+hits') {
     try {
-        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=${Math.max(amount, 5)}`);
+        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=${Math.max(amount, 10)}`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
-            // Filter only results that have a valid preview URL
-            const validSongs = data.results.filter(song => song.previewUrl);
+            const validSongs = data.results.filter(song => song.previewUrl && song.artistName);
             
             return validSongs.slice(0, amount).map(song => {
-                const wrongArtists = ["The Beatles", "Queen", "Led Zeppelin", "The Rolling Stones", "Fleetwood Mac", "Elton John", "Madonna", "Michael Jackson", "Prince", "David Bowie", "ABBA", "Ed Sheeran", "Taylor Swift"].filter(a => a !== song.artistName);
-                const shuffledWrong = wrongArtists.sort(() => 0.5 - Math.random()).slice(0, 3);
-                const options = [...shuffledWrong, song.artistName].sort(() => 0.5 - Math.random());
+                const correctArtist = song.artistName;
+                const poolWrongArtists = ["The Beatles", "Queen", "Led Zeppelin", "The Rolling Stones", "Fleetwood Mac", "Elton John", "Madonna", "Michael Jackson", "Prince", "David Bowie", "ABBA", "Ed Sheeran", "Taylor Swift", "U2", "Coldplay", "Adele"];
+                
+                // Filter out the correct artist so they don't appear in wrong options, then pick 3
+                const wrongOptions = poolWrongArtists.filter(a => a.toLowerCase() !== correctArtist.toLowerCase()).sort(() => 0.5 - Math.random()).slice(0, 3);
+                
+                // Combine and shuffle properly
+                const options = [...wrongOptions, correctArtist].sort(() => 0.5 - Math.random());
                 
                 return {
                     q: `Name the artist performing this track! 🎵`,
-                    a: song.artistName,
+                    a: correctArtist,
                     options: options,
                     audioUrl: song.previewUrl,
                     type: 'music'
