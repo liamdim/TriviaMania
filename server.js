@@ -7,16 +7,18 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.json({ limit: '10mb' })); // Allow image uploads via base64
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let gameState = {
-  status: 'waiting', // waiting, active, paused, revealed, podium
+  status: 'waiting',
   currentRound: null,
   timerSeconds: 10,
   betweenDelay: 5,
-  paypalUrl: 'https://paypal.me',
+  paypalUrl: '',
+  entryPrice: '0',
   eventTitle: 'TriviaMania Live Event',
+  qrVisible: false,
   advertImage: null,
   advertActive: false,
   players: {},
@@ -60,8 +62,11 @@ io.on('connection', (socket) => {
       };
       gameState.status = 'paused';
     } else if (action === 'updateSettings' && payload) {
-      if (payload.paypalUrl) gameState.paypalUrl = payload.paypalUrl;
-      if (payload.eventTitle) gameState.eventTitle = payload.eventTitle;
+      if (payload.paypalUrl !== undefined) gameState.paypalUrl = payload.paypalUrl;
+      if (payload.entryPrice !== undefined) gameState.entryPrice = payload.entryPrice;
+      if (payload.eventTitle !== undefined) gameState.eventTitle = payload.eventTitle;
+    } else if (action === 'toggleQR') {
+      gameState.qrVisible = !gameState.qrVisible;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
       gameState.advertActive = true;
