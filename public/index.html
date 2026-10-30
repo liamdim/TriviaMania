@@ -96,8 +96,8 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Trivia Section -->
-                <label>Trivia Category:</label>
+                <!-- 1. Standard Trivia Section -->
+                <label>Standard Trivia Category:</label>
                 <select id="categorySelect">
                     <option value="">Random / General Knowledge</option>
                     <option value="9">General Knowledge</option>
@@ -110,33 +110,63 @@
                     <option value="12">Music & Pop Culture</option>
                     <option value="15">Video Games</option>
                 </select>
-                <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Trivia Round</button>
+                <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Standard Trivia Round</button>
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Music / Decades Section -->
-                <label>Music & Decades Section (Artist Rounds):</label>
+                <!-- 2. Music & Decades Section -->
+                <label>Music & Decades Section:</label>
                 <select id="musicGenreSelect">
-                    <option value="1980s pop rock">1980s Pop & Rock</option>
-                    <option value="1990s britpop">1990s Britpop & Indie</option>
-                    <option value="classic rock hits">Classic Rock Anthems</option>
+                    <option value="1980s pop rock">1980s Hits</option>
+                    <option value="1990s britpop">1990s Hits</option>
+                    <option value="2000s pop hits">2000s Hits</option>
+                    <option value="2010s billboard hits">2010s Hits</option>
+                    <option value="2020s pop hits">2020s Hits</option>
+                    <option value="dance hits edm">Dance & Club Hits</option>
+                    <option value="female pop artists">Female Artists</option>
+                    <option value="male pop artists">Male Artists</option>
+                    <option value="boy bands 90s 00s">Boy Bands</option>
+                    <option value="girl bands pop">Girl Bands</option>
+                    <option value="country music hits">Country Hits</option>
+                    <option value="classic rock anthems">Rock Hits</option>
+                    <option value="billboard number one hits">UK / US No.1s</option>
+                    <option value="indie alternative rock">Indie & Alt</option>
                     <option value="motown soul legends">Motown & Soul</option>
-                    <option value="disco groove 70s">1970s Disco & Funk</option>
-                    <option value="country music hits">Country Music</option>
-                    <option value="tv theme songs">TV Show Themes</option>
+                    <option value="jazz lounge classics">Jazz</option>
+                    <option value="rnb soul hits">R&B</option>
+                    <option value="rap hip hop hits">Rap & Hip-Hop</option>
+                    <option value="uk garage old school">UK Garage</option>
+                    <option value="tv theme songs">TV Show Theme Songs</option>
+                    <option value="cartoon theme songs">Cartoon Theme Songs</option>
+                    <option value="epic movie soundtracks">Movie Theme Songs</option>
                 </select>
-                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Decades Round</button>
+                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Theme Round</button>
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Dedicated Kids Section -->
-                <label>Kids & Family Movie Section (Movie Title Rounds):</label>
-                <select id="kidsGenreSelect">
-                    <option value="disney songs singalong">Disney & Family Animation</option>
-                    <option value="kids cartoon theme songs">Cartoon Theme Songs</option>
-                    <option value="family movie songs">Family Movie Soundtracks</option>
+                <!-- 3. Dedicated Kids Music & Movie Section -->
+                <label>Kids & Family Theme Songs Section:</label>
+                <select id="kidsMusicGenreSelect">
+                    <option value="disney songs singalong">Disney Movie Theme Songs</option>
+                    <option value="disney channel songs">Disney Show Theme Songs</option>
+                    <option value="marvel soundtrack theme">Marvel Theme Songs</option>
+                    <option value="cbeebies theme songs kids">CBeebies Shows Theme Songs</option>
+                    <option value="nickelodeon tv theme songs">Nickelodeon TV Show Themes</option>
+                    <option value="cartoon network theme songs">Cartoon Network Theme Songs</option>
                 </select>
-                <button class="btn-api" style="background:#03dac6; color:black;" onclick="addKidsToPlaylist()">➕ Add Kids & Movie Round</button>
+                <button class="btn-api" style="background:#03dac6; color:black;" onclick="addKidsMusicToPlaylist()">➕ Add Kids Theme Song Round</button>
+
+                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
+
+                <!-- 4. Dedicated Kids Trivia Section -->
+                <label>Kids Trivia Section:</label>
+                <select id="kidsTriviaSelect">
+                    <option value="disney">Disney Trivia</option>
+                    <option value="animals">Animals & Nature Trivia</option>
+                    <option value="science">Fun Science Trivia</option>
+                    <option value="geography">World Geography Trivia</option>
+                </select>
+                <button class="btn-api" style="background:#bb86fc; color:black;" onclick="addKidsTriviaToPlaylist()">➕ Add Kids Trivia Round</button>
             </div>
 
             <div class="panel">
@@ -168,7 +198,7 @@
             const roundName = `Trivia: ${categoryName} (${questions.length} Qs)`;
 
             playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Trivia Round";
+            btn.textContent = "➕ Add Standard Trivia Round";
             renderPlaylist();
         }
 
@@ -183,30 +213,50 @@
             const btn = event.target;
             btn.textContent = "Fetching Audio Clips...";
 
-            const questions = await fetchMusicPreviewRound(count, searchTerm, false);
+            const isMovieOrTv = searchTerm.includes('theme') || searchTerm.includes('soundtrack');
+            const questions = await fetchMusicPreviewRound(count, searchTerm, isMovieOrTv);
             const roundName = `Music: ${genreName} (${questions.length} Qs)`;
 
             playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Music / Decades Round";
+            btn.textContent = "➕ Add Music / Theme Round";
             renderPlaylist();
         }
 
-        async function addKidsToPlaylist() {
+        async function addKidsMusicToPlaylist() {
             const count = parseInt(document.getElementById('questionCountSelect').value);
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const kidsSelect = document.getElementById('kidsGenreSelect');
-            const searchTerm = kidsSelect.value;
-            const genreName = kidsSelect.options[kidsSelect.selectedIndex].text;
+            const kidsMusicSelect = document.getElementById('kidsMusicGenreSelect');
+            const searchTerm = kidsMusicSelect.value;
+            const genreName = kidsMusicSelect.options[kidsMusicSelect.selectedIndex].text;
 
             const btn = event.target;
             btn.textContent = "Fetching Kids Audio...";
 
             const questions = await fetchMusicPreviewRound(count, searchTerm, true);
-            const roundName = `Kids Movie: ${genreName} (${questions.length} Qs)`;
+            const roundName = `Kids Theme: ${genreName} (${questions.length} Qs)`;
 
             playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Kids & Movie Round";
+            btn.textContent = "➕ Add Kids Theme Song Round";
+            renderPlaylist();
+        }
+
+        async function addKidsTriviaToPlaylist() {
+            const count = parseInt(document.getElementById('questionCountSelect').value);
+            const timer = parseInt(document.getElementById('timerSelect').value);
+            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+            const kidsTriviaSelect = document.getElementById('kidsTriviaSelect');
+            const subGenre = kidsTriviaSelect.value;
+            const genreName = kidsTriviaSelect.options[kidsTriviaSelect.selectedIndex].text;
+
+            const btn = event.target;
+            btn.textContent = "Fetching Kids Trivia...";
+
+            const questions = await fetchKidsTriviaQuestions(count, subGenre);
+            const roundName = `Kids Trivia: ${genreName} (${questions.length} Qs)`;
+
+            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
+            btn.textContent = "➕ Add Kids Trivia Round";
             renderPlaylist();
         }
 
