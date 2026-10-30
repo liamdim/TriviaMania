@@ -13,7 +13,7 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
             return data.results.map(item => {
                 const correct = decodeHTML(item.correct_answer);
                 const incorrects = item.incorrect_answers.map(decodeHTML);
-                const options = [...incorrects, correct].sort(() => 0.5 - Math.random());
+                const options = [...incorrects, correct].sort(() => Math.random() - 0.5);
                 
                 return {
                     q: decodeHTML(item.question),
@@ -31,27 +31,34 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
 
 async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock', isKidsOrTv = false) {
     try {
-        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=25`);
+        const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=30`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
             const validSongs = data.results.filter(song => song.previewUrl && song.trackName);
             
-            // If it's a kids/Disney/TV round, test on Movie/Show titles instead of unknown artist names!
             if (isKidsOrTv || searchTerm.includes('disney') || searchTerm.includes('cartoon') || searchTerm.includes('tv theme') || searchTerm.includes('soundtrack')) {
-                const movieDecoys = ["The Lion King", "Frozen", "Moana", "Toy Story", "Aladdin", "Tangled", "Shrek", "Cars", "Finding Nemo", "Beauty and the Beast", "Cinderella", "The Little Mermaid", "Up", "Encanto", "Harry Potter", "Star Wars", "Jurassic Park", "Batman", "Spider-Man", "Doctor Who"];
+                const movieDecoys = ["The Lion King", "Frozen", "Moana", "Toy Story", "Aladdin", "Tangled", "Shrek", "Cars", "Finding Nemo", "Beauty and the Beast", "Cinderella", "The Little Mermaid", "Up", "Encanto", "Harry Potter", "Star Wars", "Jurassic Park", "Batman", "Spider-Man", "Doctor Who", "The Incredibles", "Monsters, Inc.", "Mulan", "Hercules"];
 
                 return validSongs.slice(0, amount).map(song => {
-                    // Extract a clean movie/show name or fallback to track name context
-                    let correctMovie = song.collectionName || song.trackName.replace(/\(.*?\)/g, '').trim();
-                    if (correctMovie.length > 25) correctMovie = "Classic Movie Soundtrack";
+                    // Clean up song title to look like a clean movie/show theme entry
+                    let cleanTitle = song.trackName
+                        .replace(/\(.*?\)/g, '')
+                        .replace(/from.*$/i, '')
+                        .replace(/theme.*$/i, '')
+                        .trim();
+                    
+                    if (cleanTitle.length < 2) cleanTitle = "Favorite Family Movie";
 
-                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== correctMovie.toLowerCase()).sort(() => 0.5 - Math.random()).slice(0, 3);
-                    const options = [...wrongOptions, correctMovie].sort(() => 0.5 - Math.random());
+                    // Pick 3 wrong movie decoys
+                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== cleanTitle.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
+                    
+                    // Combine correct answer with decoys and truly randomize position
+                    const options = [...wrongOptions, cleanTitle].sort(() => Math.random() - 0.5);
 
                     return {
                         q: `What movie, show, or animation is this theme song from? 🎵`,
-                        a: correctMovie,
+                        a: cleanTitle,
                         options: options,
                         audioUrl: song.previewUrl,
                         type: 'music'
@@ -59,7 +66,7 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock'
                 });
             }
 
-            // Standard Music / Decades Round (Asking for Artist Name with genre-matched decoys)
+            // Standard Music Round (Asking for Artist Name)
             let decoyPool = ["Duran Duran", "Tears for Fears", "Spandau Ballet", "Culture Club", "Wham!", "Simple Minds", "Eurythmics", "Bryan Adams", "Bon Jovi", "Queen", "The Police"];
             
             const lowerSearch = searchTerm.toLowerCase();
@@ -75,13 +82,13 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock'
 
             return validSongs.slice(0, amount).map(song => {
                 const correctArtist = song.artistName;
-                const wrongOptions = decoyPool.filter(a => a.toLowerCase() !== correctArtist.toLowerCase()).sort(() => 0.5 - Math.random()).slice(0, 3);
+                const wrongOptions = decoyPool.filter(a => a.toLowerCase() !== correctArtist.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
                 
                 while (wrongOptions.length < 3) {
                     wrongOptions.push("Similar Artist " + Math.floor(Math.random() * 10));
                 }
 
-                const options = [...wrongOptions, correctArtist].sort(() => 0.5 - Math.random());
+                const options = [...wrongOptions, correctArtist].sort(() => Math.random() - 0.5);
                 
                 return {
                     q: `Name the artist performing this track! 🎵 (${song.trackName})`,
