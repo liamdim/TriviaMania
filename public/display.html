@@ -27,7 +27,6 @@
         .waiting-teams-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .team-pill { background: #1a1d2d; border: 1px solid var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 6px; }
 
-        /* Poll Display Box */
         .poll-display { margin-top: 25px; background: rgba(26, 29, 45, 0.8); padding: 20px; border-radius: 14px; border: 1px solid var(--primary); display: none; }
         .poll-bar-container { background: #131520; border-radius: 8px; margin: 8px 0; overflow: hidden; height: 30px; position: relative; border: 1px solid #333852; }
         .poll-bar-fill { background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 0%; transition: width 0.4s ease; }
@@ -86,7 +85,6 @@
                     </div>
                 </div>
 
-                <!-- Live Poll Results Box -->
                 <div id="projectorPollBox" class="poll-display">
                     <h3 id="projectorPollQuestion" style="margin:0 0 12px 0; color:var(--accent); font-size:18px;"></h3>
                     <div id="projectorPollBars"></div>
@@ -212,7 +210,6 @@
             if (state.welcomeMessage) document.getElementById('welcomeMessageDisplay').textContent = state.welcomeMessage;
             if (state.bannerText) document.getElementById('bannerText').textContent = `🌟 ${state.bannerText}`;
 
-            // Poll display handling
             if (state.pollActive && state.status === 'waiting') {
                 projectorPollBox.style.display = 'block';
                 projectorPollQuestion.textContent = state.pollQuestion;
@@ -274,8 +271,13 @@
                         optionsGrid.innerHTML += `<div class="pill"><strong style="color:var(--accent);">${letter}:</strong> ${opt}</div>`;
                     });
 
+                    // Auto-play audio preview globally when host starts round
                     if (q.audioUrl && state.status === 'active') {
-                        audioContainer.innerHTML = `<audio autoplay controls src="${q.audioUrl}" style="width: 100%; max-width: 400px;"></audio>`;
+                        audioContainer.innerHTML = `<audio autoplay src="${q.audioUrl}" style="display:none;"></audio>`;
+                        const audioEl = audioContainer.querySelector('audio');
+                        if (audioEl) {
+                            audioEl.play().catch(err => console.log("Auto-play prevented or handled:", err));
+                        }
                     } else {
                         audioContainer.innerHTML = '';
                     }
