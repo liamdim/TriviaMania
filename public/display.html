@@ -61,9 +61,9 @@
                 <div style="font-size: 20px; color: #a4a8bc;">Scan QR code with your phone camera to join instantly!</div>
             </div>
             <div class="qr-box">
-                <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:18px;">Join Game</h3>
+                <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:18px;">Scan to Join</h3>
                 <img id="joinQrImage" src="" alt="Join QR Code">
-                <div style="font-size: 13px; color: #a4a8bc; margin-top: 8px;" id="joinLinkText"></div>
+                <div style="font-size: 13px; color: #a4a8bc; margin-top: 8px; word-break: break-all;" id="joinLinkText"></div>
             </div>
         </div>
 
@@ -93,13 +93,13 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Point the QR code directly to /player.html for instant team sign-in
         const playerJoinUrl = window.location.origin + '/player.html';
         document.getElementById('joinLinkText').textContent = playerJoinUrl;
         document.getElementById('joinQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerJoinUrl)}`;
         
         const socket = io();
 
-        // Auto-initialize Web Audio API on first active state
         let audioCtx = null;
         function initAudio() {
             if (!audioCtx) {
@@ -137,7 +137,7 @@
                 podiumView.style.display = 'block';
                 audioContainer.innerHTML = '';
             } else if (state.status === 'active' || state.status === 'revealed') {
-                initAudio(); // Auto-enable audio context when round starts
+                initAudio();
                 waitingView.style.display = 'none';
                 podiumView.style.display = 'none';
                 gameView.style.display = 'block';
