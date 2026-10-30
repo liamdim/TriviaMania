@@ -5,23 +5,15 @@
     <title>TriviaMania - Host Control Center</title>
     <style>
         :root { 
-            --bg: #090a10; 
-            --card: #131520; 
-            --primary: #9c27b0; 
-            --primary-glow: rgba(156, 39, 176, 0.4);
-            --accent: #00e5ff; 
-            --accent-glow: rgba(0, 229, 255, 0.3);
-            --text: #ffffff; 
-            --muted: #8a8d9f;
-            --danger: #ff1744; 
-            --success: #00e676;
+            --bg: #090a10; --card: #131520; --primary: #9c27b0; --primary-glow: rgba(156, 39, 176, 0.4);
+            --accent: #00e5ff; --accent-glow: rgba(0, 229, 255, 0.3); --text: #ffffff; --muted: #8a8d9f;
+            --danger: #ff1744; --success: #00e676;
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
         h1 { margin: 0; font-size: 26px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
         .nav-links a { color: var(--accent); text-decoration: none; margin-left: 20px; font-weight: bold; background: #1a1d2e; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent); }
         
-        /* Tab Navigation */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab-btn { background: #131520; border: 1px solid #2a2e45; color: var(--muted); padding: 12px 24px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px; }
         .tab-btn.active { background: var(--primary); color: white; border-color: var(--accent); box-shadow: 0 0 15px var(--primary-glow); }
@@ -45,7 +37,6 @@
         
         select, input[type="text"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         label { font-size: 12px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        
         .preview-box { max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; display: none; }
     </style>
     <script src="/js/api.js"></script>
@@ -60,7 +51,6 @@
         </div>
     </header>
 
-    <!-- Tab Navigation Bar -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center</button>
         <button class="tab-btn" onclick="switchTab('playlist', event)">🎵 Playlist Builder</button>
@@ -79,19 +69,22 @@
         </div>
 
         <div class="panel">
+            <h2>Projector Display Toggles</h2>
+            <p style="color: var(--muted); font-size: 13px; margin-top:0;">Quickly toggle the payment QR code on/off the main screen.</p>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="toggleProjectorQR()">🔲 Show / Hide PayPal QR on Projector</button>
+        </div>
+
+        <div class="panel">
             <h2>Connected Teams (<span id="playerCount">0</span>)</h2>
             <div id="playerList" style="max-height: 250px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
             </div>
         </div>
 
-        <div class="panel full-width">
+        <div class="panel">
             <h2>Live Advert Screen Controls</h2>
-            <p style="color: var(--muted); font-size: 13px; margin-top:0;">Instantly push or hide custom images/adverts across projector and player screens.</p>
-            <div style="display: flex; gap: 15px;">
-                <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvertToScreen()">📢 Push Uploaded Ad to Screens</button>
-                <button class="btn-danger" style="padding: 12px; font-size:15px; width:100%;" onclick="hideAdvertFromScreen()">❌ Turn Off Advert / Hide</button>
-            </div>
+            <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvertToScreen()">📢 Push Uploaded Ad to Screens</button>
+            <button class="btn-danger" style="padding: 12px; font-size:15px; width:100%; margin-top:10px;" onclick="hideAdvertFromScreen()">❌ Turn Off Advert / Hide</button>
         </div>
     </div>
 
@@ -99,7 +92,6 @@
     <div id="tab-playlist" class="tab-content">
         <div class="panel">
             <h2>Build Quiz Rounds</h2>
-            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label>Question Count:</label>
@@ -176,31 +168,15 @@
                 <option value="epic movie soundtracks">Movie Theme Songs</option>
             </select>
             <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Theme Round</button>
-
-            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
-
-            <label>Kids & Family Theme Songs:</label>
-            <select id="kidsMusicGenreSelect">
-                <option value="disney songs singalong">Disney Movie Theme Songs</option>
-                <option value="disney channel songs">Disney Show Theme Songs</option>
-                <option value="marvel soundtrack theme">Marvel Theme Songs</option>
-                <option value="cbeebies theme songs kids">CBeebies Shows Theme Songs</option>
-                <option value="nickelodeon tv theme songs">Nickelodeon TV Show Themes</option>
-                <option value="cartoon network theme songs">Cartoon Network Theme Songs</option>
-            </select>
-            <button class="btn-api" style="background:#00e5ff; color:black;" onclick="addKidsMusicToPlaylist()">➕ Add Kids Theme Round</button>
         </div>
 
         <div>
-            <!-- Custom Round Importer -->
             <div class="panel" style="border: 2px dashed var(--primary);">
                 <h2>📝 Custom Round Importer</h2>
                 <label>Round Name:</label>
                 <input type="text" id="customRoundName" value="Custom Pub Round">
-                
                 <label>Paste Questions (Format: Q | Answer | Opt1, Opt2, Opt3, Opt4):</label>
                 <textarea id="customRoundText" rows="4" placeholder="What is our local pub name? | The Crown | Crown, Red Lion, Swan, Anchor"></textarea>
-                
                 <button class="btn-api" style="background:#ff9100; color:black;" onclick="addCustomRoundToPlaylist()">➕ Add Custom Round</button>
             </div>
 
@@ -217,14 +193,10 @@
     <div id="tab-media" class="tab-content">
         <div class="panel full-width">
             <h2>🖼️ Upload Advert or Sponsor Image</h2>
-            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Upload a sponsor logo, venue flyer, or event poster to display on the projector and player screens.</p>
-            
             <label>Select Image File:</label>
             <input type="file" id="imageUploadInput" accept="image/*" onchange="previewImage(event)" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
-            
             <br>
             <img id="imagePreview" class="preview-box" alt="Preview">
-            
             <button class="btn-api" style="margin-top: 15px;" onclick="uploadAndStoreAdvert()">💾 Save & Ready Advert</button>
         </div>
     </div>
@@ -233,13 +205,16 @@
     <div id="tab-settings" class="tab-content">
         <div class="panel full-width">
             <h2>⚙️ Game & PayPal Payment Settings</h2>
-            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Configure your event title and PayPal payment link so players can pay entry fees or tips directly from their phones.</p>
+            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Set an entry price (e.g. 5.00). If set above 0, players must confirm payment via PayPal before joining the game!</p>
             
             <label>Event / Venue Title:</label>
             <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
             
-            <label>PayPal Payment Link (PayPal.me / Pool / Donation URL):</label>
+            <label>PayPal Payment Link (PayPal.me / Pool URL):</label>
             <input type="text" id="paypalUrlInput" placeholder="https://paypal.me/yourpubquiz">
+
+            <label>Entry Price (£ or $ amount, enter 0 for free):</label>
+            <input type="text" id="entryPriceInput" value="0" placeholder="5.00">
             
             <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save Settings & Broadcast</button>
         </div>
@@ -256,6 +231,10 @@
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             event.target.classList.add('active');
+        }
+
+        function toggleProjectorQR() {
+            socket.emit('hostAction', { action: 'toggleQR' });
         }
 
         function previewImage(event) {
@@ -277,28 +256,27 @@
                 alert('Please select an image file first!');
                 return;
             }
-            alert('Advert image loaded and ready! Go to Control Center to push it to screens.');
+            alert('Advert loaded! Go to Control Center to push it.');
         }
 
         function pushAdvertToScreen() {
             if (!storedAdvertBase64) {
-                alert('No advert image uploaded yet! Go to Adverts & Media tab first.');
+                alert('No advert image uploaded yet!');
                 return;
             }
             socket.emit('hostAction', { action: 'pushAdvert', payload: { image: storedAdvertBase64 } });
-            alert('Advert pushed to Projector and Player screens!');
         }
 
         function hideAdvertFromScreen() {
             socket.emit('hostAction', { action: 'hideAdvert' });
-            alert('Advert hidden from screens.');
         }
 
         function saveSettings() {
             const paypalUrl = document.getElementById('paypalUrlInput').value.trim();
+            const entryPrice = document.getElementById('entryPriceInput').value.trim();
             const eventTitle = document.getElementById('eventTitleInput').value.trim();
-            socket.emit('hostAction', { action: 'updateSettings', payload: { paypalUrl, eventTitle } });
-            alert('Settings saved and broadcasted successfully!');
+            socket.emit('hostAction', { action: 'updateSettings', payload: { paypalUrl, entryPrice, eventTitle } });
+            alert('Settings saved successfully!');
         }
 
         function addCustomRoundToPlaylist() {
@@ -307,14 +285,10 @@
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
 
-            if (!rawText) {
-                alert('Please paste at least one question!');
-                return;
-            }
+            if (!rawText) return alert('Please paste questions!');
 
             const lines = rawText.split('\n');
             const questions = [];
-
             lines.forEach(line => {
                 const parts = line.split('|');
                 if (parts.length >= 3) {
@@ -322,15 +296,9 @@
                     const a = parts[1].trim();
                     const options = parts[2].split(',').map(o => o.trim());
                     if (!options.includes(a)) options.push(a);
-                    const shuffledOptions = options.sort(() => Math.random() - 0.5);
-                    questions.push({ q, a, options: shuffledOptions, type: 'trivia' });
+                    questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'trivia' });
                 }
             });
-
-            if (questions.length === 0) {
-                alert('Parsing failed. Format: Question | Answer | Opt1, Opt2, Opt3, Opt4');
-                return;
-            }
 
             playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay });
             renderPlaylist();
@@ -341,15 +309,11 @@
             const count = parseInt(document.getElementById('questionCountSelect').value);
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const categorySelect = document.getElementById('categorySelect');
-            const categoryId = categorySelect.value;
-            const categoryName = categoryId ? categorySelect.options[categorySelect.selectedIndex].text : "General";
+            const categoryId = document.getElementById('categorySelect').value;
+            const categoryName = categoryId ? document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text : "General";
             
-            const btn = event.target;
-            btn.textContent = "Fetching...";
             const questions = await fetchTriviaQuestions(count, categoryId);
             playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Standard Trivia Round";
             renderPlaylist();
         }
 
@@ -358,53 +322,25 @@
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const musicSelect = document.getElementById('musicGenreSelect');
-            const searchTerm = musicSelect.value;
-            const genreName = musicSelect.options[musicSelect.selectedIndex].text;
-
-            const btn = event.target;
-            btn.textContent = "Fetching Audio Clips...";
-            const isMovieOrTv = searchTerm.includes('theme') || searchTerm.includes('soundtrack');
-            const questions = await fetchMusicPreviewRound(count, searchTerm, isMovieOrTv);
-            playlist.push({ id: Date.now(), name: `Music: ${genreName} (${questions.length} Qs)`, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Music / Theme Round";
-            renderPlaylist();
-        }
-
-        async function addKidsMusicToPlaylist() {
-            const count = parseInt(document.getElementById('questionCountSelect').value);
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const kidsMusicSelect = document.getElementById('kidsMusicGenreSelect');
-            const searchTerm = kidsMusicSelect.value;
-            const genreName = kidsMusicSelect.options[kidsMusicSelect.selectedIndex].text;
-
-            const btn = event.target;
-            btn.textContent = "Fetching Kids Audio...";
-            const questions = await fetchMusicPreviewRound(count, searchTerm, true);
-            playlist.push({ id: Date.now(), name: `Kids Theme: ${genreName} (${questions.length} Qs)`, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Kids Theme Round";
+            const questions = await fetchMusicPreviewRound(count, musicSelect.value, musicSelect.value.includes('theme'));
+            playlist.push({ id: Date.now(), name: `Music: ${musicSelect.options[musicSelect.selectedIndex].text} (${questions.length} Qs)`, questions, timer, betweenDelay });
             renderPlaylist();
         }
 
         function renderPlaylist() {
             const container = document.getElementById('playlistContainer');
             document.getElementById('playlistCount').textContent = playlist.length;
-
             if (playlist.length === 0) {
                 container.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>';
                 return;
             }
-
             container.innerHTML = '';
             playlist.forEach((round, index) => {
                 container.innerHTML += `
                     <div class="playlist-card">
+                        <div><strong>${index + 1}. ${round.name}</strong></div>
                         <div>
-                            <strong>${index + 1}. ${round.name}</strong>
-                            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Timer: ${round.timer}s</div>
-                        </div>
-                        <div>
-                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadRound(${index})">📂 Load</button>
+                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px;" onclick="loadRound(${index})">📂 Load</button>
                             <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
                         </div>
                     </div>
@@ -414,11 +350,8 @@
 
         function loadRound(index) {
             const round = playlist[index];
-            socket.emit('hostAction', { 
-                action: 'loadRound', 
-                payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay } 
-            });
-            alert(`Loaded "${round.name}"! Click "▶ Start / Resume Round" in Control Center when ready.`);
+            socket.emit('hostAction', { action: 'loadRound', payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay } });
+            alert(`Loaded "${round.name}"!`);
         }
 
         function deleteRound(index) {
@@ -435,12 +368,10 @@
             const countEl = document.getElementById('playerCount');
             const playerIds = Object.keys(players);
             countEl.textContent = playerIds.length;
-            
             if (playerIds.length === 0) {
                 listEl.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>';
                 return;
             }
-
             listEl.innerHTML = '';
             playerIds.forEach(id => {
                 const p = players[id];
