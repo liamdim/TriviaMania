@@ -6,9 +6,14 @@
     <style>
         :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
-        .container { width: 90%; max-width: 1200px; padding: 40px; background: var(--card); border: 2px solid var(--primary); border-radius: 20px; box-shadow: 0 10px 40px rgba(156, 39, 176, 0.3); display: grid; grid-template-columns: 1fr 300px; gap: 30px; align-items: center; position: relative; }
+        
+        /* Dynamic Grid layout depending on QR visibility */
+        .container { width: 90%; max-width: 1200px; padding: 40px; background: var(--card); border: 2px solid var(--primary); border-radius: 20px; box-shadow: 0 10px 40px rgba(156, 39, 176, 0.3); display: grid; grid-template-columns: 1fr; gap: 30px; align-items: center; transition: all 0.3s ease; }
+        .container.show-qr { grid-template-columns: 1fr 300px; }
+
         .main-col { text-align: left; }
-        .qr-col { background: #1a1d2d; padding: 20px; border-radius: 14px; border: 1px solid #333852; text-align: center; }
+        .qr-col { background: #1a1d2d; padding: 20px; border-radius: 14px; border: 1px solid #333852; text-align: center; display: none; }
+        
         h1 { font-size: 48px; color: var(--accent); margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
         .question { font-size: 32px; margin-bottom: 20px; color: #fff; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 22px; }
@@ -17,7 +22,6 @@
         .leaderboard { margin-top: 15px; display: none; background: #1a1d2d; padding: 15px; border-radius: 12px; border: 1px solid var(--accent); max-height: 180px; overflow-y: auto; text-align: left; }
         .leaderboard-row { display: flex; justify-content: space-between; font-size: 18px; padding: 6px 0; border-bottom: 1px solid #222538; }
         
-        /* Podium View */
         .podium-view { display: none; text-align: center; }
         .podium-grid { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-top: 20px; height: 260px; }
         .podium-pillar { background: #1a1d2d; border: 2px solid var(--primary); border-radius: 12px 12px 0 0; width: 140px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 15px; }
@@ -25,7 +29,6 @@
         .podium-2 { height: 180px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
         .podium-3 { height: 130px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
 
-        /* Advert Overlay */
         .advert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
         .advert-overlay img { max-width: 80vw; max-height: 80vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 50px rgba(0, 229, 255, 0.5); }
 
@@ -36,13 +39,12 @@
 </head>
 <body>
 
-    <!-- Advert Pop-up Overlay -->
     <div id="advertOverlay" class="advert-overlay">
         <h2 style="color:var(--accent); font-size:32px; margin-bottom:20px;">📢 Featured Sponsor & Venue Advert</h2>
         <img id="advertImageDisplay" src="" alt="Advert">
     </div>
 
-    <div class="container" id="screenBox">
+    <div class="container" id="screenContainer">
         <div class="main-col">
             <div id="waitingView">
                 <h1 id="eventTitleDisplay">TriviaMania Live 🍻</h1>
@@ -53,9 +55,7 @@
             <div id="gameView" style="display:none;">
                 <div id="roundTitle" style="font-size: 20px; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; font-weight:bold;"></div>
                 <div class="question" id="questionText">Loading question...</div>
-                
                 <div id="audioContainer" style="margin-bottom: 12px;"></div>
-
                 <div class="options" id="optionsGrid"></div>
                 <div class="answer" id="answerBox">Answer: <span id="answerText"></span></div>
                 
@@ -72,15 +72,16 @@
             </div>
         </div>
 
-        <div class="qr-col">
-            <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:18px;">Pay / Tip via PayPal</h3>
-            <p style="font-size: 12px; color: #8a8d9f; margin:0 0 10px 0;">Scan to pay game fee:</p>
+        <!-- Right Column: PayPal QR Code -->
+        <div class="qr-col" id="qrColumn">
+            <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:18px;">Pay Entry / Tip</h3>
+            <p style="font-size: 12px; color: #8a8d9f; margin:0 0 10px 0;">Scan to pay via PayPal:</p>
             <img id="qrImage" src="" alt="PayPal QR">
             <div id="paypalTextDisplay" style="font-size: 12px; color: var(--accent); margin-top: 10px; word-break:break-all;"></div>
         </div>
     </div>
 
-    <div class="fundraising-banner" id="bannerText">🌟 TriviaMania Live Pub Quiz | Scan Table QR to Pay</div>
+    <div class="fundraising-banner" id="bannerText">🌟 TriviaMania Live Pub Quiz</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -89,7 +90,6 @@
         const socket = io();
 
         let audioCtx = null;
-
         function unlockAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const dummyAudio = new Audio();
@@ -109,19 +109,26 @@
             const audioContainer = document.getElementById('audioContainer');
             const leaderboardBox = document.getElementById('leaderboardBox');
             const advertOverlay = document.getElementById('advertOverlay');
+            const screenContainer = document.getElementById('screenContainer');
+            const qrColumn = document.getElementById('qrColumn');
 
             if (state.eventTitle) {
                 document.getElementById('eventTitleDisplay').textContent = state.eventTitle;
-                document.getElementById('bannerText').textContent = `🌟 ${state.eventTitle} | Scan Table QR to Pay`;
+                document.getElementById('bannerText').textContent = `🌟 ${state.eventTitle}`;
             }
 
-            if (state.paypalUrl) {
+            // Toggle QR visibility on Projector
+            if (state.qrVisible && state.paypalUrl) {
+                screenContainer.classList.add('show-qr');
+                qrColumn.style.display = 'block';
                 const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(state.paypalUrl)}`;
                 document.getElementById('qrImage').src = qrSrc;
                 document.getElementById('paypalTextDisplay').textContent = state.paypalUrl;
+            } else {
+                screenContainer.classList.remove('show-qr');
+                qrColumn.style.display = 'none';
             }
 
-            // Advert Overlay Control
             if (state.advertActive && state.advertImage) {
                 document.getElementById('advertImageDisplay').src = state.advertImage;
                 advertOverlay.style.display = 'flex';
