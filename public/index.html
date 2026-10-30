@@ -53,13 +53,13 @@
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center & Scores</button>
+        <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center & Queue</button>
         <button class="tab-btn" onclick="switchTab('playlist', event)">🎵 Playlist Builder</button>
         <button class="tab-btn" onclick="switchTab('media', event)">🖼️ Adverts & Media</button>
-        <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Settings</button>
+        <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Settings & Polls</button>
     </div>
 
-    <!-- TAB 1: CONTROL CENTER & LIVE SCORES -->
+    <!-- TAB 1: CONTROL CENTER & PLAYLIST QUEUE -->
     <div id="tab-control" class="tab-content active">
         <div class="panel">
             <h2>Master Game Controls</h2>
@@ -67,6 +67,13 @@
             <button onclick="sendAction('pause')">⏸ Pause Game</button>
             <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
             <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
+        </div>
+
+        <div class="panel">
+            <h2>Active Playlist Queue</h2>
+            <div id="hostPlaylistQueue" style="max-height: 220px; overflow-y: auto;">
+                <p style="color: var(--muted); font-size: 14px;">No rounds loaded in queue yet.</p>
+            </div>
         </div>
 
         <div class="panel">
@@ -84,10 +91,10 @@
             <button class="btn-api" style="background:#00e676; color:black; margin-top:10px;" onclick="togglePoll()">📊 Toggle Pre-Game Icebreaker Poll</button>
         </div>
 
-        <div class="panel full-width">
-            <h2>🏆 Live Team Leaderboard & Connected Teams (<span id="playerCount">0</span>)</h2>
+        <div class="panel">
+            <h2>🏆 Connected Teams (<span id="playerCount">0</span>)</h2>
             <button class="btn-api" style="background:#00e676; color:black; margin-bottom:15px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
-            <div id="hostScoreList" style="max-height: 250px; overflow-y: auto;">
+            <div id="hostScoreList" style="max-height: 180px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
             </div>
         </div>
@@ -221,7 +228,7 @@
         </div>
     </div>
 
-    <!-- TAB 4: SETTINGS -->
+    <!-- TAB 4: SETTINGS & POLLS -->
     <div id="tab-settings" class="tab-content">
         <div class="panel full-width">
             <h2>⚙️ Editable Display Text & Tip Jar</h2>
@@ -239,6 +246,17 @@
             <input type="text" id="tipJarUrlInput" placeholder="https://paypal.me/yourpubquiz">
             
             <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save & Broadcast Settings</button>
+        </div>
+
+        <div class="panel full-width">
+            <h2>📊 Pre-Game Icebreaker Poll Manager</h2>
+            <label>Poll Question:</label>
+            <input type="text" id="pollQuestionInput" value="What is the greatest pub snack of all time?">
+
+            <label>Poll Options (comma separated):</label>
+            <input type="text" id="pollOptionsInput" value="Crisps / Nuts, Pork Pies, Scampi Fries, Bowl of Chips">
+
+            <button class="btn-api" style="background:var(--primary); color:white; margin-top: 10px;" onclick="savePollSettings()">📊 Update & Broadcast Poll</button>
         </div>
     </div>
 
@@ -310,6 +328,14 @@
             alert('Settings saved and broadcasted successfully!');
         }
 
+        function savePollSettings() {
+            const pollQuestion = document.getElementById('pollQuestionInput').value.trim();
+            const optionsRaw = document.getElementById('pollOptionsInput').value.trim();
+            const pollOptions = optionsRaw.split(',').map(o => o.trim()).filter(Boolean);
+            socket.emit('hostAction', { action: 'updateSettings', payload: { pollQuestion, pollOptions } });
+            alert('Poll updated and broadcasted!');
+        }
+
         function exportLeaderboardCSV() {
             const sorted = Object.values(latestPlayersState).sort((a, b) => b.score - a.score);
             if (sorted.length === 0) return alert('No players to export!');
@@ -351,6 +377,7 @@
 
             playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
+            renderHostQueue();
             alert(`Added custom round "${name}"!`);
         }
 
@@ -365,6 +392,7 @@
             const questions = await fetchTriviaQuestions(count, categoryId);
             playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
+            renderHostQueue();
         }
 
         async function addMusicToPlaylist() {
@@ -376,6 +404,7 @@
             const questions = await fetchMusicPreviewRound(count, musicSelect.value, musicSelect.value.includes('theme'));
             playlist.push({ id: Date.now(), name: `Music: ${musicSelect.options[musicSelect.selectedIndex].text} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
+            renderHostQueue();
         }
 
         function renderPlaylist() {
@@ -399,6 +428,23 @@
             });
         }
 
+        function renderHostQueue() {
+            const queueEl = document.getElementById('hostPlaylistQueue');
+            if (playlist.length === 0) {
+                queueEl.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds loaded in queue yet.</p>';
+                return;
+            }
+            queueEl.innerHTML = '';
+            playlist.forEach((round, index) => {
+                queueEl.innerHTML += `
+                    <div class="playlist-card">
+                        <div><strong>${index + 1}. ${round.name}</strong></div>
+                        <button class="btn-play" style="padding: 4px 10px; margin-top:0; font-size: 11px; width:auto;" onclick="loadRound(${index})">Load</button>
+                    </div>
+                `;
+            });
+        }
+
         function loadRound(index) {
             const round = playlist[index];
             socket.emit('hostAction', { action: 'loadRound', payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay, speedBonus: round.speedBonus } });
@@ -408,6 +454,7 @@
         function deleteRound(index) {
             playlist.splice(index, 1);
             renderPlaylist();
+            renderHostQueue();
         }
 
         function sendAction(action) {
@@ -419,6 +466,8 @@
             if (state.welcomeMessage) document.getElementById('welcomeMessageInput').value = state.welcomeMessage;
             if (state.bannerText) document.getElementById('bannerTextInput').value = state.bannerText;
             if (state.tipJarUrl) document.getElementById('tipJarUrlInput').value = state.tipJarUrl;
+            if (state.pollQuestion) document.getElementById('pollQuestionInput').value = state.pollQuestion;
+            if (state.pollOptions) document.getElementById('pollOptionsInput').value = state.pollOptions.join(', ');
         });
 
         socket.on('updatePlayers', (players) => {
