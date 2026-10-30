@@ -16,6 +16,7 @@
         .options-container { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
         .choice-btn { background: #22222e; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
         .choice-btn:hover { background: var(--primary); color: black; }
+        .score-badge { background: #22222e; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
     </style>
 </head>
 <body>
@@ -30,6 +31,7 @@
     <div id="gameScreen" class="game-screen">
         <div class="card">
             <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0;"></h2>
+            <div class="score-badge">Score: <span id="playerScore">0</span> pts</div>
             <p id="gameStatusText" style="color: #aaa; font-size: 14px;">Waiting for host to start...</p>
             
             <div id="answerSection" style="display:none;">
@@ -42,24 +44,24 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        let myTeamName = "";
 
         function joinGame() {
-            const nameInput = document.getElementById('playerName').value.trim();
-            if (!nameInput) {
+            myTeamName = document.getElementById('playerName').value.trim();
+            if (!myTeamName) {
                 alert('Please enter a team name!');
                 return;
             }
-            socket.emit('playerJoin', { name: nameInput });
+            socket.emit('playerJoin', { name: myTeamName });
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
-            document.getElementById('welcomeHeader').textContent = nameInput;
+            document.getElementById('welcomeHeader').textContent = myTeamName;
         }
 
         function selectAnswer(optionText) {
             socket.emit('submitAnswer', { answer: optionText });
-            alert(`Locked in: ${optionText}`);
             document.getElementById('answerSection').style.display = 'none';
-            document.getElementById('gameStatusText').textContent = "Answer locked! Waiting for reveal...";
+            document.getElementById('gameStatusText').textContent = `Locked in: "${optionText}"! Waiting for reveal...`;
         }
 
         socket.on('syncState', (state) => {
@@ -89,11 +91,19 @@
                     });
                 }
             } else if (state.status === 'revealed') {
-                statusText.textContent = "Answer Revealed on Projector!";
+                statusText.textContent = "Answer Revealed on Projector! Check leaderboard.";
                 answerSection.style.display = 'none';
             } else {
                 statusText.textContent = "Waiting for next question...";
                 answerSection.style.display = 'none';
+            }
+        });
+
+        socket.on('updatePlayers', (players) => {
+            for (const id in players) {
+                if (players[id].name === myTeamName) {
+                    document.getElementById('playerScore').textContent = players[id].score;
+                }
             }
         });
     </script>
