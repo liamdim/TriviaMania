@@ -24,7 +24,6 @@
         .podium-2 { height: 180px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
         .podium-3 { height: 130px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
 
-        /* Advert Fullscreen Overlay with explicit display rules */
         #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.98); display: none; justify-content: center; align-items: center; z-index: 99999; flex-direction: column; }
         #advertOverlay img { max-width: 85vw; max-height: 85vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 60px rgba(0, 229, 255, 0.6); }
 
@@ -100,8 +99,7 @@
                 document.getElementById('bannerText').textContent = `🌟 ${state.eventTitle}`;
             }
 
-            // Advert Overlay Control with explicit flex display
-            if (state.advertActive && state.advertImage) {
+            if (state.projectorAdvertActive && state.advertImage) {
                 document.getElementById('advertImageDisplay').src = state.advertImage;
                 advertOverlay.style.display = 'flex';
             } else {
