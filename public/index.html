@@ -4,41 +4,23 @@
     <meta charset="UTF-8">
     <title>TriviaMania - Host Control Center</title>
     <style>
-        :root { 
-            --bg: #090a10; --card: #131520; --primary: #9c27b0; --primary-glow: rgba(156, 39, 176, 0.4);
-            --accent: #00e5ff; --accent-glow: rgba(0, 229, 255, 0.3); --text: #ffffff; --muted: #8a8d9f;
-            --danger: #ff1744; --success: #00e676;
-        }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; --muted: #8a8d9f; --success: #00e676; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 26px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
-        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 20px; font-weight: bold; background: #1a1d2e; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent); }
-        
+        h1 { margin: 0; font-size: 24px; color: var(--accent); }
+        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 15px; font-weight: bold; background: #1a1d2e; padding: 8px 12px; border-radius: 6px; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { background: #131520; border: 1px solid #2a2e45; color: var(--muted); padding: 12px 24px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--accent); box-shadow: 0 0 15px var(--primary-glow); }
-        
+        .tab-btn { background: #131520; border: 1px solid #2a2e45; color: var(--muted); padding: 10px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--accent); }
         .tab-content { display: none; }
-        .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .full-width { grid-column: span 2; }
-
-        .panel { background: var(--card); border: 1px solid #222538; border-radius: 14px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #222538; padding-bottom: 12px; color: var(--accent); }
-        
-        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #22263d; color: white; width: 100%; margin-top: 10px; transition: all 0.2s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .tab-content.active { display: block; }
+        .panel { background: var(--card); border: 1px solid #222538; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        h2 { font-size: 16px; margin-top: 0; color: var(--accent); border-bottom: 1px solid #222538; padding-bottom: 10px; }
+        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #22263d; color: white; width: 100%; margin-top: 8px; }
         .btn-play { background: var(--success); color: black; }
-        .btn-reveal { background: var(--accent); color: black; }
-        .btn-restart { background: #ff9100; color: black; }
-        .btn-danger { background: var(--danger); width: auto; padding: 6px 12px; margin-top: 0; font-size: 12px; }
-        .btn-api { background: var(--primary); color: white; font-size: 15px; box-shadow: 0 0 10px var(--primary-glow); }
-
-        .playlist-card { background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
-        
-        select, input[type="text"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        label { font-size: 12px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .preview-box { max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; display: none; }
-        .score-row { display: flex; justify-content: space-between; align-items: center; background: #1a1d2d; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #2a2e45; }
+        select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 12px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 6px; box-sizing: border-box; }
+        label { font-size: 11px; color: var(--muted); font-weight: bold; text-transform: uppercase; }
+        .playlist-card { background: #1a1d2d; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -46,218 +28,58 @@
     <header>
         <h1>⚡ TriviaMania Host Dashboard</h1>
         <div class="nav-links">
-            <a href="/display.html" target="_blank">📺 Projector Display</a>
-            <a href="/player.html" target="_blank">📱 Player Join Link</a>
+            <a href="/display.html" target="_blank">📺 Projector</a>
+            <a href="/player.html" target="_blank">📱 Phone Link</a>
         </div>
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Control Center & Queue</button>
+        <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Control Center</button>
         <button class="tab-btn" onclick="switchTab('playlist', this)">🎵 Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('media', this)">🖼️ Adverts & Media</button>
-        <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings & Polls</button>
     </div>
 
-    <!-- TAB 1: CONTROL CENTER & PLAYLIST QUEUE -->
+    <!-- TAB 1: CONTROL CENTER -->
     <div id="tab-control" class="tab-content active">
         <div class="panel">
             <h2>Master Game Controls</h2>
             <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
             <button onclick="sendAction('pause')">⏸ Pause Game</button>
-            <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
-            <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
+            <button onclick="sendAction('restart')">🔄 Restart Round</button>
+            <button style="background:var(--accent); color:black;" onclick="sendAction('reveal')">💡 Reveal Answer</button>
         </div>
 
         <div class="panel">
-            <h2>Active Playlist Queue</h2>
-            <div id="hostPlaylistQueue" style="max-height: 220px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 14px;">No rounds loaded in queue yet.</p>
-            </div>
+            <h2>Active Queue</h2>
+            <div id="hostPlaylistQueue">No rounds loaded in queue yet.</div>
         </div>
 
         <div class="panel">
-            <h2>Interactive Lobby & Screen Controls</h2>
-            <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector Only</button>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="pushAdvert('mobile')">📱 Push Ad to Mobile Phones Only</button>
-            <button class="btn-api" style="background:var(--primary);" onclick="pushAdvert('both')">📢 Push Ad to BOTH Screens</button>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn-danger" style="width:100%;" onclick="hideAdvert('projector')">❌ Hide Projector Ad</button>
-                <button class="btn-danger" style="width:100%;" onclick="hideAdvert('mobile')">❌ Hide Mobile Ad</button>
-            </div>
-            
-            <hr style="border:0; border-top:1px solid #222538; margin:15px 0;">
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="toggleTipJar()">🎁 Toggle Tip Jar on Phones</button>
-            <button class="btn-api" style="background:#00e676; color:black; margin-top:10px;" onclick="togglePoll()">📊 Toggle Pre-Game Icebreaker Poll</button>
-        </div>
-
-        <div class="panel">
-            <h2>🏆 Connected Teams (<span id="playerCount">0</span>)</h2>
-            <button class="btn-api" style="background:#00e676; color:black; margin-bottom:15px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
-            <div id="hostScoreList" style="max-height: 180px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
-            </div>
+            <h2>Connected Teams (<span id="playerCount">0</span>)</h2>
+            <div id="hostScoreList">No teams connected yet.</div>
         </div>
     </div>
 
     <!-- TAB 2: PLAYLIST BUILDER -->
     <div id="tab-playlist" class="tab-content">
         <div class="panel">
-            <h2>Build Quiz Rounds</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label>Question Count:</label>
-                    <select id="questionCountSelect">
-                        <option value="5">5 Questions</option>
-                        <option value="10" selected>10 Questions</option>
-                        <option value="15">15 Questions</option>
-                        <option value="20">20 Questions</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Question Timer:</label>
-                    <select id="timerSelect">
-                        <option value="5">5 Seconds</option>
-                        <option value="10" selected>10 Seconds</option>
-                        <option value="20">20 Seconds</option>
-                        <option value="30">30 Seconds</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label>Delay Before Next Question:</label>
-                <select id="delaySelect">
-                    <option value="2">2 Seconds</option>
-                    <option value="5" selected>5 Seconds</option>
-                    <option value="10">10 Seconds</option>
-                    <option value="15">15 Seconds</option>
-                </select>
-            </div>
-
-            <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
-                <input type="checkbox" id="speedBonusCheckbox" style="width: 20px; height: 20px; margin:0; cursor:pointer;">
-                <label for="speedBonusCheckbox" style="cursor:pointer; color: white; font-size: 14px;">Enable Turbo Speed Bonus (Faster answers = more points)</label>
-            </div>
-
-            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
-
-            <label>Standard Trivia Section (Online Pull):</label>
-            <select id="categorySelect">
-                <option value="">Random / General Knowledge</option>
-                <option value="9">General Knowledge</option>
-                <option value="17">Science & Nature</option>
-                <option value="23">History</option>
-                <option value="22">Geography & World Capitals</option>
-                <option value="11">Movies & Cinema</option>
-                <option value="12">Music & Pop Culture</option>
-                <option value="15">Video Games</option>
+            <h2>Build Curated Rounds</h2>
+            <label>Select Round Type:</label>
+            <select id="curatedSelect">
+                <option value="kids">🧸 Kids & Cartoons Round</option>
+                <option value="classic_rock">🎵 Classic Rock Music Round</option>
+                <option value="80s_hits">🎵 1980s Hits Music Round</option>
             </select>
-            <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Online Trivia Round</button>
-
-            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
-
-            <label>Dedicated Kids & Family Section (Curated):</label>
-            <button class="btn-api" style="background:#00e676; color:black;" onclick="addKidsRoundToPlaylist()">🧸 Add Kids & Cartoons Round</button>
-
-            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
-
-            <label>Curated Music Rounds (Guaranteed Working Audio):</label>
-            <select id="curatedMusicSelect">
-                <option value="classic_rock">Classic Rock Anthems</option>
-                <option value="80s_hits">1980s Pop & Rock</option>
-                <option value="90s_hits">1990s Chart Hits</option>
-                <option value="motown">Motown & Soul Classics</option>
-                <option value="kids_tv">Kids TV & Cartoon Themes</option>
-            </select>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addCuratedMusicRound()">🎵 Add Curated Music Round</button>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addCuratedRound()">➕ Add Round to Queue</button>
         </div>
 
-        <div>
-            <!-- Custom Picture Round Importer -->
-            <div class="panel" style="border: 2px dashed var(--accent);">
-                <h2>🖼️ Custom Picture Round Importer</h2>
-                <label>Round Name:</label>
-                <input type="text" id="picRoundName" value="Picture Round">
-                <label>Paste Questions (Format: Image URL | Correct Answer | Opt1, Opt2, Opt3):</label>
-                <textarea id="picRoundText" rows="4" placeholder="https://i.imgur.com/example.jpg | Eiffel Tower | Big Ben, Colosseum, Leaning Tower"></textarea>
-                <button class="btn-api" style="background:var(--accent); color:black;" onclick="addPictureRoundToPlaylist()">➕ Add Picture Round</button>
-            </div>
-
-            <div class="panel" style="border: 2px dashed var(--primary);">
-                <h2>📝 Custom Text Round Importer</h2>
-                <label>Round Name:</label>
-                <input type="text" id="customRoundName" value="Custom Pub Round">
-                <label>Paste Questions (Format: Q | Answer | Opt1, Opt2, Opt3, Opt4):</label>
-                <textarea id="customRoundText" rows="3" placeholder="What is our local pub name? | The Crown | Crown, Red Lion, Swan, Anchor"></textarea>
-                <button class="btn-api" style="background:#ff9100; color:black;" onclick="addCustomRoundToPlaylist()">➕ Add Custom Round</button>
-            </div>
-
-            <div class="panel">
-                <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
-                <div id="playlistContainer" style="max-height: 200px; overflow-y: auto;">
-                    <p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 3: ADVERTS & MEDIA -->
-    <div id="tab-media" class="tab-content">
-        <div class="panel full-width">
-            <h2>🖼️ Upload Advert or Sponsor Image</h2>
-            
-            <label>Advert Title / Text Above Picture:</label>
-            <input type="text" id="advertTitleInput" value="Featured Sponsor & Event Advert">
-
-            <label>Select Image File:</label>
-            <input type="file" id="imageUploadInput" accept="image/*" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
-            <br>
-            
-            <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
-                <input type="checkbox" id="showAdvertQRCheckbox" style="width: 20px; height: 20px; margin:0; cursor:pointer;">
-                <label for="showAdvertQRCheckbox" style="cursor:pointer; color: white; font-size: 14px;">Show Join QR Code in corner of projector advert</label>
-            </div>
-
-            <div id="uploadStatus" style="color: var(--success); font-weight: bold; margin-top: 10px; display:none;">✅ Image loaded and ready to push!</div>
-            <img id="imagePreview" class="preview-box" alt="Preview">
-        </div>
-    </div>
-
-    <!-- TAB 4: SETTINGS & POLLS -->
-    <div id="tab-settings" class="tab-content">
-        <div class="panel full-width">
-            <h2>⚙️ Editable Display Text & Tip Jar</h2>
-            
-            <label>Main Event / Venue Title:</label>
-            <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
-            
-            <label>Waiting Room Welcome Message:</label>
-            <input type="text" id="welcomeMessageInput" value="Welcome to the ultimate pub quiz experience!">
-            
-            <label>Bottom Scrolling Banner Text:</label>
-            <input type="text" id="bannerTextInput" value="TriviaMania Live Pub Quiz Night">
-
-            <label>Tip Jar / PayPal Pool Link (Optional):</label>
-            <input type="text" id="tipJarUrlInput" placeholder="https://paypal.me/yourpubquiz">
-            
-            <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save & Broadcast Settings</button>
-        </div>
-
-        <div class="panel full-width">
-            <h2>📊 Pre-Game Icebreaker Poll Manager</h2>
-            <label>Poll Question:</label>
-            <input type="text" id="pollQuestionInput" value="What is the greatest pub snack of all time?">
-
-            <label>Poll Options (comma separated):</label>
-            <input type="text" id="pollOptionsInput" value="Crisps / Nuts, Pork Pies, Scampi Fries, Bowl of Chips">
-
-            <button class="btn-api" style="background:var(--primary); color:white; margin-top: 10px;" onclick="savePollSettings()">📊 Update & Broadcast Poll</button>
+        <div class="panel">
+            <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
+            <div id="playlistContainer">No rounds in playlist yet.</div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- TAB SWITCHING FUNCTION ---
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -265,358 +87,88 @@
             if (btn) btn.classList.add('active');
         }
 
-        // --- HYBRID SYSTEM: ONLINE TRIVIA + CURATED MUSIC & KIDS BANKS ---
-        async function fetchTriviaQuestions(amount = 10, category = '') {
-            let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
-            if (category) url += `&category=${category}`;
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.results && data.results.length > 0) {
-                    return data.results.map(item => {
-                        const incorrect = item.incorrect_answers.map(ans => decodeHtml(ans));
-                        const correct = decodeHtml(item.correct_answer);
-                        const uniqueOptions = [...new Set([...incorrect, correct])];
-                        while (uniqueOptions.length < 4 && incorrect.length > 0) {
-                            uniqueOptions.push(incorrect[Math.floor(Math.random() * incorrect.length)]);
-                        }
-                        return {
-                            q: decodeHtml(item.question),
-                            a: correct,
-                            options: uniqueOptions.sort(() => Math.random() - 0.5),
-                            type: 'trivia'
-                        };
-                    });
-                }
-            } catch (e) {
-                console.error("Error fetching trivia:", e);
-            }
-            return [{ q: "What is the capital of France?", a: "Paris", options: ["London", "Paris", "Berlin", "Madrid"], type: 'trivia' }];
-        }
-
-        function addKidsRoundToPlaylist() {
-            const kidsPool = [
-                { q: "What kind of animal is Simba in The Lion King?", a: "Lion", options: ["Tiger", "Lion", "Leopard", "Cheetah"] },
-                { q: "In Frozen, what is the name of Elsa and Anna's kingdom?", a: "Arendelle", options: ["Corona", "Arendelle", "Atlantis", "Agrabah"] },
-                { q: "What color is Mickey Mouse's shorts?", a: "Red", options: ["Blue", "Yellow", "Red", "Green"] },
-                { q: "What is the name of Andy's cowboy toy in Toy Story?", a: "Woody", options: ["Buzz", "Woody", "Rex", "Slinky"] },
-                { q: "Which Pokémon is a yellow electric mouse?", a: "Pikachu", options: ["Charmander", "Squirtle", "Pikachu", "Bulbasaur"] },
-                { q: "What fruit do minions love the most?", a: "Banana", options: ["Apple", "Banana", "Strawberry", "Orange"] },
-                { q: "What is the name of the sponge who lives in a pineapple under the sea?", a: "SpongeBob SquarePants", options: ["Patrick Star", "SpongeBob SquarePants", "Squidward", "Mr. Krabs"] },
-                { q: "In Harry Potter, what is the name of Harry's pet owl?", a: "Hedwig", options: ["Crookshanks", "Scabbers", "Hedwig", "Fang"] },
-                { q: "What superhero wears a red and blue suit and climbs walls?", a: "Spider-Man", options: ["Batman", "Superman", "Iron Man", "Spider-Man"] },
-                { q: "What color are the spots on a traditional ladybug?", a: "Black", options: ["White", "Yellow", "Black", "Blue"] }
-            ];
-            kidsPool.sort(() => Math.random() - 0.5);
-            const count = parseInt(document.getElementById('questionCountSelect').value);
-            const questions = kidsPool.slice(0, count).map(item => ({
-                ...item,
-                options: [...item.options].sort(() => Math.random() - 0.5),
-                type: 'trivia'
-            }));
-
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
-
-            playlist.push({ id: Date.now(), name: `Kids & Cartoons (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
-            renderPlaylist();
-            renderHostQueue();
-            alert('Added Kids & Cartoons round!');
-        }
-
-        function addCuratedMusicRound() {
-            const type = document.getElementById('curatedMusicSelect').value;
-            const selectEl = document.getElementById('curatedMusicSelect');
-            const genreName = selectEl.options[selectEl.selectedIndex].text;
-
-            const musicLibraries = {
-                classic_rock: [
-                    { q: "Name the artist / band performing this track", a: "Queen", options: ["The Beatles", "Queen", "Led Zeppelin", "Pink Floyd"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/36/53/b7/3653b7c8-7013-8898-7240-23a595c2f5d9/mza_10795287019777178351.m43.aac" },
-                    { q: "Name the artist / band performing this track", a: "The Beatles", options: ["The Rolling Stones", "The Beatles", "The Who", "The Kinks"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/c6/8e/3c/c68e3c6a-4d2c-8824-3458-1f6b814674d8/mza_11674482098716327668.m43.aac" },
-                    { q: "Name the artist / band performing this track", a: "Aerosmith", options: ["Guns N' Roses", "AC/DC", "Aerosmith", "Van Halen"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/4a/12/3b/4a123b32-901d-5b62-3482-3e2849818817/mza_1416752044810756778.m43.aac" }
-                ],
-                80s_hits: [
-                    { q: "Name the artist / band performing this track", a: "Michael Jackson", options: ["Prince", "George Michael", "Michael Jackson", "Lionel Richie"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/d2/88/ef/d288efd1-5544-245f-4a33-2a3162319ef5/mza_7143997193635392817.m43.aac" },
-                    { q: "Name the artist / band performing this track", a: "Wham!", options: ["Duran Duran", "Culture Club", "Wham!", "Spandau Ballet"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/48/43/d3/4843d3e2-b80c-6869-7987-a2f01f84524c/mza_11942186716075654326.m43.aac" }
-                ],
-                90s_hits: [
-                    { q: "Name the artist / band performing this track", a: "Spice Girls", options: ["All Saints", "TLC", "Spice Girls", "Destiny's Child"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/21/3c/6d/213c6d54-1b12-bc78-685a-0d927c32e541/mza_1632731876547185347.m43.aac" },
-                    { q: "Name the artist / band performing this track", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/e5/22/a9/e522a945-31a8-8687-32b5-5c123491f245/mza_1583920194871927384.m43.aac" }
-                ],
-                motown: [
-                    { q: "Name the artist / band performing this track", a: "Stevie Wonder", options: ["Marvin Gaye", "Stevie Wonder", "Smokey Robinson", "Curtis Mayfield"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/64/34/23/643423b4-52d8-2198-4c18-971842340284/mza_1028491827471928374.m43.aac" }
-                ],
-                kids_tv: [
-                    { q: "Name the TV show or cartoon theme song", a: "PAW Patrol", options: ["Peppa Pig", "PAW Patrol", "Fireman Sam", "Bob the Builder"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/99/88/77/99887766-5544-3322-1111-000022223333/mza_1234567890123456789.m43.aac" }
-                ]
-            };
-
-            let questions = musicLibraries[type] || musicLibraries.classic_rock;
-            questions = questions.map(item => ({
-                ...item,
-                options: [...item.options].sort(() => Math.random() - 0.5),
-                type: 'music'
-            }));
-
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
-
-            playlist.push({ id: Date.now(), name: `Music: ${genreName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
-            renderPlaylist();
-            renderHostQueue();
-            alert(`Added curated music round "${genreName}"!`);
-        }
-
-        function decodeHtml(html) {
-            const txt = document.createElement("textarea");
-            txt.innerHTML = html;
-            return txt.value;
-        }
-
-        // --- DASHBOARD CONTROLLER SCRIPT ---
         const socket = io();
         let playlist = [];
-        let storedAdvertBase64 = null;
-        let latestPlayersState = {};
 
-        document.getElementById('imageUploadInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    storedAdvertBase64 = e.target.result;
-                    const preview = document.getElementById('imagePreview');
-                    preview.src = storedAdvertBase64;
-                    preview.style.display = 'block';
-                    document.getElementById('uploadStatus').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
+        function addCuratedRound() {
+            const type = document.getElementById('curatedSelect').value;
+            let questions = [];
+            let name = "";
+
+            if (type === 'kids') {
+                name = "Kids & Cartoons Round";
+                questions = [
+                    { q: "What kind of animal is Simba in The Lion King?", a: "Lion", options: ["Tiger", "Lion", "Leopard", "Cheetah"], type: 'trivia' },
+                    { q: "In Frozen, what is the name of Elsa and Anna's kingdom?", a: "Arendelle", options: ["Corona", "Arendelle", "Atlantis", "Agrabah"], type: 'trivia' },
+                    { q: "What color is Mickey Mouse's shorts?", a: "Red", options: ["Blue", "Yellow", "Red", "Green"], type: 'trivia' },
+                    { q: "What is the name of Andy's cowboy toy in Toy Story?", a: "Woody", options: ["Buzz", "Woody", "Rex", "Slinky"], type: 'trivia' },
+                    { q: "Which Pokémon is a yellow electric mouse?", a: "Pikachu", options: ["Charmander", "Squirtle", "Pikachu", "Bulbasaur"], type: 'trivia' }
+                ];
+            } else if (type === 'classic_rock') {
+                name = "Classic Rock Music Round";
+                questions = [
+                    { q: "Name the artist / band performing this track", a: "Queen", options: ["The Beatles", "Queen", "Led Zeppelin", "Pink Floyd"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/36/53/b7/3653b7c8-7013-8898-7240-23a595c2f5d9/mza_10795287019777178351.m43.aac", type: 'music' },
+                    { q: "Name the artist / band performing this track", a: "The Beatles", options: ["The Rolling Stones", "The Beatles", "The Who", "The Kinks"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/c6/8e/3c/c68e3c6a-4d2c-8824-3458-1f6b814674d8/mza_11674482098716327668.m43.aac", type: 'music' }
+                ];
+            } else if (type === '80s_hits') {
+                name = "1980s Hits Music Round";
+                questions = [
+                    { q: "Name the artist / band performing this track", a: "Michael Jackson", options: ["Prince", "George Michael", "Michael Jackson", "Lionel Richie"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/d2/88/ef/d288efd1-5544-245f-4a33-2a3162319ef5/mza_7143997193635392817.m43.aac", type: 'music' }
+                ];
             }
-        });
 
-        function pushAdvert(target) {
-            if (!storedAdvertBase64) {
-                alert('Please select an image file in the Adverts & Media tab first!');
-                return;
-            }
-            const advertTitle = document.getElementById('advertTitleInput').value.trim();
-            const showAdvertQR = document.getElementById('showAdvertQRCheckbox').checked;
-
-            socket.emit('hostAction', { 
-                action: 'pushAdvert', 
-                payload: { image: storedAdvertBase64, target, advertTitle, showAdvertQR } 
-            });
-            alert(`Advert pushed to ${target}!`);
-        }
-
-        function hideAdvert(target) {
-            socket.emit('hostAction', { action: 'hideAdvert', payload: { target } });
-            alert(`Advert hidden from ${target}.`);
-        }
-
-        function toggleTipJar() {
-            socket.emit('hostAction', { action: 'toggleTipJar' });
-            alert('Tip Jar toggled on/off for players!');
-        }
-
-        function togglePoll() {
-            socket.emit('hostAction', { action: 'togglePoll' });
-            alert('Pre-Game Poll toggled on/off!');
-        }
-
-        function saveSettings() {
-            const eventTitle = document.getElementById('eventTitleInput').value.trim();
-            const welcomeMessage = document.getElementById('welcomeMessageInput').value.trim();
-            const bannerText = document.getElementById('bannerTextInput').value.trim();
-            const tipJarUrl = document.getElementById('tipJarUrlInput').value.trim();
-            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle, welcomeMessage, bannerText, tipJarUrl } });
-            alert('Settings saved and broadcasted successfully!');
-        }
-
-        function savePollSettings() {
-            const pollQuestion = document.getElementById('pollQuestionInput').value.trim();
-            const optionsRaw = document.getElementById('pollOptionsInput').value.trim();
-            const pollOptions = optionsRaw.split(',').map(o => o.trim()).filter(Boolean);
-            socket.emit('hostAction', { action: 'updateSettings', payload: { pollQuestion, pollOptions } });
-            alert('Poll updated and broadcasted!');
-        }
-
-        function exportLeaderboardCSV() {
-            const sorted = Object.values(latestPlayersState).sort((a, b) => b.score - a.score);
-            if (sorted.length === 0) return alert('No players to export!');
-            
-            let csv = 'Rank,Team Name,Score\n';
-            sorted.forEach((p, idx) => {
-                csv += `${idx + 1},"${p.name}",${p.score}\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'TriviaMania_Leaderboard.csv');
-            a.click();
-        }
-
-        function addCustomRoundToPlaylist() {
-            const name = document.getElementById('customRoundName').value.trim() || "Custom Round";
-            const rawText = document.getElementById('customRoundText').value.trim();
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
-
-            if (!rawText) return alert('Please paste questions!');
-
-            const lines = rawText.split('\n');
-            const questions = [];
-            lines.forEach(line => {
-                const parts = line.split('|');
-                if (parts.length >= 3) {
-                    const q = parts[0].trim();
-                    const a = parts[1].trim();
-                    const options = parts[2].split(',').map(o => o.trim());
-                    if (!options.includes(a)) options.push(a);
-                    questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'trivia' });
-                }
-            });
-
-            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            playlist.push({ name, questions, timer: 10, betweenDelay: 5 });
             renderPlaylist();
-            renderHostQueue();
-            alert(`Added custom round "${name}"!`);
-        }
-
-        function addPictureRoundToPlaylist() {
-            const name = document.getElementById('picRoundName').value.trim() || "Picture Round";
-            const rawText = document.getElementById('picRoundText').value.trim();
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
-
-            if (!rawText) return alert('Please paste picture questions!');
-
-            const lines = rawText.split('\n');
-            const questions = [];
-            lines.forEach(line => {
-                const parts = line.split('|');
-                if (parts.length >= 3) {
-                    const imageUrl = parts[0].trim();
-                    const a = parts[1].trim();
-                    const options = parts[2].split(',').map(o => o.trim());
-                    if (!options.includes(a)) options.push(a);
-                    
-                    const q = `<img src="${imageUrl}" style="max-height:280px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto;" alt="Picture Round"><div style="font-size:20px;">Identify what or who is shown above:</div>`;
-                    
-                    questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'picture' });
-                }
-            });
-
-            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
-            renderPlaylist();
-            renderHostQueue();
-            alert(`Added picture round "${name}"!`);
-        }
-
-        async function addTriviaToPlaylist() {
-            const count = parseInt(document.getElementById('questionCountSelect').value);
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
-            const categoryId = document.getElementById('categorySelect').value;
-            const categoryName = categoryId ? document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text : "General";
-            
-            const questions = await fetchTriviaQuestions(count, categoryId);
-            playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
-            renderPlaylist();
-            renderHostQueue();
+            alert(`Added "${name}"!`);
         }
 
         function renderPlaylist() {
             const container = document.getElementById('playlistContainer');
-            document.getElementById('playlistCount').textContent = playlist.length;
-            if (playlist.length === 0) {
-                container.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>';
-                return;
-            }
-            container.innerHTML = '';
-            playlist.forEach((round, index) => {
-                container.innerHTML += `
-                    <div class="playlist-card">
-                        <div><strong>${index + 1}. ${round.name}</strong> ${round.speedBonus ? '⚡(Turbo)' : ''}</div>
-                        <div>
-                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px;" onclick="loadRound(${index})">📂 Load</button>
-                            <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderHostQueue() {
             const queueEl = document.getElementById('hostPlaylistQueue');
+            document.getElementById('playlistCount').textContent = playlist.length;
+            
             if (playlist.length === 0) {
-                queueEl.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds loaded in queue yet.</p>';
+                container.innerHTML = 'No rounds in playlist yet.';
+                queueEl.innerHTML = 'No rounds loaded in queue yet.';
                 return;
             }
+
+            container.innerHTML = '';
             queueEl.innerHTML = '';
             playlist.forEach((round, index) => {
-                queueEl.innerHTML += `
+                const html = `
                     <div class="playlist-card">
                         <div><strong>${index + 1}. ${round.name}</strong></div>
-                        <button class="btn-play" style="padding: 4px 10px; margin-top:0; font-size: 11px; width:auto;" onclick="loadRound(${index})">Load</button>
+                        <button class="btn-play" style="padding: 6px 12px; width:auto; margin:0;" onclick="loadRound(${index})">Load</button>
                     </div>
                 `;
+                container.innerHTML += html;
+                queueEl.innerHTML += html;
             });
         }
 
         function loadRound(index) {
             const round = playlist[index];
-            socket.emit('hostAction', { action: 'loadRound', payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay, speedBonus: round.speedBonus } });
-            alert(`Loaded "${round.name}"!`);
-        }
-
-        function deleteRound(index) {
-            playlist.splice(index, 1);
-            renderPlaylist();
-            renderHostQueue();
+            socket.emit('hostAction', { action: 'loadRound', payload: round });
+            alert(`Loaded "${round.name}" into master control!`);
         }
 
         function sendAction(action) {
             socket.emit('hostAction', { action });
         }
 
-        socket.on('syncState', (state) => {
-            if (state.eventTitle) document.getElementById('eventTitleInput').value = state.eventTitle;
-            if (state.welcomeMessage) document.getElementById('welcomeMessageInput').value = state.welcomeMessage;
-            if (state.bannerText) document.getElementById('bannerTextInput').value = state.bannerText;
-            if (state.tipJarUrl) document.getElementById('tipJarUrlInput').value = state.tipJarUrl;
-            if (state.pollQuestion) document.getElementById('pollQuestionInput').value = state.pollQuestion;
-            if (state.pollOptions) document.getElementById('pollOptionsInput').value = state.pollOptions.join(', ');
-        });
-
         socket.on('updatePlayers', (players) => {
-            latestPlayersState = players;
             const listEl = document.getElementById('hostScoreList');
             const countEl = document.getElementById('playerCount');
-            const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
-            countEl.textContent = sortedPlayers.length;
-
-            if (sortedPlayers.length === 0) {
-                listEl.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>';
+            const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+            countEl.textContent = sorted.length;
+            if (sorted.length === 0) {
+                listEl.innerHTML = 'No teams connected yet.';
                 return;
             }
-
             listEl.innerHTML = '';
-            sortedPlayers.forEach((p, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                listEl.innerHTML += `
-                    <div class="score-row">
-                        <span>${medal} ${p.avatar} <strong>${p.name}</strong> <em style="color:var(--muted); font-size:12px;">"${p.motto}"</em></span>
-                        <span style="color: var(--accent); font-weight:bold; font-size:16px;">${p.score} pts</span>
-                    </div>
-                `;
+            sorted.forEach((p, idx) => {
+                listEl.innerHTML += `<div style="display:flex; justify-content:space-between; padding:4px 0;"><span>${idx + 1}. ${p.avatar} ${p.name}</span><strong>${p.score} pts</strong></div>`;
             });
         });
     </script>
