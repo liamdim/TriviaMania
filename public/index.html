@@ -24,7 +24,7 @@
 
         .playlist-card { background: #22222e; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
         
-        select, input[type="text"] { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
+        select, input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-family: sans-serif; }
         label { font-size: 12px; color: #aaa; }
     </style>
     <script src="/js/api.js"></script>
@@ -40,7 +40,7 @@
     </header>
 
     <div class="grid">
-        <!-- Left Column: Master Controls, Charity Settings & Players -->
+        <!-- Left Column: Master Controls & Charity Settings -->
         <div>
             <div class="panel">
                 <h2>Master Game Controls</h2>
@@ -50,7 +50,6 @@
                 <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
             </div>
 
-            <!-- Charity & Fundraising Banner Settings -->
             <div class="panel">
                 <h2>Charity & Sponsor Settings</h2>
                 <label>Charity / Donation URL:</label>
@@ -70,10 +69,22 @@
             </div>
         </div>
 
-        <!-- Right Column: Playlist & Round Generator -->
+        <!-- Right Column: Playlist & Round Generators -->
         <div>
+            <!-- Custom Round Importer Panel -->
+            <div class="panel" style="border: 2px dashed var(--primary);">
+                <h2>📝 Custom Round Importer</h2>
+                <label>Round Name:</label>
+                <input type="text" id="customRoundName" value="Custom Charity Round">
+                
+                <label>Paste Questions (Format: Question | Correct Answer | Opt1, Opt2, Opt3, Opt4):</label>
+                <textarea id="customRoundText" rows="4" placeholder="What is our local charity? | Community Hope | Hope, Red Cross, Salvation Army, Food Bank&#10;What year was the pub built? | 1924 | 1901, 1924, 1950, 1982"></textarea>
+                
+                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addCustomRoundToPlaylist()">➕ Add Custom Round to Queue</button>
+            </div>
+
             <div class="panel">
-                <h2>Build Your Quiz Playlist</h2>
+                <h2>Build API Quiz Playlist</h2>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
@@ -108,7 +119,6 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Standard Trivia -->
                 <label>Standard Trivia Category:</label>
                 <select id="categorySelect">
                     <option value="">Random / General Knowledge</option>
@@ -126,7 +136,6 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Music / Decades -->
                 <label>Music & Decades Section:</label>
                 <select id="musicGenreSelect">
                     <option value="1980s pop rock">1980s Hits</option>
@@ -156,7 +165,6 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Kids Music & Movie -->
                 <label>Kids & Family Theme Songs Section:</label>
                 <select id="kidsMusicGenreSelect">
                     <option value="disney songs singalong">Disney Movie Theme Songs</option>
@@ -170,7 +178,6 @@
 
                 <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
 
-                <!-- Kids Trivia -->
                 <label>Kids Trivia Section:</label>
                 <select id="kidsTriviaSelect">
                     <option value="disney">Disney Trivia</option>
@@ -199,7 +206,45 @@
             const charityUrl = document.getElementById('charityUrlInput').value.trim();
             const sponsorText = document.getElementById('sponsorInput').value.trim();
             socket.emit('hostAction', { action: 'updateCharity', payload: { charityUrl, sponsorText } });
-            alert('Charity settings broadcasted to projector and player screens!');
+            alert('Charity settings broadcasted!');
+        }
+
+        function addCustomRoundToPlaylist() {
+            const name = document.getElementById('customRoundName').value.trim() || "Custom Round";
+            const rawText = document.getElementById('customRoundText').value.trim();
+            const timer = parseInt(document.getElementById('timerSelect').value);
+            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+
+            if (!rawText) {
+                alert('Please paste at least one question into the custom round box!');
+                return;
+            }
+
+            const lines = rawText.split('\n');
+            const questions = [];
+
+            lines.forEach(line => {
+                const parts = line.split('|');
+                if (parts.length >= 3) {
+                    const q = parts[0].trim();
+                    const a = parts[1].trim();
+                    const options = parts[2].split(',').map(o => o.trim());
+                    // Ensure correct answer is included in options and shuffled
+                    if (!options.includes(a)) options.push(a);
+                    const shuffledOptions = options.sort(() => Math.random() - 0.5);
+
+                    questions.push({ q, a, options: shuffledOptions, type: 'trivia' });
+                }
+            });
+
+            if (questions.length === 0) {
+                alert('Could not parse questions. Check the format: Question | Answer | Opt1, Opt2, Opt3, Opt4');
+                return;
+            }
+
+            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay });
+            renderPlaylist();
+            alert(`Successfully added custom round "${name}" with ${questions.length} questions!`);
         }
 
         async function addTriviaToPlaylist() {
