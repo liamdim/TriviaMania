@@ -2,261 +2,168 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TriviaMania - Player Controller</title>
+    <title>TriviaMania - Live Projector Display</title>
     <style>
-        :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; --success: #00e676; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; justify-content: center; align-items: center; }
-        .card { background: var(--card); border: 2px solid var(--primary); border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(156, 39, 176, 0.4); text-align: center; box-sizing: border-box; }
-        h1 { color: var(--accent); font-size: 32px; margin-top: 0; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
-        input { width: 100%; padding: 14px; margin: 10px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; }
-        button { width: 100%; padding: 16px; background: var(--accent); color: black; border: none; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); transition: transform 0.1s; }
-        button:active { transform: scale(0.98); }
+        :root { 
+            --bg: #090a10; --card: #131520; --primary: #9c27b0; --primary-glow: rgba(156, 39, 176, 0.4);
+            --accent: #00e5ff; --accent-glow: rgba(0, 229, 255, 0.3); --text: #ffffff; --muted: #8a8d9f;
+            --danger: #ff1744; --success: #00e676;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 30px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow: hidden; }
         
-        .avatar-picker { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
-        .avatar-option { font-size: 26px; padding: 8px; background: #1a1d2d; border: 2px solid #333; border-radius: 10px; cursor: pointer; }
-        .avatar-option.selected { border-color: var(--accent); background: rgba(0, 229, 255, 0.2); }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 28px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
+        .stats-badge { background: #1a1d2e; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); font-size: 16px; font-weight: bold; }
 
-        .game-screen { display: none; width: 100%; max-width: 400px; text-align: center; }
-        .options-container { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
-        .choice-btn { background: #1a1d2d; border: 2px solid var(--primary); color: white; padding: 16px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; text-align: left; }
-        .choice-btn:hover { background: var(--primary); color: white; }
-        .score-badge { background: #1a1d2d; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); font-size: 16px; }
+        .main-container { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; flex: 1; min-height: 0; }
         
-        .audio-unlock-btn { background: var(--success); color: black; margin-bottom: 12px; font-size: 14px; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; border: none; cursor: pointer; box-shadow: 0 0 10px rgba(0,230,118,0.4); }
-        .poll-container { background: #1a1d2d; border: 1px solid var(--accent); padding: 15px; border-radius: 10px; margin-bottom: 15px; display: none; text-align: left; }
-        .poll-btn { background: #22263d; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; margin-top: 8px; width: 100%; text-align: center; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .poll-btn:hover { background: var(--primary); }
+        .quiz-panel { background: var(--card); border: 2px solid #222538; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 15px 40px rgba(0,0,0,0.7); position: relative; }
+        
+        #roundTitle { font-size: 20px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
+        #questionText { font-size: 32px; font-weight: bold; margin: 20px 0; line-height: 1.4; text-align: center; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .option-box { background: #1a1d2d; border: 2px solid #2a2e45; padding: 18px; border-radius: 12px; font-size: 20px; font-weight: bold; text-align: center; transition: all 0.2s; }
+        .option-box.correct { background: var(--success); color: black; border-color: white; box-shadow: 0 0 20px var(--success); }
 
-        .reaction-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; border-top: 1px solid #222538; padding-top: 12px; }
-        .reaction-btn { background: #1a1d2d; border: 1px solid #333852; border-radius: 8px; font-size: 20px; padding: 6px; cursor: pointer; }
-        .reaction-btn:hover { background: var(--primary); }
+        .timer-bar-container { background: #1a1d2d; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 20px; border: 1px solid #333852; }
+        #timerBar { background: var(--accent); height: 100%; width: 100%; transition: width 1s linear, background-color 0.3s; box-shadow: 0 0 10px var(--accent); }
 
-        .tip-jar-btn { background: #ff9100; color: black; margin-top: 12px; display: none; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 0 10px rgba(255,145,0,0.4); }
+        .sidebar-panel { display: flex; flex-direction: column; gap: 20px; }
+        .sub-panel { background: var(--card); border: 1px solid #222538; border-radius: 16px; padding: 20px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #222538; padding-bottom: 10px; color: var(--accent); }
 
-        #mobileAdvertModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 99999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; flex-direction: column; }
-        #mobileAdvertModal img { max-width: 90vw; max-height: 65vh; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.5); margin-bottom: 15px; }
+        .leaderboard-list { overflow-y: auto; flex: 1; }
+        .leaderboard-item { display: flex; justify-content: space-between; background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 18px; border: 1px solid #2a2e45; }
+        
+        #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; text-align: center; }
+        #advertOverlay img { max-height: 70vh; max-width: 80vw; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 30px var(--accent-glow); margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="mobileAdvertModal">
-        <h3 style="color:var(--accent); margin-top:0;">📢 Featured Sponsor Advert</h3>
-        <img id="mobileAdvertImage" src="" alt="Advert">
-        <button style="width:auto; padding: 10px 25px; background:var(--accent); color:black;" onclick="closeMobileAdvert()">Dismiss Advert</button>
-    </div>
+    <header>
+        <h1 id="displayEventTitle">TriviaMania Live Event</h1>
+        <div class="stats-badge">Connected Teams: <span id="displayPlayerCount">0</span></div>
+    </header>
 
-    <div id="joinScreen" class="card">
-        <h1>TriviaMania</h1>
-        <p style="color: #a4a8bc; font-size: 14px; margin-bottom: 10px;">Choose your avatar & enter team name:</p>
-        
-        <div class="avatar-picker">
-            <div class="avatar-option selected" onclick="selectAvatar('🍻', this)">🍻</div>
-            <div class="avatar-option" onclick="selectAvatar('🚀', this)">🚀</div>
-            <div class="avatar-option" onclick="selectAvatar('🦊', this)">🦊</div>
-            <div class="avatar-option" onclick="selectAvatar('🌮', this)">🌮</div>
-            <div class="avatar-option" onclick="selectAvatar('🎸', this)">🎸</div>
-        </div>
-
-        <input type="text" id="playerName" placeholder="Team Name" maxlength="20">
-        <input type="text" id="playerMotto" placeholder="Team Motto / Tagline" maxlength="30">
-        <button onclick="attemptJoin()">Join Game</button>
-    </div>
-
-    <div id="gameScreen" class="game-screen">
-        <div class="card">
-            <button id="audioUnlockBtn" class="audio-unlock-btn" onclick="unlockPhoneAudio()">🔊 Tap Here to Enable Phone Audio</button>
-            <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0; font-size: 22px;"></h2>
-            <div class="score-badge">Score: <span id="playerScore">0</span> pts</div>
-            <p id="gameStatusText" style="color: #a4a8bc; font-size: 15px; margin: 10px 0;">Waiting in lobby...</p>
+    <div class="main-container">
+        <!-- LEFT: QUESTION & OPTIONS -->
+        <div class="quiz-panel">
+            <div>
+                <h3 id="roundTitle">Waiting for Host to Load Round...</h3>
+                <div id="questionText">Welcome! Get your phones ready and join the game at <span style="color:var(--accent)">/player.html</span></div>
+            </div>
             
-            <div id="mobilePollBox" class="poll-container">
-                <div style="font-size:12px; color:var(--accent); font-weight:bold; text-transform:uppercase; margin-bottom:4px;">📊 Icebreaker Poll</div>
-                <div id="mobilePollQuestion" style="font-size:14px; font-weight:bold; margin-bottom:8px;"></div>
-                <div id="mobilePollOptions"></div>
-            </div>
+            <div id="optionsContainer" class="options-grid"></div>
 
-            <div id="answerSection" style="display:none;">
-                <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 12px; font-weight: bold;"></p>
-                <div class="options-container" id="playerOptionsGrid"></div>
+            <div>
+                <div id="answerRevealBox" style="font-size: 24px; font-weight: bold; color: var(--success); text-align: center; min-height: 35px; margin-top: 15px;"></div>
+                <div class="timer-bar-container">
+                    <div id="timerBar"></div>
+                </div>
             </div>
-
-            <div class="reaction-tray">
-                <button class="reaction-btn" onclick="sendReaction('🍻')">🍻</button>
-                <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
-                <button class="reaction-btn" onclick="sendReaction('👎')">👎</button>
-                <button class="reaction-btn" onclick="sendReaction('🎉')">🎉</button>
-                <button class="reaction-btn" onclick="sendReaction('67')">67</button>
-            </div>
-
-            <a id="tipJarLink" href="#" target="_blank" class="tip-jar-btn">🎁 Tip / Support the Quizmaster</a>
         </div>
+
+        <!-- RIGHT: LEADERBOARD -->
+        <div class="sidebar-panel">
+            <div class="sub-panel">
+                <h2>🏆 Live Leaderboard</h2>
+                <div id="displayLeaderboard" class="leaderboard-list">
+                    <p style="color: var(--muted); text-align: center; margin-top: 40px;">No scores yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADVERT OVERLAY -->
+    <div id="advertOverlay">
+        <h2 id="advertDisplayTitle" style="font-size: 36px; color: var(--accent); margin-top:0;">Featured Sponsor</h2>
+        <img id="advertDisplayImage" src="" alt="Sponsor Advert">
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let myTeamName = "";
-        let selectedAvatar = '🍻';
-        let dismissedAdvert = false;
-
-        // Persistent global audio element initialized on user tap
-        let globalPhoneAudio = new Audio();
-        globalPhoneAudio.preload = "auto";
-
-        function unlockPhoneAudio() {
-            globalPhoneAudio.src = "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/36/53/b7/3653b7c8-7013-8898-7240-23a595c2f5d9/mza_10795287019777178351.m43.aac";
-            globalPhoneAudio.play().then(() => {
-                globalPhoneAudio.pause();
-                globalPhoneAudio.currentTime = 0;
-                document.getElementById('audioUnlockBtn').style.display = 'none';
-                alert('Phone audio unlocked successfully!');
-            }).catch(e => {
-                console.log("Audio unlock error:", e);
-                alert('Please tap again to enable audio.');
-            });
-        }
-
-        function selectAvatar(emoji, element) {
-            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedAvatar = emoji;
-        }
 
         socket.on('syncState', (state) => {
-            const statusText = document.getElementById('gameStatusText');
-            const answerSection = document.getElementById('answerSection');
-            const promptEl = document.getElementById('currentQuestionPrompt');
-            const optionsGrid = document.getElementById('playerOptionsGrid');
-            const mobileAdvertModal = document.getElementById('mobileAdvertModal');
-            const mobileAdvertImage = document.getElementById('mobileAdvertImage');
-            const tipJarLink = document.getElementById('tipJarLink');
-            const mobilePollBox = document.getElementById('mobilePollBox');
-            const mobilePollQuestion = document.getElementById('mobilePollQuestion');
-            const mobilePollOptions = document.getElementById('mobilePollOptions');
-
-            if (state.tipJarActive && state.tipJarUrl) {
-                tipJarLink.href = state.tipJarUrl;
-                tipJarLink.style.display = 'block';
-            } else {
-                tipJarLink.style.display = 'none';
+            if (state.eventTitle) {
+                document.getElementById('displayEventTitle').textContent = state.eventTitle;
             }
 
-            const isJoined = document.getElementById('gameScreen').style.display === 'block';
-
-            if (isJoined && state.pollActive && state.status === 'waiting') {
-                mobilePollBox.style.display = 'block';
-                mobilePollQuestion.textContent = state.pollQuestion;
-                mobilePollOptions.innerHTML = '';
-                state.pollOptions.forEach((opt, idx) => {
-                    mobilePollOptions.innerHTML += `<button class="poll-btn" onclick="votePoll(${idx})">${opt}</button>`;
-                });
+            // Handle Advert Overlay
+            const advertOverlay = document.getElementById('advertOverlay');
+            if (state.projectorAdvertActive && state.advertImage) {
+                document.getElementById('advertDisplayImage').src = state.advertImage;
+                document.getElementById('advertDisplayTitle').textContent = state.advertTitle || 'Sponsor Advert';
+                advertOverlay.style.display = 'flex';
             } else {
-                mobilePollBox.style.display = 'none';
+                advertOverlay.style.display = 'none';
             }
 
-            if (isJoined && state.mobileAdvertActive && state.advertImage) {
-                if (!dismissedAdvert) {
-                    mobileAdvertImage.src = state.advertImage;
-                    mobileAdvertModal.style.display = 'flex';
-                }
-            } else {
-                mobileAdvertModal.style.display = 'none';
-                if (!state.mobileAdvertActive) dismissedAdvert = false;
-            }
-
-            if (isJoined && state.status === 'active' && state.currentRound && state.currentRound.questions) {
+            // Handle Round & Questions
+            if (state.currentRound) {
                 const round = state.currentRound;
-                const qIndex = round.currentIndex || 0;
-                const currentQ = round.questions[qIndex];
+                document.getElementById('roundTitle').textContent = round.name + " (Question " + (round.currentIndex + 1) + " of " + round.questions.length + ")";
+                
+                const currentQ = round.questions[round.currentIndex];
+                if (currentQ) {
+                    // FIXED: Using innerHTML so image tags render correctly as pictures!
+                    document.getElementById('questionText').innerHTML = currentQ.q;
 
-                statusText.textContent = `Question ${qIndex + 1} of ${round.questions.length} ${round.speedBonus ? '⚡' : ''}`;
-                answerSection.style.display = 'block';
-                promptEl.textContent = currentQ.q;
+                    const optionsContainer = document.getElementById('optionsContainer');
+                    optionsContainer.innerHTML = '';
+                    
+                    if (currentQ.options) {
+                        currentQ.options.forEach((opt, idx) => {
+                            const letter = ['A', 'B', 'C', 'D'][idx];
+                            const div = document.createElement('div');
+                            div.className = 'option-box';
+                            div.innerHTML = '<span style="color:var(--accent);">' + letter + ':</span> ' + opt;
+                            
+                            if (state.status === 'revealed' && opt.trim().toLowerCase() === currentQ.a.trim().toLowerCase()) {
+                                div.classList.add('correct');
+                            }
+                            optionsContainer.appendChild(div);
+                        });
+                    }
 
-                optionsGrid.innerHTML = '';
-                if (currentQ.options) {
-                    currentQ.options.forEach((opt, idx) => {
-                        const letter = ['A', 'B', 'C', 'D'][idx];
-                        const btn = document.createElement('button');
-                        btn.className = 'choice-btn';
-                        btn.innerHTML = `<strong style="color:var(--accent);">${letter}:</strong> ${opt}`;
-                        btn.onclick = () => selectAnswer(opt);
-                        optionsGrid.appendChild(btn);
-                    });
+                    const revealBox = document.getElementById('answerRevealBox');
+                    if (state.status === 'revealed') {
+                        revealBox.textContent = 'Correct Answer: ' + currentQ.a;
+                    } else {
+                        revealBox.textContent = '';
+                    }
                 }
-
-                // Trigger music playback via the unlocked global audio instance
-                if (currentQ.audioUrl) {
-                    globalPhoneAudio.src = currentQ.audioUrl;
-                    globalPhoneAudio.play().catch(e => console.log("Phone music playback restricted:", e));
-                } else {
-                    globalPhoneAudio.pause();
-                }
-
-            } else if (isJoined && state.status === 'revealed') {
-                statusText.textContent = "Answer Revealed on Projector! Check leaderboard.";
-                answerSection.style.display = 'none';
-                globalPhoneAudio.pause();
-            } else if (isJoined && state.status === 'podium') {
-                statusText.textContent = "🎉 Game Over! Check projector for final podium winners!";
-                answerSection.style.display = 'none';
-                globalPhoneAudio.pause();
-            } else if (isJoined) {
-                globalPhoneAudio.pause();
-                if (!state.mobileAdvertActive && !state.pollActive) {
-                    statusText.textContent = "Waiting for host to start...";
-                } else if (state.pollActive) {
-                    statusText.textContent = "Cast your vote in the poll below!";
-                }
-                answerSection.style.display = 'none';
             }
         });
 
-        function votePoll(optionIndex) {
-            socket.emit('submitPollVote', { optionIndex });
-            alert('Vote submitted!');
-        }
+        socket.on('updatePlayers', (players) => {
+            const keys = Object.keys(players);
+            document.getElementById('displayPlayerCount').textContent = keys.length;
 
-        function closeMobileAdvert() {
-            document.getElementById('mobileAdvertModal').style.display = 'none';
-            dismissedAdvert = true;
-        }
-
-        function attemptJoin() {
-            const nameInput = document.getElementById('playerName');
-            const mottoInput = document.getElementById('playerMotto');
-            myTeamName = nameInput.value.trim();
-            const motto = mottoInput.value.trim() || 'Here for a good time!';
-
-            if (!myTeamName) {
-                alert('Please enter a team name!');
+            const listEl = document.getElementById('displayLeaderboard');
+            if (keys.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--muted); text-align: center; margin-top: 40px;">No teams connected yet.</p>';
                 return;
             }
-            socket.emit('playerJoin', { name: myTeamName, avatar: selectedAvatar, motto });
-            
-            document.getElementById('joinScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            document.getElementById('welcomeHeader').textContent = myTeamName;
-        }
 
-        function sendReaction(emoji) {
-            if ("vibrate" in navigator) navigator.vibrate(40);
-            socket.emit('sendReaction', { emoji, teamName: myTeamName });
-        }
+            const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+            let html = '';
+            sorted.forEach((p, idx) => {
+                html += '<div class="leaderboard-item"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
+            });
+            listEl.innerHTML = html;
+        });
 
-        function selectAnswer(optionText) {
-            if ("vibrate" in navigator) navigator.vibrate(60);
-            socket.emit('submitAnswer', { answer: optionText });
-            document.getElementById('answerSection').style.display = 'none';
-            document.getElementById('gameStatusText').textContent = `Locked in: "${optionText}"! Waiting for reveal...`;
-        }
-
-        socket.on('updatePlayers', (players) => {
-            for (const id in players) {
-                if (players[id].name === myTeamName) {
-                    document.getElementById('playerScore').textContent = players[id].score;
-                }
+        socket.on('timerTick', (timeLeft) => {
+            const bar = document.getElementById('timerBar');
+            const percentage = (timeLeft / 10) * 100;
+            bar.style.width = Math.max(0, percentage) + '%';
+            if (timeLeft <= 3) {
+                bar.style.backgroundColor = 'var(--danger)';
+            } else {
+                bar.style.backgroundColor = 'var(--accent)';
             }
         });
     </script>
