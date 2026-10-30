@@ -30,15 +30,12 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
 }
 
 async function fetchKidsTriviaQuestions(amount = 10, subGenre = 'disney') {
-    // Uses Open Trivia DB mixed with general family-friendly query parameters
-    let categoryId = "9"; // General knowledge fallback
+    let categoryId = "9";
     if (subGenre === 'animals') categoryId = "27";
     if (subGenre === 'science') categoryId = "17";
     if (subGenre === 'geography') categoryId = "22";
 
     const questions = await fetchTriviaQuestions(amount, categoryId);
-    
-    // Customize phrasing to make it super fun for kids rounds
     return questions.map((q, idx) => ({
         ...q,
         q: `[Kids Quiz #${idx + 1}] ${q.q}`
@@ -47,14 +44,13 @@ async function fetchKidsTriviaQuestions(amount = 10, subGenre = 'disney') {
 
 async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock', isKidsOrMovie = false) {
     try {
-        // Fetch a larger pool to ensure plenty of valid preview streams
         const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=40`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
             const validSongs = data.results.filter(song => song.previewUrl && song.trackName);
             
-            // Handle Movie / TV / Kids Theme Rounds (Guessing the Show or Movie)
+            // Handle Movie / TV / Kids Theme Rounds (Guessing the Show or Movie cleanly)
             if (isKidsOrMovie || searchTerm.includes('disney') || searchTerm.includes('marvel') || searchTerm.includes('cbeebies') || searchTerm.includes('nickelodeon') || searchTerm.includes('cartoon network') || searchTerm.includes('theme')) {
                 let showDecoys = ["The Lion King", "Frozen", "Moana", "Toy Story", "Aladdin", "Mickey Mouse Clubhouse", "Peppa Pig", "Paw Patrol", "Bluey", "Spider-Man", "Avengers", "SpongeBob SquarePants", "Ben 10", "Teletubbies", "Postman Pat", "Danger Mouse", "The Incredibles", "Shrek", "Harry Potter", "Doctor Who"];
 
@@ -69,8 +65,11 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock'
                 }
 
                 return validSongs.slice(0, amount).map(song => {
-                    let correctShow = song.collectionName || song.artistName || "Family Classic";
-                    if (correctShow.length > 30) correctShow = "Animated Masterpiece";
+                    // Clean movie/show parsing ensuring full titles without cutoffs
+                    let correctShow = song.collectionName || song.artistName || "Classic Family Movie";
+                    if (correctShow.length > 35 || correctShow.toLowerCase().includes('soundtrack')) {
+                        correctShow = "Classic Animated Masterpiece";
+                    }
 
                     const wrongOptions = showDecoys.filter(s => s.toLowerCase() !== correctShow.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
                     const options = [...wrongOptions, correctShow].sort(() => Math.random() - 0.5);
