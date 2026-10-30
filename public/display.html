@@ -12,6 +12,7 @@
         .pill { background: #22222e; padding: 20px; border-radius: 10px; border: 1px solid #444; }
         .answer { font-size: 36px; color: #03dac6; margin-top: 30px; font-weight: bold; display: none; }
         .fundraising-banner { position: absolute; bottom: 20px; font-size: 20px; color: #03dac6; background: rgba(0,0,0,0.6); padding: 10px 30px; border-radius: 20px; border: 1px solid #03dac6; }
+        .audio-btn { background: #03dac6; color: black; font-size: 20px; font-weight: bold; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -20,6 +21,7 @@
         <div id="waitingView">
             <h1>TriviaMania Live 🍻</h1>
             <p style="font-size: 24px; color: #aaa;">Scan the QR code on your phone or visit <span id="joinLinkDisplay"></span> to join!</p>
+            <button class="audio-btn" onclick="unlockAudio()">🔊 Click to Enable Sound & Music</button>
             <p style="font-size: 18px; color: #03dac6; margin-top: 20px;">All proceeds support our local community charity.</p>
         </div>
 
@@ -40,6 +42,14 @@
     <script>
         document.getElementById('joinLinkDisplay').textContent = window.location.origin + '/player.html';
         const socket = io();
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+            audioUnlocked = true;
+            const dummyAudio = new Audio();
+            dummyAudio.play().catch(() => {});
+            alert('Audio enabled! Music rounds will now play automatically.');
+        }
 
         socket.on('syncState', (state) => {
             const waitingView = document.getElementById('waitingView');
