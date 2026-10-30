@@ -5,9 +5,10 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  maxHttpBufferSize: 1e8 // 100 MB socket buffer for images
+});
 
-// Increase JSON body limit to 50mb so high-res sponsor images upload instantly
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -65,6 +66,7 @@ io.on('connection', (socket) => {
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
       gameState.advertActive = true;
+      console.log("Advert pushed successfully. Size of base64:", payload.image ? payload.image.length : 0);
     } else if (action === 'hideAdvert') {
       gameState.advertActive = false;
     } else if (action === 'resume') {
