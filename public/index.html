@@ -4,18 +4,27 @@
     <meta charset="UTF-8">
     <title>TriviaMania - Host Dashboard</title>
     <style>
-        :root { --bg: #0b0b10; --card: #15151c; --primary: #bb86fc; --accent: #03dac6; --text: #ffffff; }
+        :root { --bg: #0b0b10; --card: #15151c; --primary: #bb86fc; --accent: #03dac6; --text: #ffffff; --danger: #cf6679; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a35; padding-bottom: 15px; margin-bottom: 20px; }
         h1 { margin: 0; font-size: 24px; color: var(--primary); }
         .nav-links a { color: var(--accent); text-decoration: none; margin-left: 15px; font-weight: bold; }
         
-        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
-        .panel { background: var(--card); border: 1px solid #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #2a2a35; color: white; width: 100%; margin-top: 10px; }
+        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
+        .panel { background: var(--card); border: 1px solid #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #2a2a35; padding-bottom: 10px; color: var(--primary); }
+        
+        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #2a2a35; color: white; width: 100%; margin-top: 10px; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
         .btn-play { background: #4caf50; }
         .btn-reveal { background: #03dac6; color: black; }
-        .btn-api { background: var(--primary); color: black; font-size: 16px; margin-bottom: 10px; }
+        .btn-danger { background: var(--danger); width: auto; padding: 6px 10px; margin-top: 0; font-size: 12px; }
+        .btn-api { background: var(--primary); color: black; font-size: 15px; }
+
+        .playlist-card { background: #22222e; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        
+        select { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
+        label { font-size: 12px; color: #aaa; }
     </style>
     <script src="/js/api.js"></script>
 </head>
@@ -30,10 +39,11 @@
     </header>
 
     <div class="grid">
+        <!-- Left Column: Master Controls & Players -->
         <div>
             <div class="panel">
-                <h2>Master Controls</h2>
-                <button class="btn-play" onclick="sendAction('resume')">▶ Resume / Start Round</button>
+                <h2>Master Game Controls</h2>
+                <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
                 <button onclick="sendAction('pause')">⏸ Pause Game</button>
                 <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer on Screen</button>
             </div>
@@ -41,20 +51,46 @@
             <div class="panel">
                 <h2>Connected Players (<span id="playerCount">0</span>)</h2>
                 <div id="playerList" style="max-height: 200px; overflow-y: auto;">
-                    <p style="color: #777;">No players connected yet.</p>
+                    <p style="color: #777; font-size: 14px;">No players connected yet.</p>
                 </div>
             </div>
         </div>
 
+        <!-- Right Column: Playlist & Round Generator -->
         <div>
+            <!-- Add Rounds to Queue -->
             <div class="panel">
-                <h2>Live Online Round Generator</h2>
-                <p style="color: #aaa; font-size: 14px;">Pull fresh, non-repeating questions directly from online databases instantly!</p>
+                <h2>Build Your Quiz Playlist</h2>
+                <p style="color: #aaa; font-size: 14px;">Add live online rounds to your queue, then load them when you're ready.</p>
                 
-                <button class="btn-api" onclick="loadOnlineTriviaRound()">🌐 Load 10 Live Trivia Questions (API)</button>
-                <button class="btn-api" style="background:#ff9800; color:black;" onclick="loadOnlineMusicRound()">🎵 Load Live Music Preview Round (API)</button>
-                
-                <div id="loadedStatus" style="margin-top: 15px; color: #03dac6; font-weight: bold;"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label>Question Count:</label>
+                        <select id="questionCountSelect">
+                            <option value="5">5 Questions</option>
+                            <option value="10" selected>10 Questions</option>
+                            <option value="15">15 Questions</option>
+                            <option value="20">20 Questions</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Round Type:</label>
+                        <select id="roundTypeSelect">
+                            <option value="trivia">General Trivia (API)</option>
+                            <option value="music">Music Audio Previews (API)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-api" onclick="addToPlaylist()">➕ Generate & Add Round to Queue</button>
+            </div>
+
+            <!-- Active Playlist Queue -->
+            <div class="panel">
+                <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
+                <div id="playlistContainer">
+                    <p style="color: #777; font-size: 14px;">No rounds in playlist yet. Add a round above!</p>
+                </div>
             </div>
         </div>
     </div>
@@ -62,33 +98,81 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        let playlist = [];
 
-        async function loadOnlineTriviaRound() {
-            document.getElementById('loadedStatus').textContent = "Fetching fresh questions from online database...";
-            const questions = await fetchTriviaQuestions(10);
+        async function addToPlaylist() {
+            const count = parseInt(document.getElementById('questionCountSelect').value);
+            const type = document.getElementById('roundTypeSelect').value;
             
-            const roundPayload = {
-                name: "Live Online Trivia Round",
-                questions: questions,
-                currentIndex: 0
-            };
+            const btn = event.target;
+            btn.textContent = "Fetching questions from online API...";
+            
+            let questions = [];
+            let roundName = "";
 
-            socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
-            document.getElementById('loadedStatus').textContent = `Success! Loaded ${questions.length} live trivia questions and pushed to projector.`;
+            if (type === 'trivia') {
+                questions = await fetchTriviaQuestions(count);
+                roundName = `Trivia Round (${questions.length} Qs)`;
+            } else {
+                questions = await fetchMusicPreviewRound();
+                roundName = `Music Audio Round (${questions.length} Qs)`;
+            }
+
+            playlist.push({
+                id: Date.now(),
+                name: roundName,
+                questions: questions
+            });
+
+            btn.textContent = "➕ Generate & Add Round to Queue";
+            renderPlaylist();
         }
 
-        async function loadOnlineMusicRound() {
-            document.getElementById('loadedStatus').textContent = "Fetching live music preview clips...";
-            const questions = await fetchMusicPreviewRound();
-            
+        function renderPlaylist() {
+            const container = document.getElementById('playlistContainer');
+            document.getElementById('playlistCount').textContent = playlist.length;
+
+            if (playlist.length === 0) {
+                container.innerHTML = '<p style="color: #777; font-size: 14px;">No rounds in playlist yet. Add a round above!</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            playlist.forEach((round, index) => {
+                container.innerHTML += `
+                    <div class="playlist-card">
+                        <div>
+                            <strong>${index + 1}. ${round.name}</strong>
+                            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ready to load</div>
+                        </div>
+                        <div>
+                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadRound(${index})">▶ Load</button>
+                            <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function loadRound(index) {
+            const round = playlist[index];
             const roundPayload = {
-                name: "Live Music Audio Round",
-                questions: questions,
+                name: round.name,
+                questions: round.questions,
                 currentIndex: 0
             };
 
             socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
-            document.getElementById('loadedStatus').textContent = `Success! Loaded ${questions.length} music tracks with auto-play audio previews.`;
+            alert(`Loaded "${round.name}" to projector and player phones!`);
+        }
+
+        function deleteRound(index) {
+            playlist.splice(index, 1);
+            renderPlaylist();
+        }
+
+        function sendAction(action) {
+            socket.emit('hostAction', { action });
         }
 
         socket.on('updatePlayers', (players) => {
@@ -98,7 +182,7 @@
             countEl.textContent = playerIds.length;
             
             if (playerIds.length === 0) {
-                listEl.innerHTML = '<p style="color: #777;">No players connected yet.</p>';
+                listEl.innerHTML = '<p style="color: #777; font-size: 14px;">No players connected yet.</p>';
                 return;
             }
 
