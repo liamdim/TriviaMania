@@ -38,6 +38,8 @@
         select, input[type="text"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         label { font-size: 12px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
         .preview-box { max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; display: none; }
+        
+        .score-row { display: flex; justify-content: space-between; align-items: background; background: #1a1d2d; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #2a2e45; }
     </style>
     <script src="/js/api.js"></script>
 </head>
@@ -52,13 +54,13 @@
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center</button>
+        <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center & Scores</button>
         <button class="tab-btn" onclick="switchTab('playlist', event)">🎵 Playlist Builder</button>
         <button class="tab-btn" onclick="switchTab('media', event)">🖼️ Adverts & Media</button>
         <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Settings</button>
     </div>
 
-    <!-- TAB 1: CONTROL CENTER -->
+    <!-- TAB 1: CONTROL CENTER & LIVE SCORES -->
     <div id="tab-control" class="tab-content active">
         <div class="panel">
             <h2>Master Game Controls</h2>
@@ -70,22 +72,18 @@
 
         <div class="panel">
             <h2>Separate Screen Advert Controls</h2>
-            <p style="color: var(--muted); font-size: 13px; margin-top:0;">Push ad to projector and phones independently.</p>
-            
             <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector Only</button>
             <button class="btn-api" style="background:#ff9100; color:black;" onclick="pushAdvert('mobile')">📱 Push Ad to Mobile Phones Only</button>
             <button class="btn-api" style="background:var(--primary);" onclick="pushAdvert('both')">📢 Push Ad to BOTH Screens</button>
-            
-            <hr style="border:0; border-top:1px solid #222538; margin:15px 0;">
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <button class="btn-danger" style="width:100%;" onclick="hideAdvert('projector')">❌ Hide Projector Ad</button>
                 <button class="btn-danger" style="width:100%;" onclick="hideAdvert('mobile')">❌ Hide Mobile Ad</button>
             </div>
         </div>
 
         <div class="panel full-width">
-            <h2>Connected Teams (<span id="playerCount">0</span>)</h2>
-            <div id="playerList" style="max-height: 250px; overflow-y: auto;">
+            <h2>🏆 Live Team Leaderboard & Connected Teams (<span id="playerCount">0</span>)</h2>
+            <div id="hostScoreList" style="max-height: 250px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
             </div>
         </div>
@@ -207,10 +205,18 @@
     <!-- TAB 4: SETTINGS -->
     <div id="tab-settings" class="tab-content">
         <div class="panel full-width">
-            <h2>⚙️ Game Settings</h2>
-            <label>Event / Venue Title:</label>
+            <h2>⚙️ Editable Display Text & Settings</h2>
+            
+            <label>Main Event / Venue Title:</label>
             <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
-            <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save Settings</button>
+            
+            <label>Waiting Room Welcome Message:</label>
+            <input type="text" id="welcomeMessageInput" value="Welcome to the ultimate pub quiz experience!">
+            
+            <label>Bottom Scrolling Banner Text:</label>
+            <input type="text" id="bannerTextInput" value="TriviaMania Live Pub Quiz Night">
+            
+            <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save & Broadcast Settings</button>
         </div>
     </div>
 
@@ -258,8 +264,10 @@
 
         function saveSettings() {
             const eventTitle = document.getElementById('eventTitleInput').value.trim();
-            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle } });
-            alert('Settings saved successfully!');
+            const welcomeMessage = document.getElementById('welcomeMessageInput').value.trim();
+            const bannerText = document.getElementById('bannerTextInput').value.trim();
+            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle, welcomeMessage, bannerText } });
+            alert('Settings saved and broadcasted successfully!');
         }
 
         function addCustomRoundToPlaylist() {
@@ -346,19 +354,32 @@
             socket.emit('hostAction', { action });
         }
 
+        socket.on('syncState', (state) => {
+            if (state.eventTitle) document.getElementById('eventTitleInput').value = state.eventTitle;
+            if (state.welcomeMessage) document.getElementById('welcomeMessageInput').value = state.welcomeMessage;
+            if (state.bannerText) document.getElementById('bannerTextInput').value = state.bannerText;
+        });
+
         socket.on('updatePlayers', (players) => {
-            const listEl = document.getElementById('playerList');
+            const listEl = document.getElementById('hostScoreList');
             const countEl = document.getElementById('playerCount');
-            const playerIds = Object.keys(players);
-            countEl.textContent = playerIds.length;
-            if (playerIds.length === 0) {
+            const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
+            countEl.textContent = sortedPlayers.length;
+
+            if (sortedPlayers.length === 0) {
                 listEl.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>';
                 return;
             }
+
             listEl.innerHTML = '';
-            playerIds.forEach(id => {
-                const p = players[id];
-                listEl.innerHTML += `<div style="padding: 8px; border-bottom:1px solid #222538; display:flex; justify-content:space-between;"><span>${p.avatar} <strong>${p.name}</strong></span> <span style="color:var(--accent);">${p.score} pts</span></div>`;
+            sortedPlayers.forEach((p, idx) => {
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                listEl.innerHTML += `
+                    <div class="score-row">
+                        <span>${medal} ${p.avatar} <strong>${p.name}</strong></span>
+                        <span style="color: var(--accent); font-weight:bold; font-size:16px;">${p.score} pts</span>
+                    </div>
+                `;
             });
         });
     </script>
