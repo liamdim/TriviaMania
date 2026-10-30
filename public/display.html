@@ -10,6 +10,135 @@
         .question { font-size: 36px; margin-bottom: 25px; color: #fff; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 24px; text-align: left; }
         .pill { background: #22222e; padding: 20px; border-radius: 10px; border: 1px solid #444; }
+        .answer { font-size: 32px; color: #03dac6; margin-top: 20px; font-weight: bold; display: none; }
+        .leaderboard { margin-top: 20px; display: none; text-align: left; background: #1f1f2b; padding: 20px; border-radius: 10px; border: 1px solid #03dac6; }
+        .leaderboard-row { display: flex; justify-content: space-between; font-size: 22px; padding: 6px 0; border-bottom: 1px solid #333; }
+        .fundraising-banner { position: absolute; bottom: 20px; font-size: 20px; color: #03dac6; background: rgba(0,0,0,0.6); padding: 10px 30px; border-radius: 20px; border: 1px solid #03dac6; }
+        .audio-btn { background: #03dac6; color: black; font-size: 20px; font-weight: bold; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="screenBox">
+        <div id="waitingView">
+            <h1>TriviaMania Live 🍻</h1>
+            <p style="font-size: 24px; color: #aaa;">Scan the QR code on your phone or visit <span id="joinLinkDisplay"></span> to join!</p>
+            <button class="audio-btn" onclick="unlockAudio()">🔊 Click to Enable Sound & Music</button>
+            <p style="font-size: 18px; color: #03dac6; margin-top: 20px;">All proceeds support our local community charity.</p>
+        </div>
+
+        <div id="gameView" style="display:none;">
+            <div id="roundTitle" style="font-size: 22px; color: #bb86fc; text-transform: uppercase; margin-bottom: 10px;"></div>
+            <div class="question" id="questionText">Loading question...</div>
+            
+            <div id="audioContainer" style="margin-bottom: 15px;"></div>
+
+            <div class="options" id="optionsGrid"></div>
+            <div class="answer" id="answerBox">Correct Answer: <span id="answerText"></span></div>
+            
+            <div class="leaderboard" id="leaderboardBox">
+                <h3 style="margin-top:0; color:#03dac6;">🏆 Live Leaderboard</h3>
+                <div id="leaderboardList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fundraising-banner">🌟 TriviaMania Charity Event | Scan Table QR to Donate</div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.getElementById('joinLinkDisplay').textContent = window.location.origin + '/player.html';
+        const socket = io();
+
+        function unlockAudio() {
+            const dummyAudio = new Audio();
+            dummyAudio.play().catch(() => {});
+            alert('Audio enabled! Music rounds will now play automatically.');
+        }
+
+        socket.on('syncState', (state) => {
+            const waitingView = document.getElementById('waitingView');
+            const gameView = document.getElementById('gameView');
+            const roundTitle = document.getElementById('roundTitle');
+            const questionText = document.getElementById('questionText');
+            const optionsGrid = document.getElementById('optionsGrid');
+            const answerBox = document.getElementById('answerBox');
+            const answerText = document.getElementById('answerText');
+            const audioContainer = document.getElementById('audioContainer');
+            const leaderboardBox = document.getElementById('leaderboardBox');
+
+            if (state.status === 'active' || state.status === 'revealed') {
+                waitingView.style.display = 'none';
+                gameView.style.display = 'block';
+
+                const round = state.currentRound;
+                if (round && round.questions && round.questions.length > 0) {
+                    const q = round.questions[round.currentIndex || 0];
+                    roundTitle.textContent = round.name;
+                    questionText.textContent = q.q;
+
+                    optionsGrid.innerHTML = '';
+                    q.options.forEach((opt, idx) => {
+                        const letter = ['A', 'B', 'C', 'D'][idx];
+                        optionsGrid.innerHTML += `<div class="pill"><strong style="color:#bb86fc;">${letter}:</strong> ${opt}</div>`;
+                    });
+
+                    if (q.audioUrl && state.status === 'active') {
+                        audioContainer.innerHTML = `<audio autoplay controls src="${q.audioUrl}" style="width: 100%; max-width: 400px;"></audio>`;
+                    } else {
+                        audioContainer.innerHTML = '';
+                    }
+
+                    if (state.status === 'revealed') {
+                        answerBox.style.display = 'block';
+                        answerText.textContent = q.a;
+                        leaderboardBox.style.display = 'block';
+                    } else {
+                        answerBox.style.display = 'none';
+                        leaderboardBox.style.display = 'none';
+                    }
+                }
+            } else {
+                waitingView.style.display = 'block';
+                gameView.style.display = 'none';
+                audioContainer.innerHTML = '';
+            }
+        });
+
+        socket.on('updatePlayers', (players) => {
+            const listEl = document.getElementById('leaderboardList');
+            const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
+
+            if (sortedPlayers.length === 0) {
+                listEl.innerHTML = '<p style="color:#777;">No players scored yet.</p>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            sortedPlayers.forEach((p, idx) => {
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                listEl.innerHTML += `
+                    <div class="leaderboard-row">
+                        <span>${medal} ${p.avatar} ${p.name}</span>
+                        <strong style="color: #bb86fc;">${p.score} pts</strong>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TriviaMania Projector Display</title>
+    <style>
+        body { font-family: sans-serif; background: #0b0b10; color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
+        .container { width: 90%; max-width: 1200px; padding: 50px; background: #15151c; border: 2px solid #bb86fc; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        h1 { font-size: 50px; color: #bb86fc; margin-bottom: 10px; }
+        .question { font-size: 36px; margin-bottom: 25px; color: #fff; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 24px; text-align: left; }
+        .pill { background: #22222e; padding: 20px; border-radius: 10px; border: 1px solid #444; }
         .answer { font-size: 36px; color: #03dac6; margin-top: 30px; font-weight: bold; display: none; }
         .fundraising-banner { position: absolute; bottom: 20px; font-size: 20px; color: #03dac6; background: rgba(0,0,0,0.6); padding: 10px 30px; border-radius: 20px; border: 1px solid #03dac6; }
         .audio-btn { background: #03dac6; color: black; font-size: 20px; font-weight: bold; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
