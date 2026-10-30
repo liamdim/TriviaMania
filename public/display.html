@@ -24,9 +24,9 @@
         .podium-2 { height: 180px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
         .podium-3 { height: 130px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
 
-        /* Advert Fullscreen Overlay */
-        .advert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.98); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
-        .advert-overlay img { max-width: 85vw; max-height: 85vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 60px rgba(0, 229, 255, 0.6); }
+        /* Advert Fullscreen Overlay with explicit display rules */
+        #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.98); display: none; justify-content: center; align-items: center; z-index: 99999; flex-direction: column; }
+        #advertOverlay img { max-width: 85vw; max-height: 85vh; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 60px rgba(0, 229, 255, 0.6); }
 
         .fundraising-banner { position: absolute; bottom: 15px; font-size: 18px; color: var(--accent); background: rgba(19, 21, 32, 0.9); padding: 12px 35px; border-radius: 25px; border: 1px solid var(--accent); }
         .audio-btn { background: var(--accent); color: black; font-size: 18px; font-weight: bold; padding: 14px 28px; border: none; border-radius: 10px; cursor: pointer; margin-top: 15px; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
@@ -34,7 +34,7 @@
 </head>
 <body>
 
-    <div id="advertOverlay" class="advert-overlay">
+    <div id="advertOverlay">
         <h2 style="color:var(--accent); font-size:36px; margin-bottom:20px; text-shadow: 0 0 15px rgba(0,229,255,0.5);">📢 Featured Sponsor & Event Advert</h2>
         <img id="advertImageDisplay" src="" alt="Advert">
     </div>
@@ -100,7 +100,7 @@
                 document.getElementById('bannerText').textContent = `🌟 ${state.eventTitle}`;
             }
 
-            // Advert Overlay Control
+            // Advert Overlay Control with explicit flex display
             if (state.advertActive && state.advertImage) {
                 document.getElementById('advertImageDisplay').src = state.advertImage;
                 advertOverlay.style.display = 'flex';
