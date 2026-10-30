@@ -25,7 +25,6 @@
 </head>
 <body>
 
-    <!-- Payment Modal Screen -->
     <div id="paymentModal" class="payment-modal">
         <div class="card">
             <h2 style="color:var(--accent); margin-top:0;">💳 Entry Fee Required</h2>
@@ -35,7 +34,6 @@
         </div>
     </div>
 
-    <!-- Join Screen -->
     <div id="joinScreen" class="card">
         <h1>TriviaMania</h1>
         <p style="color: #8a8d9f; font-size: 14px;">Enter your team name to join:</p>
@@ -43,7 +41,6 @@
         <button onclick="attemptJoin()">Join Game</button>
     </div>
 
-    <!-- Main Game Screen -->
     <div id="gameScreen" class="game-screen">
         <div class="card">
             <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0;"></h2>
@@ -119,7 +116,6 @@
 
             const priceNum = parseFloat(globalSettings.entryPrice);
             if (priceNum > 0 && globalSettings.paypalUrl) {
-                // Show one-time payment modal if entry fee is set
                 document.getElementById('priceDisplay').textContent = `£${priceNum.toFixed(2)}`;
                 document.getElementById('modalPaypalLink').href = globalSettings.paypalUrl;
                 document.getElementById('paymentModal').style.display = 'flex';
