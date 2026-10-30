@@ -157,10 +157,10 @@
 
             <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
 
-            <label>Music & Artist Section:</label>
+            <label>Music & Artist Section (Live Web Search):</label>
             <select id="musicGenreSelect">
-                <option value="female pop artists">🎤 Female Artists Only (Taylor, Beyoncé, Adele, etc.)</option>
-                <option value="male pop artists">🎤 Male Artists Only</option>
+                <option value="female pop artists">🎤 Female Pop Icons (Taylor, Beyoncé, Adele, etc.)</option>
+                <option value="male pop artists">🎤 Male Pop Artists</option>
                 <option value="1980s pop rock">1980s Hits</option>
                 <option value="1990s britpop">1990s Hits</option>
                 <option value="2000s pop hits">2000s Hits</option>
@@ -168,7 +168,7 @@
                 <option value="motown soul legends">Motown & Soul</option>
                 <option value="tv theme songs">TV Theme Songs</option>
             </select>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Artist Round</button>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicToPlaylist()">➕ Add Web Music Round</button>
         </div>
 
         <div>
@@ -256,10 +256,9 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- BULLETPROOF QUESTION & MUSIC GENERATORS ---
+        // --- BULLETPROOF NORMALIZED INTERNET PULL GENERATORS ---
         async function fetchTriviaQuestions(amount = 10, category = '') {
             if (category === 'kids') {
-                // Curated family-friendly kids & cartoon questions
                 const kidsPool = [
                     { q: "What kind of animal is Simba in The Lion King?", a: "Lion", options: ["Tiger", "Lion", "Leopard", "Cheetah"] },
                     { q: "In Frozen, what is the name of Elsa and Anna's kingdom?", a: "Arendelle", options: ["Corona", "Arendelle", "Atlantis", "Agrabah"] },
@@ -314,10 +313,10 @@
                 const isMaleRound = searchTerm.toLowerCase().includes('male');
 
                 if (isFemaleRound) {
-                    const femaleIcons = ['Taylor Swift', 'Beyonce', 'Adele', 'Dua Lipa', 'Billie Eilish', 'Katy Perry', 'Lady Gaga', 'Ariana Grande', 'Rihanna', 'Pink', 'Shakira', 'Miley Cyrus', 'Olivia Rodrigo', 'Celine Dion', 'Whitney Houston'];
+                    const femaleIcons = ['Taylor Swift', 'Beyonce', 'Adele', 'Dua Lipa', 'Billie Eilish', 'Katy Perry', 'Lady Gaga', 'Ariana Grande', 'Pink', 'Shakira', 'Miley Cyrus', 'Olivia Rodrigo'];
                     queryTerm = femaleIcons[Math.floor(Math.random() * femaleIcons.length)];
                 } else if (isMaleRound) {
-                    const maleIcons = ['Ed Sheeran', 'Justin Bieber', 'Shawn Mendes', 'Harry Styles', 'Bruno Mars', 'The Weeknd', 'Sam Smith', 'Eminem', 'Calvin Harris', 'Post Malone', 'Drake', 'Lewis Capaldi'];
+                    const maleIcons = ['Ed Sheeran', 'Justin Bieber', 'Harry Styles', 'Bruno Mars', 'The Weeknd', 'Sam Smith', 'Calvin Harris', 'Drake'];
                     queryTerm = maleIcons[Math.floor(Math.random() * maleIcons.length)];
                 }
 
@@ -511,7 +510,6 @@
                     const options = parts[2].split(',').map(o => o.trim());
                     if (!options.includes(a)) options.push(a);
                     
-                    // Format question to display image on projector
                     const q = `<img src="${imageUrl}" style="max-height:280px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto;" alt="Picture Round"><div style="font-size:20px;">Identify what or who is shown above:</div>`;
                     
                     questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'picture' });
