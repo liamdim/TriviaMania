@@ -2,360 +2,173 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TriviaMania Projector Display</title>
+    <title>TriviaMania - Live Projector Display</title>
     <style>
         :root { 
-            --bg: #07080c; 
-            --card: rgba(19, 21, 32, 0.85); 
-            --primary: #9c27b0; 
-            --accent: #00e5ff; 
-            --text: #ffffff; 
-            --glow: rgba(0, 229, 255, 0.25);
+            --bg: #090a10; --card: #131520; --primary: #9c27b0; --primary-glow: rgba(156, 39, 176, 0.4);
+            --accent: #00e5ff; --accent-glow: rgba(0, 229, 255, 0.3); --text: #ffffff; --muted: #8a8d9f;
+            --danger: #ff1744; --success: #00e676;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 30px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow: hidden; }
         
-        .container { width: 88%; max-width: 1250px; padding: 45px; background: var(--card); backdrop-filter: blur(10px); border: 2px solid rgba(156, 39, 176, 0.5); border-radius: 24px; box-shadow: 0 0 50px rgba(156, 39, 176, 0.2); text-align: left; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 28px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
+        .stats-badge { background: #1a1d2e; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); font-size: 16px; font-weight: bold; }
+
+        .main-container { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; flex: 1; min-height: 0; }
         
-        .waiting-layout { display: grid; grid-template-columns: 1fr 340px; gap: 40px; align-items: center; }
-        h1 { font-size: 50px; color: var(--accent); margin-bottom: 10px; text-shadow: 0 0 25px var(--glow); letter-spacing: 1px; }
-        .welcome-sub { font-size: 22px; color: #a4a8bc; margin-bottom: 20px; line-height: 1.4; }
+        .quiz-panel { background: var(--card); border: 2px solid #222538; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 15px 40px rgba(0,0,0,0.7); position: relative; }
         
-        .qr-box { background: #1a1d2d; padding: 20px; border-radius: 16px; border: 1px solid rgba(0, 229, 255, 0.3); text-align: center; box-shadow: 0 0 20px rgba(0,229,255,0.1); }
-        #joinQrImage { width: 180px; height: 180px; border-radius: 12px; background: white; padding: 6px; margin-top: 8px; }
-
-        .waiting-teams-box { margin-top: 20px; background: rgba(26, 29, 45, 0.6); padding: 15px; border-radius: 12px; border: 1px solid rgba(156, 39, 176, 0.3); max-height: 140px; overflow-y: auto; }
-        .waiting-teams-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .team-pill { background: #1a1d2d; border: 1px solid var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 6px; }
-
-        .poll-display { margin-top: 25px; background: rgba(26, 29, 45, 0.8); padding: 20px; border-radius: 14px; border: 1px solid var(--primary); display: none; }
-        .poll-bar-container { background: #131520; border-radius: 8px; margin: 8px 0; overflow: hidden; height: 30px; position: relative; border: 1px solid #333852; }
-        .poll-bar-fill { background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 0%; transition: width 0.4s ease; }
-        .poll-bar-text { position: absolute; top: 0; left: 12px; height: 100%; display: flex; align-items: center; font-weight: bold; font-size: 15px; color: white; z-index: 2; }
-
-        .question { font-size: 36px; margin-bottom: 30px; color: #fff; font-weight: 600; line-height: 1.3; }
-        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 24px; }
-        .pill { background: rgba(26, 29, 45, 0.8); padding: 20px 25px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .answer { font-size: 30px; color: var(--accent); margin-top: 25px; font-weight: bold; display: none; text-shadow: 0 0 15px var(--glow); }
+        #roundTitle { font-size: 20px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
+        #questionText { font-size: 28px; font-weight: bold; margin: 15px 0; line-height: 1.4; text-align: center; }
         
-        .leaderboard { margin-top: 25px; display: none; background: rgba(26, 29, 45, 0.9); padding: 20px; border-radius: 14px; border: 1px solid var(--accent); max-height: 220px; overflow-y: auto; text-align: left; box-shadow: 0 0 20px var(--glow); }
-        .leaderboard-row { display: flex; justify-content: space-between; font-size: 20px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .option-box { background: #1a1d2d; border: 2px solid #2a2e45; padding: 18px; border-radius: 12px; font-size: 20px; font-weight: bold; text-align: center; transition: all 0.2s; }
+        .option-box.correct { background: var(--success); color: black; border-color: white; box-shadow: 0 0 20px var(--success); }
+
+        .timer-bar-container { background: #1a1d2d; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 20px; border: 1px solid #333852; }
+        #timerBar { background: var(--accent); height: 100%; width: 100%; transition: width 1s linear, background-color 0.3s; box-shadow: 0 0 10px var(--accent); }
+
+        .sidebar-panel { display: flex; flex-direction: column; gap: 20px; }
+        .sub-panel { background: var(--card); border: 1px solid #222538; border-radius: 16px; padding: 20px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #222538; padding-bottom: 10px; color: var(--accent); }
+
+        .leaderboard-list { overflow-y: auto; flex: 1; }
+        .leaderboard-item { display: flex; justify-content: space-between; background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 18px; border: 1px solid #2a2e45; }
         
-        .podium-view { display: none; text-align: center; }
-        .podium-grid { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-top: 25px; height: 280px; }
-        .podium-pillar { background: rgba(26, 29, 45, 0.9); border: 2px solid var(--primary); border-radius: 14px 14px 0 0; width: 160px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 20px; }
-        .podium-1 { height: 260px; border-color: #ffd700; background: rgba(255, 215, 0, 0.15); }
-        .podium-2 { height: 200px; border-color: #c0c0c0; background: rgba(192, 192, 192, 0.15); }
-        .podium-3 { height: 140px; border-color: #cd7f32; background: rgba(205, 127, 50, 0.15); }
-
-        #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(7, 8, 12, 0.98); display: none; justify-content: center; align-items: center; z-index: 99999; flex-direction: column; }
-        #advertOverlay img { max-width: 80vw; max-height: 75vh; border-radius: 18px; border: 3px solid var(--accent); box-shadow: 0 0 70px var(--glow); }
-        .advert-qr-corner { position: absolute; bottom: 30px; right: 30px; background: rgba(19, 21, 32, 0.9); padding: 12px; border-radius: 12px; border: 2px solid var(--accent); text-align: center; display: none; }
-        .advert-qr-corner img { width: 110px; height: 110px; border-radius: 8px; background: white; padding: 4px; display: block; }
-
-        .floating-emoji { position: fixed; bottom: 50px; font-size: 45px; animation: floatUp 3s ease-out forwards; z-index: 9999; pointer-events: none; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0.5); opacity: 1; }
-            100% { transform: translateY(-70vh) scale(1.5); opacity: 0; }
-        }
-
-        .fundraising-banner { position: absolute; bottom: 20px; font-size: 20px; color: var(--accent); background: rgba(19, 21, 32, 0.95); padding: 14px 40px; border-radius: 30px; border: 1px solid var(--accent); box-shadow: 0 0 20px var(--glow); letter-spacing: 0.5px; }
+        #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; text-align: center; }
+        #advertOverlay img { max-height: 70vh; max-width: 80vw; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 30px var(--accent-glow); margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="advertOverlay">
-        <h2 id="advertTitleDisplay" style="color:var(--accent); font-size:36px; margin-bottom:15px; text-shadow: 0 0 20px var(--glow);">Featured Sponsor & Event Advert</h2>
-        <img id="advertImageDisplay" src="" alt="Advert">
-        
-        <div id="advertQrCorner" class="advert-qr-corner">
-            <span style="font-size:12px; color:var(--accent); font-weight:bold; display:block; margin-bottom:4px;">Scan to Join!</span>
-            <img id="cornerQrImg" src="" alt="QR">
-        </div>
-    </div>
+    <header>
+        <h1 id="displayEventTitle">TriviaMania Live Event</h1>
+        <div class="stats-badge">Connected Teams: <span id="displayPlayerCount">0</span></div>
+    </header>
 
-    <div class="container" id="screenContainer">
-        <div id="waitingView" class="waiting-layout">
+    <div class="main-container">
+        <!-- LEFT: QUESTION & OPTIONS -->
+        <div class="quiz-panel">
             <div>
-                <h1 id="eventTitleDisplay">TriviaMania Live 🍻</h1>
-                <p class="welcome-sub" id="welcomeMessageDisplay">Welcome to the ultimate pub quiz experience!</p>
-                <div style="font-size: 18px; color: #a4a8bc; margin-bottom: 5px;">Connected Teams (<span id="projectorPlayerCount">0</span>):</div>
-                <div class="waiting-teams-box">
-                    <div class="waiting-teams-grid" id="waitingTeamsGrid">
-                        <span style="color: #777; font-size: 14px;">Waiting for teams to join...</span>
-                    </div>
-                </div>
-
-                <div id="projectorPollBox" class="poll-display">
-                    <h3 id="projectorPollQuestion" style="margin:0 0 12px 0; color:var(--accent); font-size:18px;"></h3>
-                    <div id="projectorPollBars"></div>
-                </div>
+                <h3 id="roundTitle">Waiting for Host to Load Round...</h3>
+                <div id="questionText">Welcome! Get your phones ready and join the game at <span style="color:var(--accent)">/player.html</span></div>
             </div>
-            <div class="qr-box">
-                <h3 style="margin:0 0 5px 0; color:var(--accent); font-size:16px;">Scan to Join</h3>
-                <img id="joinQrImage" src="" alt="Join QR Code">
-                <div style="font-size: 11px; color: #a4a8bc; margin-top: 6px; word-break: break-all;" id="joinLinkText"></div>
-            </div>
-        </div>
-
-        <div id="gameView" style="display:none;">
-            <div id="roundTitle" style="font-size: 22px; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; font-weight:bold; letter-spacing:1px;"></div>
-            <div class="question" id="questionText">Loading question...</div>
-            <div id="audioContainer" style="margin-bottom: 20px;"></div>
-            <div class="options" id="optionsGrid"></div>
-            <div class="answer" id="answerBox">Answer: <span id="answerText"></span></div>
             
-            <div class="leaderboard" id="leaderboardBox">
-                <h3 style="margin-top:0; color:var(--accent); font-size:18px;">🏆 Live Leaderboard</h3>
-                <div id="leaderboardList"></div>
+            <div id="optionsContainer" class="options-grid"></div>
+
+            <div>
+                <div id="answerRevealBox" style="font-size: 24px; font-weight: bold; color: var(--success); text-align: center; min-height: 35px; margin-top: 15px;"></div>
+                <div class="timer-bar-container">
+                    <div id="timerBar"></div>
+                </div>
             </div>
         </div>
 
-        <div id="podiumView" class="podium-view">
-            <h1 style="color: #ffd700; margin: 0 0 10px 0;">🎉 GAME OVER - WINNERS! 🎉</h1>
-            <p style="font-size: 22px; color: #a4a8bc; margin: 0;">Top performing pub teams:</p>
-            <div class="podium-grid" id="podiumContainer"></div>
+        <!-- RIGHT: LEADERBOARD -->
+        <div class="sidebar-panel">
+            <div class="sub-panel">
+                <h2>🏆 Live Leaderboard</h2>
+                <div id="displayLeaderboard" class="leaderboard-list">
+                    <p style="color: var(--muted); text-align: center; margin-top: 40px;">No scores yet.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="fundraising-banner" id="bannerText">🌟 TriviaMania Live Pub Quiz</div>
+    <!-- ADVERT OVERLAY -->
+    <div id="advertOverlay">
+        <h2 id="advertDisplayTitle" style="font-size: 36px; color: var(--accent); margin-top:0;">Featured Sponsor</h2>
+        <img id="advertDisplayImage" src="" alt="Sponsor Advert">
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const playerJoinUrl = window.location.protocol + '//' + window.location.host + '/player.html';
-        document.getElementById('joinLinkText').textContent = playerJoinUrl;
-        const qrCodeSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerJoinUrl)}`;
-        document.getElementById('joinQrImage').src = qrCodeSrc;
-        document.getElementById('cornerQrImg').src = qrCodeSrc;
-        
         const socket = io();
 
-        let audioCtx = null;
-        function getAudioContext() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            return audioCtx;
-        }
-
-        function playSound(type) {
-            try {
-                const ctx = getAudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                const now = ctx.currentTime;
-                if (type === 'tick') {
-                    osc.frequency.setValueAtTime(440, now);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                    osc.start(now);
-                    osc.stop(now + 0.1);
-                } else if (type === 'reveal') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.setValueAtTime(659.25, now + 0.1);
-                    osc.frequency.setValueAtTime(783.99, now + 0.2);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                    osc.start(now);
-                    osc.stop(now + 0.5);
-                } else if (type === 'podium') {
-                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-                        const o = ctx.createOscillator();
-                        const g = ctx.createGain();
-                        o.connect(g);
-                        g.connect(ctx.destination);
-                        o.frequency.setValueAtTime(freq, now + idx * 0.1);
-                        g.gain.setValueAtTime(0.15, now + idx * 0.1);
-                        g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-                        o.start(now + idx * 0.1);
-                        o.stop(now + 1.2);
-                    });
-                }
-            } catch(e) {}
-        }
-
-        socket.on('timerTick', (timeLeft) => {
-            if (timeLeft <= 3 && timeLeft > 0) playSound('tick');
-        });
-
-        socket.on('triggerReaction', (data) => {
-            const el = document.createElement('div');
-            el.className = 'floating-emoji';
-            el.textContent = data.emoji;
-            el.style.left = (Math.random() * 80 + 10) + 'vw';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 3000);
-        });
-
         socket.on('syncState', (state) => {
-            const waitingView = document.getElementById('waitingView');
-            const gameView = document.getElementById('gameView');
-            const podiumView = document.getElementById('podiumView');
-            const roundTitle = document.getElementById('roundTitle');
-            const questionText = document.getElementById('questionText');
-            const optionsGrid = document.getElementById('optionsGrid');
-            const answerBox = document.getElementById('answerBox');
-            const answerText = document.getElementById('answerText');
-            const audioContainer = document.getElementById('audioContainer');
-            const leaderboardBox = document.getElementById('leaderboardBox');
-            const advertOverlay = document.getElementById('advertOverlay');
-            const advertQrCorner = document.getElementById('advertQrCorner');
-            const projectorPollBox = document.getElementById('projectorPollBox');
-            const projectorPollQuestion = document.getElementById('projectorPollQuestion');
-            const projectorPollBars = document.getElementById('projectorPollBars');
-
-            if (state.eventTitle) document.getElementById('eventTitleDisplay').textContent = state.eventTitle;
-            if (state.welcomeMessage) document.getElementById('welcomeMessageDisplay').textContent = state.welcomeMessage;
-            if (state.bannerText) document.getElementById('bannerText').textContent = `🌟 ${state.bannerText}`;
-
-            if (state.pollActive && state.status === 'waiting') {
-                projectorPollBox.style.display = 'block';
-                projectorPollQuestion.textContent = state.pollQuestion;
-                
-                const counts = {};
-                state.pollOptions.forEach((_, idx) => counts[idx] = 0);
-                const totalVotes = Object.keys(state.pollVotes).length;
-                Object.values(state.pollVotes).forEach(optIdx => {
-                    if (counts[optIdx] !== undefined) counts[optIdx]++;
-                });
-
-                projectorPollBars.innerHTML = '';
-                state.pollOptions.forEach((opt, idx) => {
-                    const votes = counts[idx] || 0;
-                    const pct = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
-                    projectorPollBars.innerHTML += `
-                        <div class="poll-bar-container">
-                            <div class="poll-bar-fill" style="width: ${pct}%;"></div>
-                            <div class="poll-bar-text">${opt} — ${votes} votes (${pct}%)</div>
-                        </div>
-                    `;
-                });
-            } else {
-                projectorPollBox.style.display = 'none';
+            if (state.eventTitle) {
+                document.getElementById('displayEventTitle').textContent = state.eventTitle;
             }
 
+            // Handle Advert Overlay
+            const advertOverlay = document.getElementById('advertOverlay');
             if (state.projectorAdvertActive && state.advertImage) {
-                document.getElementById('advertImageDisplay').src = state.advertImage;
-                if (state.advertTitle) document.getElementById('advertTitleDisplay').textContent = state.advertTitle;
-                
-                if (state.showAdvertQR) advertQrCorner.style.display = 'block';
-                else advertQrCorner.style.display = 'none';
-
+                document.getElementById('advertDisplayImage').src = state.advertImage;
+                document.getElementById('advertDisplayTitle').textContent = state.advertTitle || 'Sponsor Advert';
                 advertOverlay.style.display = 'flex';
             } else {
                 advertOverlay.style.display = 'none';
             }
 
-            if (state.status === 'podium') {
-                waitingView.style.display = 'none';
-                gameView.style.display = 'none';
-                podiumView.style.display = 'block';
-                audioContainer.innerHTML = '';
-                playSound('podium');
-            } else if (state.status === 'active' || state.status === 'revealed') {
-                waitingView.style.display = 'none';
-                podiumView.style.display = 'none';
-                gameView.style.display = 'block';
-
+            // Handle Round & Questions
+            if (state.currentRound) {
                 const round = state.currentRound;
-                if (round && round.questions && round.questions.length > 0) {
-                    const q = round.questions[round.currentIndex || 0];
-                    roundTitle.textContent = `${round.name} ${round.speedBonus ? '⚡(Turbo)' : ''}`;
-                    questionText.textContent = q.q;
+                document.getElementById('roundTitle').textContent = round.name + " (Question " + (round.currentIndex + 1) + " of " + round.questions.length + ")";
+                
+                const currentQ = round.questions[round.currentIndex];
+                if (currentQ) {
+                    // Smart HTML/Image builder renderer
+                    let htmlContent = currentQ.q;
+                    if (currentQ.image) {
+                        htmlContent = '<img src="' + currentQ.image + '" style="max-height:240px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto; object-fit:contain;" alt="Picture Round"><div style="font-size:22px;">' + currentQ.q + '</div>';
+                    }
+                    document.getElementById('questionText').innerHTML = htmlContent;
 
-                    optionsGrid.innerHTML = '';
-                    q.options.forEach((opt, idx) => {
-                        const letter = ['A', 'B', 'C', 'D'][idx];
-                        optionsGrid.innerHTML += `<div class="pill"><strong style="color:var(--accent);">${letter}:</strong> ${opt}</div>`;
-                    });
-
-                    // Auto-play audio preview globally when host starts round
-                    if (q.audioUrl && state.status === 'active') {
-                        audioContainer.innerHTML = `<audio autoplay src="${q.audioUrl}" style="display:none;"></audio>`;
-                        const audioEl = audioContainer.querySelector('audio');
-                        if (audioEl) {
-                            audioEl.play().catch(err => console.log("Auto-play prevented or handled:", err));
-                        }
-                    } else {
-                        audioContainer.innerHTML = '';
+                    const optionsContainer = document.getElementById('optionsContainer');
+                    optionsContainer.innerHTML = '';
+                    
+                    if (currentQ.options) {
+                        currentQ.options.forEach((opt, idx) => {
+                            const letter = ['A', 'B', 'C', 'D'][idx];
+                            const div = document.createElement('div');
+                            div.className = 'option-box';
+                            div.innerHTML = '<span style="color:var(--accent);">' + letter + ':</span> ' + opt;
+                            
+                            if (state.status === 'revealed' && opt.trim().toLowerCase() === currentQ.a.trim().toLowerCase()) {
+                                div.classList.add('correct');
+                            }
+                            optionsContainer.appendChild(div);
+                        });
                     }
 
+                    const revealBox = document.getElementById('answerRevealBox');
                     if (state.status === 'revealed') {
-                        answerBox.style.display = 'block';
-                        answerText.textContent = q.a;
-                        leaderboardBox.style.display = 'block';
-                        playSound('reveal');
+                        revealBox.textContent = 'Correct Answer: ' + currentQ.a;
                     } else {
-                        answerBox.style.display = 'none';
-                        leaderboardBox.style.display = 'none';
+                        revealBox.textContent = '';
                     }
                 }
-            } else {
-                waitingView.style.display = 'grid';
-                gameView.style.display = 'none';
-                podiumView.style.display = 'none';
-                audioContainer.innerHTML = '';
             }
         });
 
         socket.on('updatePlayers', (players) => {
-            const listEl = document.getElementById('leaderboardList');
-            const waitingTeamsGrid = document.getElementById('waitingTeamsGrid');
-            const projectorPlayerCount = document.getElementById('projectorPlayerCount');
-            const podiumContainer = document.getElementById('podiumContainer');
-            const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
+            const keys = Object.keys(players);
+            document.getElementById('displayPlayerCount').textContent = keys.length;
 
-            projectorPlayerCount.textContent = sortedPlayers.length;
-
-            if (sortedPlayers.length === 0) {
-                waitingTeamsGrid.innerHTML = '<span style="color: #777; font-size: 14px;">Waiting for teams to join...</span>';
-                listEl.innerHTML = '<p style="color:#777; font-size:16px;">No teams scored yet.</p>';
-                podiumContainer.innerHTML = '<p style="color:#777;">No active teams.</p>';
+            const listEl = document.getElementById('displayLeaderboard');
+            if (keys.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--muted); text-align: center; margin-top: 40px;">No teams connected yet.</p>';
                 return;
             }
 
-            waitingTeamsGrid.innerHTML = '';
-            sortedPlayers.forEach(p => {
-                waitingTeamsGrid.innerHTML += `<div class="team-pill"><span>${p.avatar}</span> <strong>${p.name}</strong></div>`;
+            const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+            let html = '';
+            sorted.forEach((p, idx) => {
+                html += '<div class="leaderboard-item"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
             });
+            listEl.innerHTML = html;
+        });
 
-            listEl.innerHTML = '';
-            sortedPlayers.slice(0, 5).forEach((p, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                listEl.innerHTML += `
-                    <div class="leaderboard-row">
-                        <span>${medal} ${p.avatar} ${p.name}</span>
-                        <strong style="color: var(--accent);">${p.score} pts</strong>
-                    </div>
-                `;
-            });
-
-            const p1 = sortedPlayers[0] || { name: '-', score: 0 };
-            const p2 = sortedPlayers[1] || { name: '-', score: 0 };
-            const p3 = sortedPlayers[2] || { name: '-', score: 0 };
-
-            podiumContainer.innerHTML = `
-                <div class="podium-pillar podium-2">
-                    <span style="font-size:32px;">🥈</span>
-                    <strong style="color:#c0c0c0; font-size:16px; margin-top:8px;">2nd</strong>
-                    <div style="font-size:16px; margin-top:10px; font-weight:bold; color:#fff;">${p2.name}</div>
-                    <div style="font-size:14px; color:var(--accent); margin-top:5px;">${p2.score} pts</div>
-                </div>
-                <div class="podium-pillar podium-1">
-                    <span style="font-size:40px;">👑</span>
-                    <strong style="color:#ffd700; font-size:18px; margin-top:8px;">1st</strong>
-                    <div style="font-size:18px; margin-top:10px; font-weight:bold; color:#fff;">${p1.name}</div>
-                    <div style="font-size:15px; color:var(--accent); margin-top:5px;">${p1.score} pts</div>
-                </div>
-                <div class="podium-pillar podium-3">
-                    <span style="font-size:32px;">🥉</span>
-                    <strong style="color:#cd7f32; font-size:16px; margin-top:8px;">3rd</strong>
-                    <div style="font-size:16px; margin-top:10px; font-weight:bold; color:#fff;">${p3.name}</div>
-                    <div style="font-size:14px; color:var(--accent); margin-top:5px;">${p3.score} pts</div>
-                </div>
-            `;
+        socket.on('timerTick', (timeLeft) => {
+            const bar = document.getElementById('timerBar');
+            const percentage = (timeLeft / 15) * 100;
+            bar.style.width = Math.max(0, percentage) + '%';
+            if (timeLeft <= 3) {
+                bar.style.backgroundColor = 'var(--danger)';
+            } else {
+                bar.style.backgroundColor = 'var(--accent)';
+            }
         });
     </script>
 </body>
