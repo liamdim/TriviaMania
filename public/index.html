@@ -141,64 +141,59 @@
 
             <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
 
-            <label>Standard Trivia Category:</label>
+            <label>Standard Trivia & Kids Sections:</label>
             <select id="categorySelect">
                 <option value="">Random / General Knowledge</option>
                 <option value="9">General Knowledge</option>
                 <option value="17">Science & Nature</option>
-                <option value="18">Computers & Technology</option>
-                <option value="21">Sports & Athletics</option>
                 <option value="23">History</option>
                 <option value="22">Geography & World Capitals</option>
                 <option value="11">Movies & Cinema</option>
                 <option value="12">Music & Pop Culture</option>
                 <option value="15">Video Games</option>
+                <option value="kids">🧸 Kids & Cartoons Round</option>
             </select>
-            <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Standard Trivia Round</button>
+            <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Trivia / Kids Round</button>
 
             <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
 
-            <label>Music & Decades Section:</label>
+            <label>Music & Artist Section:</label>
             <select id="musicGenreSelect">
+                <option value="female pop artists">🎤 Female Artists Only (Taylor, Beyoncé, Adele, etc.)</option>
+                <option value="male pop artists">🎤 Male Artists Only</option>
                 <option value="1980s pop rock">1980s Hits</option>
                 <option value="1990s britpop">1990s Hits</option>
                 <option value="2000s pop hits">2000s Hits</option>
-                <option value="2010s billboard hits">2010s Hits</option>
-                <option value="2020s pop hits">2020s Hits</option>
-                <option value="dance hits edm">Dance & Club Hits</option>
-                <option value="female pop artists">Female Artists</option>
-                <option value="male pop artists">Male Artists</option>
-                <option value="boy bands 90s 00s">Boy Bands</option>
-                <option value="girl bands pop">Girl Bands</option>
-                <option value="country music hits">Country Hits</option>
                 <option value="classic rock anthems">Rock Hits</option>
-                <option value="billboard number one hits">UK / US No.1s</option>
-                <option value="indie alternative rock">Indie & Alt</option>
                 <option value="motown soul legends">Motown & Soul</option>
-                <option value="jazz lounge classics">Jazz</option>
-                <option value="rnb soul hits">R&B</option>
-                <option value="rap hip hop hits">Rap & Hip-Hop</option>
-                <option value="uk garage old school">UK Garage</option>
-                <option value="tv theme songs">TV Show Theme Songs</option>
-                <option value="cartoon theme songs">Cartoon Theme Songs</option>
-                <option value="epic movie soundtracks">Movie Theme Songs</option>
+                <option value="tv theme songs">TV Theme Songs</option>
             </select>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Theme Round</button>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Artist Round</button>
         </div>
 
         <div>
+            <!-- Custom Picture Round Importer -->
+            <div class="panel" style="border: 2px dashed var(--accent);">
+                <h2>🖼️ Custom Picture Round Importer</h2>
+                <label>Round Name:</label>
+                <input type="text" id="picRoundName" value="Picture Round">
+                <label>Paste Questions (Format: Image URL | Correct Answer | Opt1, Opt2, Opt3):</label>
+                <textarea id="picRoundText" rows="4" placeholder="https://i.imgur.com/example.jpg | Eiffel Tower | Big Ben, Colosseum, Leaning Tower"></textarea>
+                <button class="btn-api" style="background:var(--accent); color:black;" onclick="addPictureRoundToPlaylist()">➕ Add Picture Round</button>
+            </div>
+
             <div class="panel" style="border: 2px dashed var(--primary);">
-                <h2>📝 Custom Round Importer</h2>
+                <h2>📝 Custom Text Round Importer</h2>
                 <label>Round Name:</label>
                 <input type="text" id="customRoundName" value="Custom Pub Round">
                 <label>Paste Questions (Format: Q | Answer | Opt1, Opt2, Opt3, Opt4):</label>
-                <textarea id="customRoundText" rows="4" placeholder="What is our local pub name? | The Crown | Crown, Red Lion, Swan, Anchor"></textarea>
+                <textarea id="customRoundText" rows="3" placeholder="What is our local pub name? | The Crown | Crown, Red Lion, Swan, Anchor"></textarea>
                 <button class="btn-api" style="background:#ff9100; color:black;" onclick="addCustomRoundToPlaylist()">➕ Add Custom Round</button>
             </div>
 
             <div class="panel">
                 <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
-                <div id="playlistContainer" style="max-height: 250px; overflow-y: auto;">
+                <div id="playlistContainer" style="max-height: 200px; overflow-y: auto;">
                     <p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>
                 </div>
             </div>
@@ -261,8 +256,30 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- EMBEDDED API QUESTION GENERATORS ---
+        // --- BULLETPROOF QUESTION & MUSIC GENERATORS ---
         async function fetchTriviaQuestions(amount = 10, category = '') {
+            if (category === 'kids') {
+                // Curated family-friendly kids & cartoon questions
+                const kidsPool = [
+                    { q: "What kind of animal is Simba in The Lion King?", a: "Lion", options: ["Tiger", "Lion", "Leopard", "Cheetah"] },
+                    { q: "In Frozen, what is the name of Elsa and Anna's kingdom?", a: "Arendelle", options: ["Corona", "Arendelle", "Atlantis", "Agrabah"] },
+                    { q: "What color is Mickey Mouse's shorts?", a: "Red", options: ["Blue", "Yellow", "Red", "Green"] },
+                    { q: "What is the name of Andy's cowboy toy in Toy Story?", a: "Woody", options: ["Buzz", "Woody", "Rex", "Slinky"] },
+                    { q: "Which Pokémon is a yellow electric mouse?", a: "Pikachu", options: ["Charmander", "Squirtle", "Pikachu", "Bulbasaur"] },
+                    { q: "What fruit do minions love the most?", a: "Banana", options: ["Apple", "Banana", "Strawberry", "Orange"] },
+                    { q: "What is the name of the sponge who lives in a pineapple under the sea?", a: "SpongeBob SquarePants", options: ["Patrick Star", "SpongeBob SquarePants", "Squidward", "Mr. Krabs"] },
+                    { q: "In Harry Potter, what is the name of Harry's pet owl?", a: "Hedwig", options: ["Crookshanks", "Scabbers", "Hedwig", "Fang"] },
+                    { q: "What superhero wears a red and blue suit and climbs walls?", a: "Spider-Man", options: ["Batman", "Superman", "Iron Man", "Spider-Man"] },
+                    { q: "What color are the spots on a traditional ladybug?", a: "Black", options: ["White", "Yellow", "Black", "Blue"] }
+                ];
+                kidsPool.sort(() => Math.random() - 0.5);
+                return kidsPool.slice(0, amount).map(item => ({
+                    ...item,
+                    options: [...item.options].sort(() => Math.random() - 0.5),
+                    type: 'trivia'
+                }));
+            }
+
             let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
             if (category) url += `&category=${category}`;
             try {
@@ -294,12 +311,17 @@
             try {
                 let queryTerm = searchTerm;
                 const isFemaleRound = searchTerm.toLowerCase().includes('female');
+                const isMaleRound = searchTerm.toLowerCase().includes('male');
+
                 if (isFemaleRound) {
-                    const femaleIcons = ['Taylor Swift', 'Beyonce', 'Rihanna', 'Dua Lipa', 'Adele', 'Ariana Grande', 'Billie Eilish', 'Lady Gaga', 'Katy Perry', 'Miley Cyrus', 'Olivia Rodrigo', 'Britney Spears', 'Madonna', 'Whitney Houston', 'Alicia Keys', 'Pink', 'Shakira', 'Celine Dion', 'Amy Winehouse', 'Sia'];
+                    const femaleIcons = ['Taylor Swift', 'Beyonce', 'Adele', 'Dua Lipa', 'Billie Eilish', 'Katy Perry', 'Lady Gaga', 'Ariana Grande', 'Rihanna', 'Pink', 'Shakira', 'Miley Cyrus', 'Olivia Rodrigo', 'Celine Dion', 'Whitney Houston'];
                     queryTerm = femaleIcons[Math.floor(Math.random() * femaleIcons.length)];
+                } else if (isMaleRound) {
+                    const maleIcons = ['Ed Sheeran', 'Justin Bieber', 'Shawn Mendes', 'Harry Styles', 'Bruno Mars', 'The Weeknd', 'Sam Smith', 'Eminem', 'Calvin Harris', 'Post Malone', 'Drake', 'Lewis Capaldi'];
+                    queryTerm = maleIcons[Math.floor(Math.random() * maleIcons.length)];
                 }
 
-                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&entity=song&limit=80`);
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&entity=song&limit=100`);
                 const data = await res.json();
                 
                 if (data.results && data.results.length > 0) {
@@ -470,13 +492,45 @@
             alert(`Added custom round "${name}"!`);
         }
 
+        function addPictureRoundToPlaylist() {
+            const name = document.getElementById('picRoundName').value.trim() || "Picture Round";
+            const rawText = document.getElementById('picRoundText').value.trim();
+            const timer = parseInt(document.getElementById('timerSelect').value);
+            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
+
+            if (!rawText) return alert('Please paste picture questions!');
+
+            const lines = rawText.split('\n');
+            const questions = [];
+            lines.forEach(line => {
+                const parts = line.split('|');
+                if (parts.length >= 3) {
+                    const imageUrl = parts[0].trim();
+                    const a = parts[1].trim();
+                    const options = parts[2].split(',').map(o => o.trim());
+                    if (!options.includes(a)) options.push(a);
+                    
+                    // Format question to display image on projector
+                    const q = `<img src="${imageUrl}" style="max-height:280px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto;" alt="Picture Round"><div style="font-size:20px;">Identify what or who is shown above:</div>`;
+                    
+                    questions.push({ q, a, options: options.sort(() => Math.random() - 0.5), type: 'picture' });
+                }
+            });
+
+            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
+            renderPlaylist();
+            renderHostQueue();
+            alert(`Added picture round "${name}"!`);
+        }
+
         async function addTriviaToPlaylist() {
             const count = parseInt(document.getElementById('questionCountSelect').value);
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const speedBonus = document.getElementById('speedBonusCheckbox').checked;
             const categoryId = document.getElementById('categorySelect').value;
-            const categoryName = categoryId ? document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text : "General";
+            const categoryName = categoryId === 'kids' ? 'Kids & Cartoons' : (categoryId ? document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text : "General");
             
             const questions = await fetchTriviaQuestions(count, categoryId);
             playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
