@@ -19,6 +19,8 @@
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); font-size: 16px; }
         
+        .tip-jar-btn { background: #ff9100; color: black; margin-top: 15px; display: none; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; text-align: center; box-shadow: 0 0 10px rgba(255,145,0,0.4); }
+
         #mobileAdvertModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 99999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; flex-direction: column; }
         #mobileAdvertModal img { max-width: 90vw; max-height: 65vh; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.5); margin-bottom: 15px; }
     </style>
@@ -48,6 +50,8 @@
                 <p id="currentQuestionPrompt" style="font-size: 16px; color: #fff; margin-bottom: 15px; font-weight: bold;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
+
+            <a id="tipJarLink" href="#" target="_blank" class="tip-jar-btn">🎁 Tip / Support the Quizmaster</a>
         </div>
     </div>
 
@@ -64,6 +68,15 @@
             const optionsGrid = document.getElementById('playerOptionsGrid');
             const mobileAdvertModal = document.getElementById('mobileAdvertModal');
             const mobileAdvertImage = document.getElementById('mobileAdvertImage');
+            const tipJarLink = document.getElementById('tipJarLink');
+
+            // Tip Jar visibility
+            if (state.tipJarActive && state.tipJarUrl) {
+                tipJarLink.href = state.tipJarUrl;
+                tipJarLink.style.display = 'block';
+            } else {
+                tipJarLink.style.display = 'none';
+            }
 
             const isJoined = document.getElementById('gameScreen').style.display === 'block';
             if (isJoined && state.mobileAdvertActive && state.advertImage) {
@@ -81,7 +94,7 @@
                 const qIndex = round.currentIndex || 0;
                 const currentQ = round.questions[qIndex];
 
-                statusText.textContent = `Question ${qIndex + 1} of ${round.questions.length}`;
+                statusText.textContent = `Question ${qIndex + 1} of ${round.questions.length} ${round.speedBonus ? '⚡' : ''}`;
                 answerSection.style.display = 'block';
                 promptEl.textContent = currentQ.q;
 
@@ -98,6 +111,9 @@
                 }
             } else if (isJoined && state.status === 'revealed') {
                 statusText.textContent = "Answer Revealed on Projector! Check leaderboard.";
+                answerSection.style.display = 'none';
+            } else if (isJoined && state.status === 'podium') {
+                statusText.textContent = "🎉 Game Over! Check projector for final podium winners!";
                 answerSection.style.display = 'none';
             } else if (isJoined) {
                 if (!state.mobileAdvertActive) {
