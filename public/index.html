@@ -188,7 +188,7 @@
     <div id="tab-media" class="tab-content">
         <div class="panel full-width">
             <h2>🖼️ Upload Advert or Sponsor Image</h2>
-            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Upload any image file. Once selected, go to Control Center to push it instantly to all screens.</p>
+            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Select any image file. You will see a live preview appear below once loaded.</p>
             <label>Select Image File:</label>
             <input type="file" id="imageUploadInput" accept="image/*" onchange="previewImage(event)" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
             <br>
@@ -235,16 +235,16 @@
 
         function pushAdvertToScreen() {
             if (!storedAdvertBase64) {
-                alert('Please upload an image in the Adverts & Media tab first!');
+                alert('Please select an image file in the Adverts & Media tab first!');
                 return;
             }
             socket.emit('hostAction', { action: 'pushAdvert', payload: { image: storedAdvertBase64 } });
-            alert('Advert successfully pushed to projector and player phones!');
+            alert('Advert pushed to all screens successfully!');
         }
 
         function hideAdvertFromScreen() {
             socket.emit('hostAction', { action: 'hideAdvert' });
-            alert('Advert hidden from screens.');
+            alert('Advert hidden.');
         }
 
         function saveSettings() {
