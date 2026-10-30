@@ -89,10 +89,10 @@
 
     <div class="fundraising-banner" id="bannerText">🌟 TriviaMania Live Pub Quiz</div>
 
-    <script src="/socket.io/socket.io.js"></script>
+<script src="/socket.io/socket.io.js"></script>
     <script>
-        // Explicitly point the QR code to player.html so scans go straight to login
-        const playerJoinUrl = window.location.origin + '/player.html';
+        // Explicitly force the QR code and text to point to /player.html
+        const playerJoinUrl = window.location.protocol + '//' + window.location.host + '/player.html';
         document.getElementById('joinLinkText').textContent = playerJoinUrl;
         document.getElementById('joinQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(playerJoinUrl)}`;
         
