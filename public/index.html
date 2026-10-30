@@ -69,10 +69,18 @@
         </div>
 
         <div class="panel">
-            <h2>Live Advert Screen Controls</h2>
-            <p style="color: var(--muted); font-size: 13px; margin-top:0;">Instantly push or hide your uploaded advert across all screens.</p>
-            <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvertToScreen()">📢 Push Advert to All Screens</button>
-            <button class="btn-danger" style="padding: 12px; font-size:15px; width:100%; margin-top:10px;" onclick="hideAdvertFromScreen()">❌ Hide Advert from Screens</button>
+            <h2>Separate Screen Advert Controls</h2>
+            <p style="color: var(--muted); font-size: 13px; margin-top:0;">Push ad to projector and phones independently.</p>
+            
+            <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector Only</button>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="pushAdvert('mobile')">📱 Push Ad to Mobile Phones Only</button>
+            <button class="btn-api" style="background:var(--primary);" onclick="pushAdvert('both')">📢 Push Ad to BOTH Screens</button>
+            
+            <hr style="border:0; border-top:1px solid #222538; margin:15px 0;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-danger" style="width:100%;" onclick="hideAdvert('projector')">❌ Hide Projector Ad</button>
+                <button class="btn-danger" style="width:100%;" onclick="hideAdvert('mobile')">❌ Hide Mobile Ad</button>
+            </div>
         </div>
 
         <div class="panel full-width">
@@ -188,7 +196,6 @@
     <div id="tab-media" class="tab-content">
         <div class="panel full-width">
             <h2>🖼️ Upload Advert or Sponsor Image</h2>
-            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Select any image file. You will see a live preview appear below once loaded.</p>
             <label>Select Image File:</label>
             <input type="file" id="imageUploadInput" accept="image/*" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
             <br>
@@ -235,18 +242,18 @@
             event.target.classList.add('active');
         }
 
-        function pushAdvertToScreen() {
+        function pushAdvert(target) {
             if (!storedAdvertBase64) {
                 alert('Please select an image file in the Adverts & Media tab first!');
                 return;
             }
-            socket.emit('hostAction', { action: 'pushAdvert', payload: { image: storedAdvertBase64 } });
-            alert('Advert pushed to all screens successfully!');
+            socket.emit('hostAction', { action: 'pushAdvert', payload: { image: storedAdvertBase64, target } });
+            alert(`Advert pushed to ${target}!`);
         }
 
-        function hideAdvertFromScreen() {
-            socket.emit('hostAction', { action: 'hideAdvert' });
-            alert('Advert hidden.');
+        function hideAdvert(target) {
+            socket.emit('hostAction', { action: 'hideAdvert', payload: { target } });
+            alert(`Advert hidden from ${target}.`);
         }
 
         function saveSettings() {
