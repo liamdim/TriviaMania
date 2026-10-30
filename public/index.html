@@ -43,7 +43,7 @@
         <div>
             <div class="panel">
                 <h2>Master Game Controls</h2>
-                <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
+                <button class="btn-play" onclick="sendAction('resume')">▶ Resume Round</button>
                 <button onclick="sendAction('pause')">⏸ Pause Game</button>
                 <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer on Screen</button>
             </div>
@@ -61,7 +61,7 @@
             <!-- Add Rounds to Queue -->
             <div class="panel">
                 <h2>Build Your Quiz Playlist</h2>
-                <p style="color: #aaa; font-size: 14px;">Add live online rounds to your queue, then load them when you're ready.</p>
+                <p style="color: #aaa; font-size: 14px;">Select category and question counts, then add rounds to your queue.</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
@@ -74,15 +74,25 @@
                         </select>
                     </div>
                     <div>
-                        <label>Round Type:</label>
-                        <select id="roundTypeSelect">
-                            <option value="trivia">General Trivia (API)</option>
-                            <option value="music">Music Audio Previews (API)</option>
+                        <label>Trivia Category:</label>
+                        <select id="categorySelect">
+                            <option value="">Random / General</option>
+                            <option value="9">General Knowledge</option>
+                            <option value="17">Science & Nature</option>
+                            <option value="18">Computers & Tech</option>
+                            <option value="20">Mythology</option>
+                            <option value="21">Sports</option>
+                            <option value="23">History</option>
+                            <option value="25">Art</option>
+                            <option value="27">Animals</option>
                         </select>
                     </div>
                 </div>
 
-                <button class="btn-api" onclick="addToPlaylist()">➕ Generate & Add Round to Queue</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
+                    <button class="btn-api" onclick="addToPlaylist('trivia')">➕ Add Trivia Round</button>
+                    <button class="btn-api" style="background:#ff9800; color:black;" onclick="addToPlaylist('music')">➕ Add Music Round</button>
+                </div>
             </div>
 
             <!-- Active Playlist Queue -->
@@ -100,21 +110,24 @@
         const socket = io();
         let playlist = [];
 
-        async function addToPlaylist() {
+        async function addToPlaylist(type) {
             const count = parseInt(document.getElementById('questionCountSelect').value);
-            const type = document.getElementById('roundTypeSelect').value;
+            const categorySelect = document.getElementById('categorySelect');
+            const categoryId = categorySelect.value;
+            const categoryName = categoryId ? categorySelect.options[categorySelect.selectedIndex].text : "General";
             
             const btn = event.target;
-            btn.textContent = "Fetching questions from online API...";
-            
+            const originalText = btn.textContent;
+            btn.textContent = "Fetching...";
+
             let questions = [];
             let roundName = "";
 
             if (type === 'trivia') {
-                questions = await fetchTriviaQuestions(count);
-                roundName = `Trivia Round (${questions.length} Qs)`;
+                questions = await fetchTriviaQuestions(count, categoryId);
+                roundName = `Trivia: ${categoryName} (${questions.length} Qs)`;
             } else {
-                questions = await fetchMusicPreviewRound();
+                questions = await fetchMusicPreviewRound(count);
                 roundName = `Music Audio Round (${questions.length} Qs)`;
             }
 
@@ -124,7 +137,7 @@
                 questions: questions
             });
 
-            btn.textContent = "➕ Generate & Add Round to Queue";
+            btn.textContent = originalText;
             renderPlaylist();
         }
 
@@ -146,7 +159,7 @@
                             <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ready to load</div>
                         </div>
                         <div>
-                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadRound(${index})">▶ Load</button>
+                            <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadAndStartRound(${index})">▶ Load & Play</button>
                             <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
                         </div>
                     </div>
@@ -154,7 +167,7 @@
             });
         }
 
-        function loadRound(index) {
+        function loadAndStartRound(index) {
             const round = playlist[index];
             const roundPayload = {
                 name: round.name,
@@ -162,8 +175,9 @@
                 currentIndex: 0
             };
 
+            // Sends loadRound and automatically sets status to active so it plays instantly
             socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
-            alert(`Loaded "${round.name}" to projector and player phones!`);
+            alert(`Loaded and started "${round.name}"!`);
         }
 
         function deleteRound(index) {
