@@ -40,7 +40,6 @@
         .preview-box { max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; display: none; }
         .score-row { display: flex; justify-content: space-between; align-items: center; background: #1a1d2d; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #2a2e45; }
     </style>
-    <script src="/js/api.js"></script>
 </head>
 <body>
 
@@ -262,6 +261,96 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // --- EMBEDDED API QUESTION GENERATORS ---
+        async function fetchTriviaQuestions(amount = 10, category = '') {
+            let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
+            if (category) url += `&category=${category}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.results && data.results.length > 0) {
+                    return data.results.map(item => {
+                        const incorrect = item.incorrect_answers.map(ans => decodeHtml(ans));
+                        const correct = decodeHtml(item.correct_answer);
+                        const uniqueOptions = [...new Set([...incorrect, correct])];
+                        while (uniqueOptions.length < 4 && incorrect.length > 0) {
+                            uniqueOptions.push(incorrect[Math.floor(Math.random() * incorrect.length)]);
+                        }
+                        return {
+                            q: decodeHtml(item.question),
+                            a: correct,
+                            options: uniqueOptions.sort(() => Math.random() - 0.5),
+                            type: 'trivia'
+                        };
+                    });
+                }
+            } catch (e) {
+                console.error("Error fetching trivia:", e);
+            }
+            return [{ q: "What is the capital of France?", a: "Paris", options: ["London", "Paris", "Berlin", "Madrid"], type: 'trivia' }];
+        }
+
+        async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
+            try {
+                let queryTerm = searchTerm;
+                const isFemaleRound = searchTerm.toLowerCase().includes('female');
+                if (isFemaleRound) {
+                    const femaleIcons = ['Taylor Swift', 'Beyonce', 'Rihanna', 'Dua Lipa', 'Adele', 'Ariana Grande', 'Billie Eilish', 'Lady Gaga', 'Katy Perry', 'Miley Cyrus', 'Olivia Rodrigo', 'Britney Spears', 'Madonna', 'Whitney Houston', 'Alicia Keys', 'Pink', 'Shakira', 'Celine Dion', 'Amy Winehouse', 'Sia'];
+                    queryTerm = femaleIcons[Math.floor(Math.random() * femaleIcons.length)];
+                }
+
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&entity=song&limit=80`);
+                const data = await res.json();
+                
+                if (data.results && data.results.length > 0) {
+                    const cleanArtistName = (name) => name.split(/&|feat\.|featuring|,/i)[0].trim();
+                    const validSongs = data.results.filter(song => song.previewUrl && song.artistName && song.trackName);
+                    validSongs.sort(() => Math.random() - 0.5);
+
+                    const allCleanArtists = [...new Set(validSongs.map(s => cleanArtistName(s.artistName)))];
+                    const questions = [];
+                    const usedArtists = new Set();
+
+                    for (const song of validSongs) {
+                        if (questions.length >= amount) break;
+                        const primaryArtist = cleanArtistName(song.artistName);
+                        
+                        if (!usedArtists.has(primaryArtist) && primaryArtist.length > 1) {
+                            usedArtists.add(primaryArtist);
+                            const otherArtists = allCleanArtists.filter(a => a.toLowerCase() !== primaryArtist.toLowerCase());
+                            otherArtists.sort(() => Math.random() - 0.5);
+                            const distractors = otherArtists.slice(0, 3);
+
+                            const options = [...new Set([primaryArtist, ...distractors])];
+                            while (options.length < 4 && allCleanArtists.length >= 4) {
+                                const extra = allCleanArtists[Math.floor(Math.random() * allCleanArtists.length)];
+                                if (!options.includes(extra)) options.push(extra);
+                            }
+
+                            questions.push({
+                                q: `Name the main artist performing this track: "${song.trackName}"`,
+                                a: primaryArtist,
+                                options: options.sort(() => Math.random() - 0.5),
+                                audioUrl: song.previewUrl,
+                                type: 'music'
+                            });
+                        }
+                    }
+                    if (questions.length > 0) return questions;
+                }
+            } catch(e) {
+                console.error("Error fetching music:", e);
+            }
+            return [{ q: "Name the artist for this track", a: "Adele", options: ["Taylor Swift", "Adele", "Rihanna", "Dua Lipa"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/c6/8e/3c/c68e3c6a-4d2c-8824-3458-1f6b814674d8/mza_11674482098716327668.m43.aac", type: 'music' }];
+        }
+
+        function decodeHtml(html) {
+            const txt = document.createElement("textarea");
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+        // --- DASHBOARD CONTROLLER SCRIPT ---
         const socket = io();
         let playlist = [];
         let storedAdvertBase64 = null;
@@ -401,7 +490,7 @@
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
             const speedBonus = document.getElementById('speedBonusCheckbox').checked;
             const musicSelect = document.getElementById('musicGenreSelect');
-            const questions = await fetchMusicPreviewRound(count, musicSelect.value, musicSelect.value.includes('theme'));
+            const questions = await fetchMusicPreviewRound(count, musicSelect.value);
             playlist.push({ id: Date.now(), name: `Music: ${musicSelect.options[musicSelect.selectedIndex].text} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             renderHostQueue();
