@@ -40,25 +40,40 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = '1980s pop rock'
             if (isKidsOrTv || searchTerm.includes('disney') || searchTerm.includes('cartoon') || searchTerm.includes('tv theme') || searchTerm.includes('soundtrack')) {
                 const movieDecoys = ["The Lion King", "Frozen", "Moana", "Toy Story", "Aladdin", "Tangled", "Shrek", "Cars", "Finding Nemo", "Beauty and the Beast", "Cinderella", "The Little Mermaid", "Up", "Encanto", "Harry Potter", "Star Wars", "Jurassic Park", "Batman", "Spider-Man", "Doctor Who", "The Incredibles", "Monsters, Inc.", "Mulan", "Hercules"];
 
+                // Curated dictionary mapping popular track keywords to their correct movie answers
+                const movieMapping = {
+                    "lion": "The Lion King", "frozen": "Frozen", "moana": "Moana", "toy": "Toy Story",
+                    "aladdin": "Aladdin", "tangled": "Tangled", "shrek": "Shrek", "cars": "Cars",
+                    "nemo": "Finding Nemo", "beauty": "Beauty and the Beast", "cinderella": "Cinderella",
+                    "mermaid": "The Little Mermaid", "up": "Up", "encanto": "Encanto", "potter": "Harry Potter",
+                    "star wars": "Star Wars", "jurassic": "Jurassic Park", "batman": "Batman", "spider": "Spider-Man",
+                    "incredibles": "The Incredibles", "monsters": "Monsters, Inc.", "mulan": "Mulan", "hercules": "Hercules",
+                    "tarzan": "Tarzan", "coco": "Coco", "aladdin": "Aladdin", "hercules": "Hercules"
+                };
+
                 return validSongs.slice(0, amount).map(song => {
-                    // Clean up song title to be the correct answer
-                    let cleanSongTitle = song.trackName
-                        .replace(/\(.*?\)/g, '')
-                        .replace(/from.*$/i, '')
-                        .replace(/theme.*$/i, '')
-                        .trim();
+                    const songTitle = song.trackName.replace(/\(.*?\)/g, '').trim();
                     
-                    if (cleanSongTitle.length < 2) cleanSongTitle = "Classic Theme Song";
+                    // Try to deduce the movie from the song name or collection name, otherwise pick a clean default match from our list
+                    let correctMovie = "The Lion King";
+                    const combinedText = (song.trackName + " " + (song.collectionName || "")).toLowerCase();
+                    
+                    for (const [keyword, movieName] of Object.entries(movieMapping)) {
+                        if (combinedText.includes(keyword)) {
+                            correctMovie = movieName;
+                            break;
+                        }
+                    }
 
                     // Pick 3 wrong movie decoys
-                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== cleanSongTitle.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
+                    const wrongOptions = movieDecoys.filter(m => m.toLowerCase() !== correctMovie.toLowerCase()).sort(() => Math.random() - 0.5).slice(0, 3);
                     
-                    // Combine correct answer with decoys and truly randomize position
-                    const options = [...wrongOptions, cleanSongTitle].sort(() => Math.random() - 0.5);
+                    // Combine correct movie with decoys and truly randomize position
+                    const options = [...wrongOptions, correctMovie].sort(() => Math.random() - 0.5);
 
                     return {
-                        q: `What Disney or family movie features this song? 🎵`,
-                        a: cleanSongTitle,
+                        q: `What movie features the song "${songTitle}"? 🎵`,
+                        a: correctMovie,
                         options: options,
                         audioUrl: song.previewUrl,
                         type: 'music'
