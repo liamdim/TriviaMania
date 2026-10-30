@@ -61,7 +61,7 @@
             <!-- Add Rounds to Queue -->
             <div class="panel">
                 <h2>Build Your Quiz Playlist</h2>
-                <p style="color: #aaa; font-size: 14px;">Select category and question counts, then add rounds to your queue.</p>
+                <p style="color: #aaa; font-size: 14px;">Select categories, decades, or kids rounds and add them to your queue.</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
@@ -89,10 +89,51 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
-                    <button class="btn-api" onclick="addToPlaylist('trivia')">➕ Add Trivia Round</button>
-                    <button class="btn-api" style="background:#ff9800; color:black;" onclick="addToPlaylist('music')">➕ Add Music Round</button>
+                <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Trivia Round</button>
+
+                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 20px 0;">
+
+                <div>
+                    <label>Music / TV / Decades / Kids Genre:</label>
+                    <select id="musicGenreSelect">
+                        <!-- Decades -->
+                        <option value="1980s pop rock">1980s Pop & Rock Anthems</option>
+                        <option value="1980s synth wave">1980s Synthwave & New Wave</option>
+                        <option value="1980s dance hits">1980s Dance & Club Hits</option>
+                        <option value="1990s britpop">1990s Britpop & Indie</option>
+                        <option value="1990s dance pop">1990s Dance & Pop</option>
+                        <option value="1990s hip hop">1990s Hip Hop & R&B</option>
+                        <option value="2000s rock">2000s Alternative Rock</option>
+                        <option value="2000s pop hits">2000s Chart Pop</option>
+                        <option value="2010s hits">2010s Billboard Hits</option>
+                        
+                        <!-- Genres -->
+                        <option value="classic rock hits">Classic Rock Anthems</option>
+                        <option value="heavy metal classics">Heavy Metal & Hard Rock</option>
+                        <option value="motown soul legends">Motown & Soul Classics</option>
+                        <option value="disco groove 70s">1970s Disco & Funk</option>
+                        <option value="country music hits">Classic & Modern Country</option>
+                        <option value="indie alternative rock">Indie & Alternative Rock</option>
+                        <option value="electronic dance music edm">EDM & Dance Anthems</option>
+                        <option value="jazz blues club">Jazz & Blues Lounge</option>
+                        <option value="acoustic coffeehouse">Acoustic Unplugged</option>
+                        <option value="reggae dub classics">Reggae & Ska</option>
+                        
+                        <!-- TV & Movies -->
+                        <option value="tv theme songs">TV Show Theme Songs</option>
+                        <option value="epic movie soundtracks">Epic Movie Soundtracks</option>
+                        <option value="broadway musicals">Broadway & Musicals</option>
+                        <option value="sci fi themes">Sci-Fi & Fantasy Themes</option>
+                        
+                        <!-- Kids -->
+                        <option value="disney songs singalong">Kids Disney Singalong Hits</option>
+                        <option value="kids cartoon theme songs">Kids Cartoon Theme Songs</option>
+                        <option value="nursery rhymes kids">Kids Nursery Rhymes & Fun</option>
+                        <option value="family movie songs">Family Movie Songs</option>
+                    </select>
                 </div>
+
+                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / TV / Kids Round</button>
             </div>
 
             <!-- Active Playlist Queue -->
@@ -110,34 +151,37 @@
         const socket = io();
         let playlist = [];
 
-        async function addToPlaylist(type) {
+        async function addTriviaToPlaylist() {
             const count = parseInt(document.getElementById('questionCountSelect').value);
             const categorySelect = document.getElementById('categorySelect');
             const categoryId = categorySelect.value;
             const categoryName = categoryId ? categorySelect.options[categorySelect.selectedIndex].text : "General";
             
             const btn = event.target;
-            const originalText = btn.textContent;
             btn.textContent = "Fetching...";
 
-            let questions = [];
-            let roundName = "";
+            const questions = await fetchTriviaQuestions(count, categoryId);
+            const roundName = `Trivia: ${categoryName} (${questions.length} Qs)`;
 
-            if (type === 'trivia') {
-                questions = await fetchTriviaQuestions(count, categoryId);
-                roundName = `Trivia: ${categoryName} (${questions.length} Qs)`;
-            } else {
-                questions = await fetchMusicPreviewRound(count);
-                roundName = `Music Audio Round (${questions.length} Qs)`;
-            }
+            playlist.push({ id: Date.now(), name: roundName, questions: questions });
+            btn.textContent = "➕ Add Trivia Round";
+            renderPlaylist();
+        }
 
-            playlist.push({
-                id: Date.now(),
-                name: roundName,
-                questions: questions
-            });
+        async function addMusicToPlaylist() {
+            const count = parseInt(document.getElementById('questionCountSelect').value);
+            const musicSelect = document.getElementById('musicGenreSelect');
+            const searchTerm = musicSelect.value;
+            const genreName = musicSelect.options[musicSelect.selectedIndex].text;
 
-            btn.textContent = originalText;
+            const btn = event.target;
+            btn.textContent = "Fetching Audio Clips...";
+
+            const questions = await fetchMusicPreviewRound(count, searchTerm);
+            const roundName = `Music: ${genreName} (${questions.length} Qs)`;
+
+            playlist.push({ id: Date.now(), name: roundName, questions: questions });
+            btn.textContent = "➕ Add Music / TV / Kids Round";
             renderPlaylist();
         }
 
@@ -175,7 +219,6 @@
                 currentIndex: 0
             };
 
-            // Sends loadRound and automatically sets status to active so it plays instantly
             socket.emit('hostAction', { action: 'loadRound', payload: roundPayload });
             alert(`Loaded and started "${round.name}"!`);
         }
