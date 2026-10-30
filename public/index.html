@@ -190,7 +190,7 @@
             <h2>🖼️ Upload Advert or Sponsor Image</h2>
             <p style="color: var(--muted); font-size: 14px; margin-top:0;">Select any image file. You will see a live preview appear below once loaded.</p>
             <label>Select Image File:</label>
-            <input type="file" id="imageUploadInput" accept="image/*" onchange="previewImage(event)" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
+            <input type="file" id="imageUploadInput" accept="image/*" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
             <br>
             <img id="imagePreview" class="preview-box" alt="Preview">
         </div>
@@ -212,14 +212,8 @@
         let playlist = [];
         let storedAdvertBase64 = null;
 
-        function switchTab(tabId, event) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        function previewImage(event) {
+        // Automatically bind file input change listener
+        document.getElementById('imageUploadInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -228,9 +222,16 @@
                     const preview = document.getElementById('imagePreview');
                     preview.src = storedAdvertBase64;
                     preview.style.display = 'block';
-                }
+                };
                 reader.readAsDataURL(file);
             }
+        });
+
+        function switchTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.target.classList.add('active');
         }
 
         function pushAdvertToScreen() {
