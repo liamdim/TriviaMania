@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  maxHttpBufferSize: 1e8 // 100 MB socket buffer for images
+  maxHttpBufferSize: 1e8
 });
 
 app.use(express.json({ limit: '50mb' }));
@@ -20,7 +20,8 @@ let gameState = {
   betweenDelay: 5,
   eventTitle: 'TriviaMania Live Event',
   advertImage: null,
-  advertActive: false,
+  projectorAdvertActive: false,
+  mobileAdvertActive: false,
   players: {},
   answersSubmitted: {}
 };
@@ -65,10 +66,23 @@ io.on('connection', (socket) => {
       if (payload.eventTitle !== undefined) gameState.eventTitle = payload.eventTitle;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
-      gameState.advertActive = true;
-      console.log("Advert pushed successfully. Size of base64:", payload.image ? payload.image.length : 0);
-    } else if (action === 'hideAdvert') {
-      gameState.advertActive = false;
+      if (payload.target === 'projector') {
+        gameState.projectorAdvertActive = true;
+      } else if (payload.target === 'mobile') {
+        gameState.mobileAdvertActive = true;
+      } else {
+        gameState.projectorAdvertActive = true;
+        gameState.mobileAdvertActive = true;
+      }
+    } else if (action === 'hideAdvert' && payload) {
+      if (payload.target === 'projector') {
+        gameState.projectorAdvertActive = false;
+      } else if (payload.target === 'mobile') {
+        gameState.mobileAdvertActive = false;
+      } else {
+        gameState.projectorAdvertActive = false;
+        gameState.mobileAdvertActive = false;
+      }
     } else if (action === 'resume') {
       if (gameState.currentRound) {
         gameState.status = 'active';
