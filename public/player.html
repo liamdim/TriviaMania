@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TriviaMania - Player Controller</title>
+    <style>
+        :root { --bg: #0b0b10; --card: #15151c; --primary: #bb86fc; --accent: #03dac6; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; justify-content: center; align-items: center; }
+        .card { background: var(--card); border: 1px solid #2a2a35; border-radius: 14px; padding: 25px; width: 100%; max-width: 400px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); text-align: center; }
+        h1 { color: var(--primary); font-size: 24px; margin-top: 0; }
+        input { width: 100%; padding: 14px; margin: 10px 0 20px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        button { width: 100%; padding: 16px; background: var(--accent); color: black; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; }
+        
+        .game-screen { display: none; width: 100%; max-width: 400px; text-align: center; }
+        .options-container { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+        .choice-btn { background: #22222e; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
+        .choice-btn:hover { background: var(--primary); color: black; }
+    </style>
+</head>
+<body>
+
+    <div id="joinScreen" class="card">
+        <h1>TriviaMania</h1>
+        <p style="color: #aaa; font-size: 14px;">Enter your team name to join:</p>
+        <input type="text" id="playerName" placeholder="Team Name" maxlength="20">
+        <button onclick="joinGame()">Join Game</button>
+    </div>
+
+    <div id="gameScreen" class="game-screen">
+        <div class="card">
+            <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0;"></h2>
+            <p id="gameStatusText" style="color: #aaa; font-size: 14px;">Waiting for host to start...</p>
+            
+            <div id="answerSection" style="display:none;">
+                <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 10px;"></p>
+                <div class="options-container" id="playerOptionsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function joinGame() {
+            const nameInput = document.getElementById('playerName').value.trim();
+            if (!nameInput) {
+                alert('Please enter a team name!');
+                return;
+            }
+            socket.emit('playerJoin', { name: nameInput });
+            document.getElementById('joinScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('welcomeHeader').textContent = nameInput;
+        }
+
+        function selectAnswer(optionText) {
+            socket.emit('submitAnswer', { answer: optionText });
+            alert(`Locked in: ${optionText}`);
+            document.getElementById('answerSection').style.display = 'none';
+            document.getElementById('gameStatusText').textContent = "Answer locked! Waiting for reveal...";
+        }
+
+        socket.on('syncState', (state) => {
+            const statusText = document.getElementById('gameStatusText');
+            const answerSection = document.getElementById('answerSection');
+            const promptEl = document.getElementById('currentQuestionPrompt');
+            const optionsGrid = document.getElementById('playerOptionsGrid');
+
+            if (state.status === 'active' && state.currentRound && state.currentRound.questions) {
+                const round = state.currentRound;
+                const qIndex = round.currentIndex || 0;
+                const currentQ = round.questions[qIndex];
+
+                statusText.textContent = `Question ${qIndex + 1} of ${round.questions.length}`;
+                answerSection.style.display = 'block';
+                promptEl.textContent = currentQ.q;
+
+                optionsGrid.innerHTML = '';
+                if (currentQ.options) {
+                    currentQ.options.forEach((opt, idx) => {
+                        const letter = ['A', 'B', 'C', 'D'][idx];
+                        const btn = document.createElement('button');
+                        btn.className = 'choice-btn';
+                        btn.innerHTML = `<strong>${letter}:</strong> ${opt}`;
+                        btn.onclick = () => selectAnswer(opt);
+                        optionsGrid.appendChild(btn);
+                    });
+                }
+            } else if (state.status === 'revealed') {
+                statusText.textContent = "Answer Revealed on Projector!";
+                answerSection.style.display = 'none';
+            } else {
+                statusText.textContent = "Waiting for next question...";
+                answerSection.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
