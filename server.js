@@ -14,6 +14,8 @@ let gameState = {
   currentRound: null,
   timerSeconds: 10,
   betweenDelay: 5,
+  charityUrl: 'https://www.justgiving.com',
+  sponsorText: 'Sponsored by TriviaMania Charity Fund',
   players: {},
   answersSubmitted: {}
 };
@@ -54,6 +56,9 @@ io.on('connection', (socket) => {
         betweenDelay: payload.betweenDelay || 5
       };
       gameState.status = 'paused';
+    } else if (action === 'updateCharity' && payload) {
+      if (payload.charityUrl) gameState.charityUrl = payload.charityUrl;
+      if (payload.sponsorText) gameState.sponsorText = payload.sponsorText;
     } else if (action === 'resume') {
       if (gameState.currentRound) {
         gameState.status = 'active';
@@ -100,7 +105,7 @@ function processRoundScores() {
     const playerAnswer = gameState.answersSubmitted[socketId].trim().toLowerCase();
     if (playerAnswer === correctAnswer) {
       if (gameState.players[socketId]) {
-        gameState.players[socketId].score += 10; // Award 10 points for correct answer
+        gameState.players[socketId].score += 10;
       }
     }
   }
