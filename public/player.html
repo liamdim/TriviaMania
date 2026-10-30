@@ -23,12 +23,17 @@
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); font-size: 16px; }
         
-        /* Reaction Tray */
-        .reaction-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; border-top: 1px solid #222538; padding-top: 15px; }
-        .reaction-btn { background: #1a1d2d; border: 1px solid #333852; border-radius: 8px; font-size: 22px; padding: 8px; cursor: pointer; }
+        /* Mobile Audio Unlock & Poll & Reactions */
+        .audio-unlock-btn { background: var(--success); color: black; margin-bottom: 12px; font-size: 14px; padding: 10px; }
+        .poll-container { background: #1a1d2d; border: 1px solid var(--accent); padding: 15px; border-radius: 10px; margin-bottom: 15px; display: none; text-align: left; }
+        .poll-btn { background: #22263d; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; margin-top: 8px; width: 100%; text-align: center; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .poll-btn:hover { background: var(--primary); }
+
+        .reaction-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; border-top: 1px solid #222538; padding-top: 12px; }
+        .reaction-btn { background: #1a1d2d; border: 1px solid #333852; border-radius: 8px; font-size: 20px; padding: 6px; cursor: pointer; }
         .reaction-btn:hover { background: var(--primary); }
 
-        .tip-jar-btn { background: #ff9100; color: black; margin-top: 15px; display: none; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; text-align: center; box-shadow: 0 0 10px rgba(255,145,0,0.4); }
+        .tip-jar-btn { background: #ff9100; color: black; margin-top: 12px; display: none; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 0 10px rgba(255,145,0,0.4); }
 
         #mobileAdvertModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 99999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; flex-direction: column; }
         #mobileAdvertModal img { max-width: 90vw; max-height: 65vh; border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0, 229, 255, 0.5); margin-bottom: 15px; }
@@ -61,16 +66,23 @@
 
     <div id="gameScreen" class="game-screen">
         <div class="card">
-            <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0; font-size: 24px;"></h2>
+            <button class="audio-unlock-btn" onclick="unlockAudio()">🔊 Tap Here to Enable Phone Audio</button>
+            <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0; font-size: 22px;"></h2>
             <div class="score-badge">Score: <span id="playerScore">0</span> pts</div>
-            <p id="gameStatusText" style="color: #a4a8bc; font-size: 16px; margin: 15px 0;">Waiting in lobby...</p>
+            <p id="gameStatusText" style="color: #a4a8bc; font-size: 15px; margin: 10px 0;">Waiting in lobby...</p>
             
+            <!-- Mobile Poll Box -->
+            <div id="mobilePollBox" class="poll-container">
+                <div style="font-size:12px; color:var(--accent); font-weight:bold; text-transform:uppercase; margin-bottom:4px;">📊 Icebreaker Poll</div>
+                <div id="mobilePollQuestion" style="font-size:14px; font-weight:bold; margin-bottom:8px;"></div>
+                <div id="mobilePollOptions"></div>
+            </div>
+
             <div id="answerSection" style="display:none;">
-                <p id="currentQuestionPrompt" style="font-size: 16px; color: #fff; margin-bottom: 15px; font-weight: bold;"></p>
+                <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 12px; font-weight: bold;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
 
-            <!-- Reaction Soundboard with "67" -->
             <div class="reaction-tray">
                 <button class="reaction-btn" onclick="sendReaction('🍻')">🍻</button>
                 <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
@@ -90,6 +102,13 @@
         let selectedAvatar = '🍻';
         let dismissedAdvert = false;
 
+        let audioCtx = null;
+        function unlockAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            alert('Phone audio enabled successfully!');
+        }
+
         function selectAvatar(emoji, element) {
             document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
             element.classList.add('selected');
@@ -104,6 +123,9 @@
             const mobileAdvertModal = document.getElementById('mobileAdvertModal');
             const mobileAdvertImage = document.getElementById('mobileAdvertImage');
             const tipJarLink = document.getElementById('tipJarLink');
+            const mobilePollBox = document.getElementById('mobilePollBox');
+            const mobilePollQuestion = document.getElementById('mobilePollQuestion');
+            const mobilePollOptions = document.getElementById('mobilePollOptions');
 
             if (state.tipJarActive && state.tipJarUrl) {
                 tipJarLink.href = state.tipJarUrl;
@@ -113,6 +135,19 @@
             }
 
             const isJoined = document.getElementById('gameScreen').style.display === 'block';
+
+            // Poll management on mobile
+            if (isJoined && state.pollActive && state.status === 'waiting') {
+                mobilePollBox.style.display = 'block';
+                mobilePollQuestion.textContent = state.pollQuestion;
+                mobilePollOptions.innerHTML = '';
+                state.pollOptions.forEach((opt, idx) => {
+                    mobilePollOptions.innerHTML += `<button class="poll-btn" onclick="votePoll(${idx})">${opt}</button>`;
+                });
+            } else {
+                mobilePollBox.style.display = 'none';
+            }
+
             if (isJoined && state.mobileAdvertActive && state.advertImage) {
                 if (!dismissedAdvert) {
                     mobileAdvertImage.src = state.advertImage;
@@ -150,12 +185,19 @@
                 statusText.textContent = "🎉 Game Over! Check projector for final podium winners!";
                 answerSection.style.display = 'none';
             } else if (isJoined) {
-                if (!state.mobileAdvertActive) {
+                if (!state.mobileAdvertActive && !state.pollActive) {
                     statusText.textContent = "Waiting for host to start...";
+                } else if (state.pollActive) {
+                    statusText.textContent = "Cast your vote in the poll below!";
                 }
                 answerSection.style.display = 'none';
             }
         });
+
+        function votePoll(optionIndex) {
+            socket.emit('submitPollVote', { optionIndex });
+            alert('Vote submitted!');
+        }
 
         function closeMobileAdvert() {
             document.getElementById('mobileAdvertModal').style.display = 'none';
@@ -176,7 +218,7 @@
             
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
-            document.getElementById('welcomeHeader`').textContent = myTeamName;
+            document.getElementById('welcomeHeader').textContent = myTeamName;
         }
 
         function sendReaction(emoji) {
