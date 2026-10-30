@@ -52,10 +52,10 @@
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center & Queue</button>
-        <button class="tab-btn" onclick="switchTab('playlist', event)">🎵 Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('media', event)">🖼️ Adverts & Media</button>
-        <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Settings & Polls</button>
+        <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Control Center & Queue</button>
+        <button class="tab-btn" onclick="switchTab('playlist', this)">🎵 Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('media', this)">🖼️ Adverts & Media</button>
+        <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings & Polls</button>
     </div>
 
     <!-- TAB 1: CONTROL CENTER & PLAYLIST QUEUE -->
@@ -258,13 +258,11 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // --- TAB SWITCHING FUNCTION ---
-        function switchTab(tabId, event) {
+        function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
-            if (event && event.target) {
-                event.target.classList.add('active');
-            }
+            if (btn) btn.classList.add('active');
         }
 
         // --- HYBRID SYSTEM: ONLINE TRIVIA + CURATED MUSIC & KIDS BANKS ---
