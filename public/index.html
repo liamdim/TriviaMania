@@ -257,6 +257,16 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // --- TAB SWITCHING FUNCTION ---
+        function switchTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
         // --- HYBRID SYSTEM: ONLINE TRIVIA + CURATED MUSIC & KIDS BANKS ---
         async function fetchTriviaQuestions(amount = 10, category = '') {
             let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
@@ -322,7 +332,6 @@
             const selectEl = document.getElementById('curatedMusicSelect');
             const genreName = selectEl.options[selectEl.selectedIndex].text;
 
-            // Verified working preview clips with 100% correct answers
             const musicLibraries = {
                 classic_rock: [
                     { q: "Name the artist / band performing this track", a: "Queen", options: ["The Beatles", "Queen", "Led Zeppelin", "Pink Floyd"], audioUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/36/53/b7/3653b7c8-7013-8898-7240-23a595c2f5d9/mza_10795287019777178351.m43.aac" },
@@ -388,13 +397,6 @@
                 reader.readAsDataURL(file);
             }
         });
-
-        function switchTab(tabId, event) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            event.target.classList.add('active');
-        }
 
         function pushAdvert(target) {
             if (!storedAdvertBase64) {
