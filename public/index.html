@@ -2,198 +2,246 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TriviaMania - Host Dashboard</title>
+    <title>TriviaMania - Host Control Center</title>
     <style>
-        :root { --bg: #0b0b10; --card: #15151c; --primary: #bb86fc; --accent: #03dac6; --text: #ffffff; --danger: #cf6679; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a35; padding-bottom: 15px; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 24px; color: var(--primary); }
-        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 15px; font-weight: bold; }
+        :root { 
+            --bg: #090a10; 
+            --card: #131520; 
+            --primary: #9c27b0; 
+            --primary-glow: rgba(156, 39, 176, 0.4);
+            --accent: #00e5ff; 
+            --accent-glow: rgba(0, 229, 255, 0.3);
+            --text: #ffffff; 
+            --muted: #8a8d9f;
+            --danger: #ff1744; 
+            --success: #00e676;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 26px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
+        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 20px; font-weight: bold; background: #1a1d2e; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent); }
         
-        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
-        .panel { background: var(--card); border: 1px solid #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #2a2a35; padding-bottom: 10px; color: var(--primary); }
+        /* Tab Navigation */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { background: #131520; border: 1px solid #2a2e45; color: var(--muted); padding: 12px 24px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--accent); box-shadow: 0 0 15px var(--primary-glow); }
         
-        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #2a2a35; color: white; width: 100%; margin-top: 10px; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
-        .btn-play { background: #4caf50; }
-        .btn-reveal { background: #03dac6; color: black; }
-        .btn-restart { background: #ff9800; color: black; }
-        .btn-danger { background: var(--danger); width: auto; padding: 6px 10px; margin-top: 0; font-size: 12px; }
-        .btn-api { background: var(--primary); color: black; font-size: 15px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: span 2; }
 
-        .playlist-card { background: #22222e; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .panel { background: var(--card); border: 1px solid #222538; border-radius: 14px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #222538; padding-bottom: 12px; color: var(--accent); }
         
-        select, input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #22222e; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-family: sans-serif; }
-        label { font-size: 12px; color: #aaa; }
+        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #22263d; color: white; width: 100%; margin-top: 10px; transition: all 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-play { background: var(--success); color: black; }
+        .btn-reveal { background: var(--accent); color: black; }
+        .btn-restart { background: #ff9100; color: black; }
+        .btn-danger { background: var(--danger); width: auto; padding: 6px 12px; margin-top: 0; font-size: 12px; }
+        .btn-api { background: var(--primary); color: white; font-size: 15px; box-shadow: 0 0 10px var(--primary-glow); }
+
+        .playlist-card { background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        
+        select, input[type="text"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        label { font-size: 12px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .preview-box { max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #444; margin-top: 10px; display: none; }
     </style>
     <script src="/js/api.js"></script>
 </head>
 <body>
 
     <header>
-        <h1>TriviaMania Host Dashboard</h1>
+        <h1>⚡ TriviaMania Host Dashboard</h1>
         <div class="nav-links">
-            <a href="/display.html" target="_blank">Open Projector Display</a>
-            <a href="/player.html" target="_blank">Player Join Link</a>
+            <a href="/display.html" target="_blank">📺 Projector Display</a>
+            <a href="/player.html" target="_blank">📱 Player Join Link</a>
         </div>
     </header>
 
-    <div class="grid">
-        <!-- Left Column: Master Controls & Charity Settings -->
-        <div>
-            <div class="panel">
-                <h2>Master Game Controls</h2>
-                <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
-                <button onclick="sendAction('pause')">⏸ Pause Game</button>
-                <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
-                <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
-            </div>
+    <!-- Tab Navigation Bar -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('control', event)">🕹️ Control Center</button>
+        <button class="tab-btn" onclick="switchTab('playlist', event)">🎵 Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('media', event)">🖼️ Adverts & Media</button>
+        <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Settings & Payments</button>
+    </div>
 
-            <div class="panel">
-                <h2>Charity & Sponsor Settings</h2>
-                <label>Charity / Donation URL:</label>
-                <input type="text" id="charityUrlInput" placeholder="https://justgiving.com/my-charity">
-                
-                <label>Sponsor / Event Name:</label>
-                <input type="text" id="sponsorInput" placeholder="Sponsored by The Local Pub & Brewery">
-                
-                <button class="btn-api" style="background:#03dac6; color:black;" onclick="updateCharitySettings()">📢 Update Projector Banner</button>
-            </div>
+    <!-- TAB 1: CONTROL CENTER -->
+    <div id="tab-control" class="tab-content active">
+        <div class="panel">
+            <h2>Master Game Controls</h2>
+            <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
+            <button onclick="sendAction('pause')">⏸ Pause Game</button>
+            <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
+            <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
+        </div>
 
-            <div class="panel">
-                <h2>Connected Players (<span id="playerCount">0</span>)</h2>
-                <div id="playerList" style="max-height: 200px; overflow-y: auto;">
-                    <p style="color: #777; font-size: 14px;">No players connected yet.</p>
-                </div>
+        <div class="panel">
+            <h2>Connected Teams (<span id="playerCount">0</span>)</h2>
+            <div id="playerList" style="max-height: 250px; overflow-y: auto;">
+                <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
             </div>
         </div>
 
-        <!-- Right Column: Playlist & Round Generators -->
+        <div class="panel full-width">
+            <h2>Live Advert Screen Controls</h2>
+            <p style="color: var(--muted); font-size: 13px; margin-top:0;">Instantly push or hide custom images/adverts across projector and player screens.</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvertToScreen()">📢 Push Uploaded Ad to Screens</button>
+                <button class="btn-danger" style="padding: 12px; font-size:15px; width:100%;" onclick="hideAdvertFromScreen()">❌ Turn Off Advert / Hide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: PLAYLIST BUILDER -->
+    <div id="tab-playlist" class="tab-content">
+        <div class="panel">
+            <h2>Build Quiz Rounds</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label>Question Count:</label>
+                    <select id="questionCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Question Timer:</label>
+                    <select id="timerSelect">
+                        <option value="5">5 Seconds</option>
+                        <option value="10" selected>10 Seconds</option>
+                        <option value="20">20 Seconds</option>
+                        <option value="30">30 Seconds</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label>Delay Before Next Question:</label>
+                <select id="delaySelect">
+                    <option value="2">2 Seconds</option>
+                    <option value="5" selected>5 Seconds</option>
+                    <option value="10">10 Seconds</option>
+                    <option value="15">15 Seconds</option>
+                </select>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
+
+            <label>Standard Trivia Category:</label>
+            <select id="categorySelect">
+                <option value="">Random / General Knowledge</option>
+                <option value="9">General Knowledge</option>
+                <option value="17">Science & Nature</option>
+                <option value="18">Computers & Technology</option>
+                <option value="21">Sports & Athletics</option>
+                <option value="23">History</option>
+                <option value="22">Geography & World Capitals</option>
+                <option value="11">Movies & Cinema</option>
+                <option value="12">Music & Pop Culture</option>
+                <option value="15">Video Games</option>
+            </select>
+            <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Standard Trivia Round</button>
+
+            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
+
+            <label>Music & Decades Section:</label>
+            <select id="musicGenreSelect">
+                <option value="1980s pop rock">1980s Hits</option>
+                <option value="1990s britpop">1990s Hits</option>
+                <option value="2000s pop hits">2000s Hits</option>
+                <option value="2010s billboard hits">2010s Hits</option>
+                <option value="2020s pop hits">2020s Hits</option>
+                <option value="dance hits edm">Dance & Club Hits</option>
+                <option value="female pop artists">Female Artists</option>
+                <option value="male pop artists">Male Artists</option>
+                <option value="boy bands 90s 00s">Boy Bands</option>
+                <option value="girl bands pop">Girl Bands</option>
+                <option value="country music hits">Country Hits</option>
+                <option value="classic rock anthems">Rock Hits</option>
+                <option value="billboard number one hits">UK / US No.1s</option>
+                <option value="indie alternative rock">Indie & Alt</option>
+                <option value="motown soul legends">Motown & Soul</option>
+                <option value="jazz lounge classics">Jazz</option>
+                <option value="rnb soul hits">R&B</option>
+                <option value="rap hip hop hits">Rap & Hip-Hop</option>
+                <option value="uk garage old school">UK Garage</option>
+                <option value="tv theme songs">TV Show Theme Songs</option>
+                <option value="cartoon theme songs">Cartoon Theme Songs</option>
+                <option value="epic movie soundtracks">Movie Theme Songs</option>
+            </select>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Theme Round</button>
+
+            <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
+
+            <label>Kids & Family Theme Songs:</label>
+            <select id="kidsMusicGenreSelect">
+                <option value="disney songs singalong">Disney Movie Theme Songs</option>
+                <option value="disney channel songs">Disney Show Theme Songs</option>
+                <option value="marvel soundtrack theme">Marvel Theme Songs</option>
+                <option value="cbeebies theme songs kids">CBeebies Shows Theme Songs</option>
+                <option value="nickelodeon tv theme songs">Nickelodeon TV Show Themes</option>
+                <option value="cartoon network theme songs">Cartoon Network Theme Songs</option>
+            </select>
+            <button class="btn-api" style="background:#00e5ff; color:black;" onclick="addKidsMusicToPlaylist()">➕ Add Kids Theme Round</button>
+        </div>
+
         <div>
-            <!-- Custom Round Importer Panel -->
+            <!-- Custom Round Importer -->
             <div class="panel" style="border: 2px dashed var(--primary);">
                 <h2>📝 Custom Round Importer</h2>
                 <label>Round Name:</label>
-                <input type="text" id="customRoundName" value="Custom Charity Round">
+                <input type="text" id="customRoundName" value="Custom Pub Round">
                 
-                <label>Paste Questions (Format: Question | Correct Answer | Opt1, Opt2, Opt3, Opt4):</label>
-                <textarea id="customRoundText" rows="4" placeholder="What is our local charity? | Community Hope | Hope, Red Cross, Salvation Army, Food Bank&#10;What year was the pub built? | 1924 | 1901, 1924, 1950, 1982"></textarea>
+                <label>Paste Questions (Format: Q | Answer | Opt1, Opt2, Opt3, Opt4):</label>
+                <textarea id="customRoundText" rows="4" placeholder="What is our local pub name? | The Crown | Crown, Red Lion, Swan, Anchor"></textarea>
                 
-                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addCustomRoundToPlaylist()">➕ Add Custom Round to Queue</button>
-            </div>
-
-            <div class="panel">
-                <h2>Build API Quiz Playlist</h2>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label>Question Count:</label>
-                        <select id="questionCountSelect">
-                            <option value="5">5 Questions</option>
-                            <option value="10" selected>10 Questions</option>
-                            <option value="15">15 Questions</option>
-                            <option value="20">20 Questions</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Question Timer:</label>
-                        <select id="timerSelect">
-                            <option value="5">5 Seconds</option>
-                            <option value="10" selected>10 Seconds</option>
-                            <option value="20">20 Seconds</option>
-                            <option value="30">30 Seconds</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label>Delay Before Next Question:</label>
-                    <select id="delaySelect">
-                        <option value="2">2 Seconds</option>
-                        <option value="5" selected>5 Seconds</option>
-                        <option value="10">10 Seconds</option>
-                        <option value="15">15 Seconds</option>
-                    </select>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
-
-                <label>Standard Trivia Category:</label>
-                <select id="categorySelect">
-                    <option value="">Random / General Knowledge</option>
-                    <option value="9">General Knowledge</option>
-                    <option value="17">Science & Nature</option>
-                    <option value="18">Computers & Technology</option>
-                    <option value="21">Sports & Athletics</option>
-                    <option value="23">History</option>
-                    <option value="22">Geography & World Capitals</option>
-                    <option value="11">Movies & Cinema</option>
-                    <option value="12">Music & Pop Culture</option>
-                    <option value="15">Video Games</option>
-                </select>
-                <button class="btn-api" onclick="addTriviaToPlaylist()">➕ Add Standard Trivia Round</button>
-
-                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
-
-                <label>Music & Decades Section:</label>
-                <select id="musicGenreSelect">
-                    <option value="1980s pop rock">1980s Hits</option>
-                    <option value="1990s britpop">1990s Hits</option>
-                    <option value="2000s pop hits">2000s Hits</option>
-                    <option value="2010s billboard hits">2010s Hits</option>
-                    <option value="2020s pop hits">2020s Hits</option>
-                    <option value="dance hits edm">Dance & Club Hits</option>
-                    <option value="female pop artists">Female Artists</option>
-                    <option value="male pop artists">Male Artists</option>
-                    <option value="boy bands 90s 00s">Boy Bands</option>
-                    <option value="girl bands pop">Girl Bands</option>
-                    <option value="country music hits">Country Hits</option>
-                    <option value="classic rock anthems">Rock Hits</option>
-                    <option value="billboard number one hits">UK / US No.1s</option>
-                    <option value="indie alternative rock">Indie & Alt</option>
-                    <option value="motown soul legends">Motown & Soul</option>
-                    <option value="jazz lounge classics">Jazz</option>
-                    <option value="rnb soul hits">R&B</option>
-                    <option value="rap hip hop hits">Rap & Hip-Hop</option>
-                    <option value="uk garage old school">UK Garage</option>
-                    <option value="tv theme songs">TV Show Theme Songs</option>
-                    <option value="cartoon theme songs">Cartoon Theme Songs</option>
-                    <option value="epic movie soundtracks">Movie Theme Songs</option>
-                </select>
-                <button class="btn-api" style="background:#ff9800; color:black;" onclick="addMusicToPlaylist()">➕ Add Music / Theme Round</button>
-
-                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
-
-                <label>Kids & Family Theme Songs Section:</label>
-                <select id="kidsMusicGenreSelect">
-                    <option value="disney songs singalong">Disney Movie Theme Songs</option>
-                    <option value="disney channel songs">Disney Show Theme Songs</option>
-                    <option value="marvel soundtrack theme">Marvel Theme Songs</option>
-                    <option value="cbeebies theme songs kids">CBeebies Shows Theme Songs</option>
-                    <option value="nickelodeon tv theme songs">Nickelodeon TV Show Themes</option>
-                    <option value="cartoon network theme songs">Cartoon Network Theme Songs</option>
-                </select>
-                <button class="btn-api" style="background:#03dac6; color:black;" onclick="addKidsMusicToPlaylist()">➕ Add Kids Theme Song Round</button>
-
-                <hr style="border: 0; border-top: 1px solid #2a2a35; margin: 15px 0;">
-
-                <label>Kids Trivia Section:</label>
-                <select id="kidsTriviaSelect">
-                    <option value="disney">Disney Trivia</option>
-                    <option value="animals">Animals & Nature Trivia</option>
-                    <option value="science">Fun Science Trivia</option>
-                    <option value="geography">World Geography Trivia</option>
-                </select>
-                <button class="btn-api" style="background:#bb86fc; color:black;" onclick="addKidsTriviaToPlaylist()">➕ Add Kids Trivia Round</button>
+                <button class="btn-api" style="background:#ff9100; color:black;" onclick="addCustomRoundToPlaylist()">➕ Add Custom Round</button>
             </div>
 
             <div class="panel">
                 <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
-                <div id="playlistContainer">
-                    <p style="color: #777; font-size: 14px;">No rounds in playlist yet. Add a round above!</p>
+                <div id="playlistContainer" style="max-height: 250px; overflow-y: auto;">
+                    <p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: ADVERTS & MEDIA -->
+    <div id="tab-media" class="tab-content">
+        <div class="panel full-width">
+            <h2>🖼️ Upload Advert or Sponsor Image</h2>
+            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Upload a sponsor logo, venue flyer, or event poster to display on the projector and player screens.</p>
+            
+            <label>Select Image File:</label>
+            <input type="file" id="imageUploadInput" accept="image/*" onchange="previewImage(event)" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
+            
+            <br>
+            <img id="imagePreview" class="preview-box" alt="Preview">
+            
+            <button class="btn-api" style="margin-top: 15px;" onclick="uploadAndStoreAdvert()">💾 Save & Ready Advert</button>
+        </div>
+    </div>
+
+    <!-- TAB 4: SETTINGS & PAYMENTS -->
+    <div id="tab-settings" class="tab-content">
+        <div class="panel full-width">
+            <h2>⚙️ Game & PayPal Payment Settings</h2>
+            <p style="color: var(--muted); font-size: 14px; margin-top:0;">Configure your event title and PayPal payment link so players can pay entry fees or tips directly from their phones.</p>
+            
+            <label>Event / Venue Title:</label>
+            <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
+            
+            <label>PayPal Payment Link (PayPal.me / Pool / Donation URL):</label>
+            <input type="text" id="paypalUrlInput" placeholder="https://paypal.me/yourpubquiz">
+            
+            <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save Settings & Broadcast</button>
         </div>
     </div>
 
@@ -201,12 +249,56 @@
     <script>
         const socket = io();
         let playlist = [];
+        let storedAdvertBase64 = null;
 
-        function updateCharitySettings() {
-            const charityUrl = document.getElementById('charityUrlInput').value.trim();
-            const sponsorText = document.getElementById('sponsorInput').value.trim();
-            socket.emit('hostAction', { action: 'updateCharity', payload: { charityUrl, sponsorText } });
-            alert('Charity settings broadcasted!');
+        function switchTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    storedAdvertBase64 = e.target.result;
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = storedAdvertBase64;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function uploadAndStoreAdvert() {
+            if (!storedAdvertBase64) {
+                alert('Please select an image file first!');
+                return;
+            }
+            alert('Advert image loaded and ready! Go to Control Center to push it to screens.');
+        }
+
+        function pushAdvertToScreen() {
+            if (!storedAdvertBase64) {
+                alert('No advert image uploaded yet! Go to Adverts & Media tab first.');
+                return;
+            }
+            socket.emit('hostAction', { action: 'pushAdvert', payload: { image: storedAdvertBase64 } });
+            alert('Advert pushed to Projector and Player screens!');
+        }
+
+        function hideAdvertFromScreen() {
+            socket.emit('hostAction', { action: 'hideAdvert' });
+            alert('Advert hidden from screens.');
+        }
+
+        function saveSettings() {
+            const paypalUrl = document.getElementById('paypalUrlInput').value.trim();
+            const eventTitle = document.getElementById('eventTitleInput').value.trim();
+            socket.emit('hostAction', { action: 'updateSettings', payload: { paypalUrl, eventTitle } });
+            alert('Settings saved and broadcasted successfully!');
         }
 
         function addCustomRoundToPlaylist() {
@@ -216,7 +308,7 @@
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
 
             if (!rawText) {
-                alert('Please paste at least one question into the custom round box!');
+                alert('Please paste at least one question!');
                 return;
             }
 
@@ -229,22 +321,20 @@
                     const q = parts[0].trim();
                     const a = parts[1].trim();
                     const options = parts[2].split(',').map(o => o.trim());
-                    // Ensure correct answer is included in options and shuffled
                     if (!options.includes(a)) options.push(a);
                     const shuffledOptions = options.sort(() => Math.random() - 0.5);
-
                     questions.push({ q, a, options: shuffledOptions, type: 'trivia' });
                 }
             });
 
             if (questions.length === 0) {
-                alert('Could not parse questions. Check the format: Question | Answer | Opt1, Opt2, Opt3, Opt4');
+                alert('Parsing failed. Format: Question | Answer | Opt1, Opt2, Opt3, Opt4');
                 return;
             }
 
             playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay });
             renderPlaylist();
-            alert(`Successfully added custom round "${name}" with ${questions.length} questions!`);
+            alert(`Added custom round "${name}"!`);
         }
 
         async function addTriviaToPlaylist() {
@@ -257,11 +347,8 @@
             
             const btn = event.target;
             btn.textContent = "Fetching...";
-
             const questions = await fetchTriviaQuestions(count, categoryId);
-            const roundName = `Trivia: ${categoryName} (${questions.length} Qs)`;
-
-            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
+            playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay });
             btn.textContent = "➕ Add Standard Trivia Round";
             renderPlaylist();
         }
@@ -276,12 +363,9 @@
 
             const btn = event.target;
             btn.textContent = "Fetching Audio Clips...";
-
             const isMovieOrTv = searchTerm.includes('theme') || searchTerm.includes('soundtrack');
             const questions = await fetchMusicPreviewRound(count, searchTerm, isMovieOrTv);
-            const roundName = `Music: ${genreName} (${questions.length} Qs)`;
-
-            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
+            playlist.push({ id: Date.now(), name: `Music: ${genreName} (${questions.length} Qs)`, questions, timer, betweenDelay });
             btn.textContent = "➕ Add Music / Theme Round";
             renderPlaylist();
         }
@@ -296,31 +380,9 @@
 
             const btn = event.target;
             btn.textContent = "Fetching Kids Audio...";
-
             const questions = await fetchMusicPreviewRound(count, searchTerm, true);
-            const roundName = `Kids Theme: ${genreName} (${questions.length} Qs)`;
-
-            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Kids Theme Song Round";
-            renderPlaylist();
-        }
-
-        async function addKidsTriviaToPlaylist() {
-            const count = parseInt(document.getElementById('questionCountSelect').value);
-            const timer = parseInt(document.getElementById('timerSelect').value);
-            const betweenDelay = parseInt(document.getElementById('delaySelect').value);
-            const kidsTriviaSelect = document.getElementById('kidsTriviaSelect');
-            const subGenre = kidsTriviaSelect.value;
-            const genreName = kidsTriviaSelect.options[kidsTriviaSelect.selectedIndex].text;
-
-            const btn = event.target;
-            btn.textContent = "Fetching Kids Trivia...";
-
-            const questions = await fetchKidsTriviaQuestions(count, subGenre);
-            const roundName = `Kids Trivia: ${genreName} (${questions.length} Qs)`;
-
-            playlist.push({ id: Date.now(), name: roundName, questions, timer, betweenDelay });
-            btn.textContent = "➕ Add Kids Trivia Round";
+            playlist.push({ id: Date.now(), name: `Kids Theme: ${genreName} (${questions.length} Qs)`, questions, timer, betweenDelay });
+            btn.textContent = "➕ Add Kids Theme Round";
             renderPlaylist();
         }
 
@@ -329,7 +391,7 @@
             document.getElementById('playlistCount').textContent = playlist.length;
 
             if (playlist.length === 0) {
-                container.innerHTML = '<p style="color: #777; font-size: 14px;">No rounds in playlist yet. Add a round above!</p>';
+                container.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>';
                 return;
             }
 
@@ -339,7 +401,7 @@
                     <div class="playlist-card">
                         <div>
                             <strong>${index + 1}. ${round.name}</strong>
-                            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Timer: ${round.timer}s | Delay: ${round.betweenDelay}s</div>
+                            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Timer: ${round.timer}s</div>
                         </div>
                         <div>
                             <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px; width:auto; display:inline-block;" onclick="loadRound(${index})">📂 Load</button>
@@ -356,7 +418,7 @@
                 action: 'loadRound', 
                 payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay } 
             });
-            alert(`Loaded "${round.name}"! Now click "▶ Start / Resume Round" in Master Controls when ready.`);
+            alert(`Loaded "${round.name}"! Click "▶ Start / Resume Round" in Control Center when ready.`);
         }
 
         function deleteRound(index) {
@@ -375,14 +437,14 @@
             countEl.textContent = playerIds.length;
             
             if (playerIds.length === 0) {
-                listEl.innerHTML = '<p style="color: #777; font-size: 14px;">No players connected yet.</p>';
+                listEl.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>';
                 return;
             }
 
             listEl.innerHTML = '';
             playerIds.forEach(id => {
                 const p = players[id];
-                listEl.innerHTML += `<div style="padding: 6px; border-bottom:1px solid #333;">${p.avatar} ${p.name}</div>`;
+                listEl.innerHTML += `<div style="padding: 8px; border-bottom:1px solid #222538; display:flex; justify-content:space-between;"><span>${p.avatar} <strong>${p.name}</strong></span> <span style="color:var(--accent);">${p.score} pts</span></div>`;
             });
         });
     </script>
