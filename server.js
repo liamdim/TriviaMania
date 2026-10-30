@@ -19,6 +19,8 @@ let gameState = {
   timerSeconds: 10,
   betweenDelay: 5,
   eventTitle: 'TriviaMania Live Event',
+  welcomeMessage: 'Welcome to the ultimate pub quiz experience!',
+  bannerText: 'TriviaMania Live Pub Quiz Night',
   advertImage: null,
   projectorAdvertActive: false,
   mobileAdvertActive: false,
@@ -44,9 +46,10 @@ io.on('connection', (socket) => {
       id: socket.id,
       name: data.name || `Team ${Object.keys(gameState.players).length + 1}`,
       score: 0,
-      avatar: '🍻'
+      avatar: ['🍻', '🎯', '🚀', '🔥', '⚡', '🏆', '🍕', '🎸'][Math.floor(Math.random() * 8)]
     };
     io.emit('updatePlayers', gameState.players);
+    io.emit('syncState', gameState);
   });
 
   socket.on('hostAction', (actionData) => {
@@ -64,6 +67,8 @@ io.on('connection', (socket) => {
       gameState.status = 'paused';
     } else if (action === 'updateSettings' && payload) {
       if (payload.eventTitle !== undefined) gameState.eventTitle = payload.eventTitle;
+      if (payload.welcomeMessage !== undefined) gameState.welcomeMessage = payload.welcomeMessage;
+      if (payload.bannerText !== undefined) gameState.bannerText = payload.bannerText;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
       if (payload.target === 'projector') {
@@ -118,6 +123,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     delete gameState.players[socket.id];
     io.emit('updatePlayers', gameState.players);
+    io.emit('syncState', gameState);
   });
 });
 
