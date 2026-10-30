@@ -64,7 +64,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendReaction', (data) => {
-    // Broadcast floating reactions to projector and all players
     io.emit('triggerReaction', { emoji: data.emoji, teamName: data.teamName });
   });
 
@@ -93,6 +92,8 @@ io.on('connection', (socket) => {
       if (payload.welcomeMessage !== undefined) gameState.welcomeMessage = payload.welcomeMessage;
       if (payload.bannerText !== undefined) gameState.bannerText = payload.bannerText;
       if (payload.tipJarUrl !== undefined) gameState.tipJarUrl = payload.tipJarUrl;
+      if (payload.pollQuestion !== undefined) gameState.pollQuestion = payload.pollQuestion;
+      if (payload.pollOptions !== undefined) gameState.pollOptions = payload.pollOptions;
     } else if (action === 'toggleTipJar') {
       gameState.tipJarActive = !gameState.tipJarActive;
     } else if (action === 'togglePoll') {
