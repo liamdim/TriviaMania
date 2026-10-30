@@ -78,10 +78,14 @@
                 <button class="btn-danger" style="width:100%;" onclick="hideAdvert('projector')">❌ Hide Projector Ad</button>
                 <button class="btn-danger" style="width:100%;" onclick="hideAdvert('mobile')">❌ Hide Mobile Ad</button>
             </div>
+            
+            <hr style="border:0; border-top:1px solid #222538; margin:15px 0;">
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="toggleTipJar()">🎁 Toggle Tip Jar / Support Link on Phones</button>
         </div>
 
         <div class="panel full-width">
             <h2>🏆 Live Team Leaderboard & Connected Teams (<span id="playerCount">0</span>)</h2>
+            <button class="btn-api" style="background:#00e676; color:black; margin-bottom:15px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
             <div id="hostScoreList" style="max-height: 250px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
             </div>
@@ -121,6 +125,11 @@
                     <option value="10">10 Seconds</option>
                     <option value="15">15 Seconds</option>
                 </select>
+            </div>
+
+            <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="speedBonusCheckbox" style="width: 20px; height: 20px; margin:0; cursor:pointer;">
+                <label for="speedBonusCheckbox" style="cursor:pointer; color: white; font-size: 14px;">Enable Turbo Speed Bonus (Faster answers = more points)</label>
             </div>
 
             <hr style="border: 0; border-top: 1px solid #222538; margin: 15px 0;">
@@ -214,7 +223,7 @@
     <!-- TAB 4: SETTINGS -->
     <div id="tab-settings" class="tab-content">
         <div class="panel full-width">
-            <h2>⚙️ Editable Display Text & Settings</h2>
+            <h2>⚙️ Editable Display Text & Tip Jar</h2>
             
             <label>Main Event / Venue Title:</label>
             <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
@@ -224,6 +233,9 @@
             
             <label>Bottom Scrolling Banner Text:</label>
             <input type="text" id="bannerTextInput" value="TriviaMania Live Pub Quiz Night">
+
+            <label>Tip Jar / PayPal Pool Link (Optional):</label>
+            <input type="text" id="tipJarUrlInput" placeholder="https://paypal.me/yourpubquiz">
             
             <button class="btn-api" style="background:var(--success); color:black; margin-top: 15px;" onclick="saveSettings()">💾 Save & Broadcast Settings</button>
         </div>
@@ -234,6 +246,7 @@
         const socket = io();
         let playlist = [];
         let storedAdvertBase64 = null;
+        let latestPlayersState = {};
 
         document.getElementById('imageUploadInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -277,12 +290,35 @@
             alert(`Advert hidden from ${target}.`);
         }
 
+        function toggleTipJar() {
+            socket.emit('hostAction', { action: 'toggleTipJar' });
+            alert('Tip Jar toggled on/off for players!');
+        }
+
         function saveSettings() {
             const eventTitle = document.getElementById('eventTitleInput').value.trim();
             const welcomeMessage = document.getElementById('welcomeMessageInput').value.trim();
             const bannerText = document.getElementById('bannerTextInput').value.trim();
-            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle, welcomeMessage, bannerText } });
+            const tipJarUrl = document.getElementById('tipJarUrlInput').value.trim();
+            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle, welcomeMessage, bannerText, tipJarUrl } });
             alert('Settings saved and broadcasted successfully!');
+        }
+
+        function exportLeaderboardCSV() {
+            const sorted = Object.values(latestPlayersState).sort((a, b) => b.score - a.score);
+            if (sorted.length === 0) return alert('No players to export!');
+            
+            let csv = 'Rank,Team Name,Score\n';
+            sorted.forEach((p, idx) => {
+                csv += `${idx + 1},"${p.name}",${p.score}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'TriviaMania_Leaderboard.csv');
+            a.click();
         }
 
         function addCustomRoundToPlaylist() {
@@ -290,6 +326,7 @@
             const rawText = document.getElementById('customRoundText').value.trim();
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
 
             if (!rawText) return alert('Please paste questions!');
 
@@ -306,7 +343,7 @@
                 }
             });
 
-            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay });
+            playlist.push({ id: Date.now(), name: `${name} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
             alert(`Added custom round "${name}"!`);
         }
@@ -315,11 +352,12 @@
             const count = parseInt(document.getElementById('questionCountSelect').value);
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
             const categoryId = document.getElementById('categorySelect').value;
             const categoryName = categoryId ? document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text : "General";
             
             const questions = await fetchTriviaQuestions(count, categoryId);
-            playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay });
+            playlist.push({ id: Date.now(), name: `Trivia: ${categoryName} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
         }
 
@@ -327,9 +365,10 @@
             const count = parseInt(document.getElementById('questionCountSelect').value);
             const timer = parseInt(document.getElementById('timerSelect').value);
             const betweenDelay = parseInt(document.getElementById('delaySelect').value);
+            const speedBonus = document.getElementById('speedBonusCheckbox').checked;
             const musicSelect = document.getElementById('musicGenreSelect');
             const questions = await fetchMusicPreviewRound(count, musicSelect.value, musicSelect.value.includes('theme'));
-            playlist.push({ id: Date.now(), name: `Music: ${musicSelect.options[musicSelect.selectedIndex].text} (${questions.length} Qs)`, questions, timer, betweenDelay });
+            playlist.push({ id: Date.now(), name: `Music: ${musicSelect.options[musicSelect.selectedIndex].text} (${questions.length} Qs)`, questions, timer, betweenDelay, speedBonus });
             renderPlaylist();
         }
 
@@ -344,7 +383,7 @@
             playlist.forEach((round, index) => {
                 container.innerHTML += `
                     <div class="playlist-card">
-                        <div><strong>${index + 1}. ${round.name}</strong></div>
+                        <div><strong>${index + 1}. ${round.name}</strong> ${round.speedBonus ? '⚡(Turbo)' : ''}</div>
                         <div>
                             <button class="btn-play" style="padding: 6px 12px; margin-top:0; font-size: 12px;" onclick="loadRound(${index})">📂 Load</button>
                             <button class="btn-danger" onclick="deleteRound(${index})">Delete</button>
@@ -356,7 +395,7 @@
 
         function loadRound(index) {
             const round = playlist[index];
-            socket.emit('hostAction', { action: 'loadRound', payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay } });
+            socket.emit('hostAction', { action: 'loadRound', payload: { name: round.name, questions: round.questions, timer: round.timer, betweenDelay: round.betweenDelay, speedBonus: round.speedBonus } });
             alert(`Loaded "${round.name}"!`);
         }
 
@@ -373,9 +412,11 @@
             if (state.eventTitle) document.getElementById('eventTitleInput').value = state.eventTitle;
             if (state.welcomeMessage) document.getElementById('welcomeMessageInput').value = state.welcomeMessage;
             if (state.bannerText) document.getElementById('bannerTextInput').value = state.bannerText;
+            if (state.tipJarUrl) document.getElementById('tipJarUrlInput').value = state.tipJarUrl;
         });
 
         socket.on('updatePlayers', (players) => {
+            latestPlayersState = players;
             const listEl = document.getElementById('hostScoreList');
             const countEl = document.getElementById('playerCount');
             const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
