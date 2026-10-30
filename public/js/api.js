@@ -8,7 +8,14 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
             return data.results.map(item => {
                 const incorrect = item.incorrect_answers.map(ans => decodeHtml(ans));
                 const correct = decodeHtml(item.correct_answer);
-                const options = [...incorrect, correct].sort(() => Math.random() - 0.5);
+                
+                // Ensure unique options
+                const uniqueOptions = [...new Set([...incorrect, correct])];
+                while (uniqueOptions.length < 4 && incorrect.length > 0) {
+                    uniqueOptions.push(incorrect[Math.floor(Math.random() * incorrect.length)]);
+                }
+                const options = uniqueOptions.sort(() => Math.random() - 0.5);
+
                 return {
                     q: decodeHtml(item.question),
                     a: correct,
@@ -27,7 +34,6 @@ async function fetchTriviaQuestions(amount = 10, category = '') {
 
 async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
     try {
-        // If searching for female artists, let's target prominent female pop/rock icons specifically
         let queryTerm = searchTerm;
         const isFemaleRound = searchTerm.toLowerCase().includes('female');
         if (isFemaleRound) {
@@ -35,12 +41,15 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
             queryTerm = femaleIcons[Math.floor(Math.random() * femaleIcons.length)];
         }
 
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&entity=song&limit=40`);
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(queryTerm)}&entity=song&limit=60`);
         const data = await res.json();
         
         if (data.results && data.results.length > 0) {
             const validSongs = data.results.filter(song => song.previewUrl && song.artistName && song.trackName);
             validSongs.sort(() => Math.random() - 0.5);
+
+            // Gather a master pool of unique artist names to use as fake choices
+            const allPossibleArtists = [...new Set(validSongs.map(s => s.artistName))];
 
             const questions = [];
             const usedArtists = new Set();
@@ -50,13 +59,21 @@ async function fetchMusicPreviewRound(amount = 10, searchTerm = 'pop hits') {
                 if (!usedArtists.has(song.artistName)) {
                     usedArtists.add(song.artistName);
                     
-                    const distractors = validSongs
-                        .filter(s => s.artistName !== song.artistName)
-                        .map(s => s.artistName)
-                        .sort(() => Math.random() - 0.5)
-                        .slice(0, 3);
+                    // Pick 3 completely different artist distractors
+                    const otherArtists = allPossibleArtists.filter(a => a !== song.artistName);
+                    otherArtists.sort(() => Math.random() - 0.5);
+                    const distractors = otherArtists.slice(0, 3);
 
-                    const options = [...distractors, song.artistName].sort(() => Math.random() - 0.5);
+                    // Combine correct answer and distractors, ensuring 100% unique options
+                    const options = [...new Set([song.artistName, ...distractors])];
+                    
+                    // Safety check if we need more options
+                    while (options.length < 4 && allPossibleArtists.length >= 4) {
+                        const extra = allPossibleArtists[Math.floor(Math.random() * allPossibleArtists.length)];
+                        if (!options.includes(extra)) options.push(extra);
+                    }
+
+                    options.sort(() => Math.random() - 0.5);
 
                     questions.push({
                         q: `Name the artist / band performing this track: "${song.trackName}"`,
