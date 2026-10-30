@@ -10,7 +10,7 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 
 let gameState = {
-  status: 'waiting', // waiting, active, paused, revealed
+  status: 'waiting', // waiting, active, paused, revealed, podium
   currentRound: null,
   timerSeconds: 10,
   betweenDelay: 5,
@@ -138,7 +138,8 @@ function startQuestionTimer() {
             io.emit('syncState', gameState);
             startQuestionTimer();
           } else {
-            gameState.status = 'waiting';
+            // End of round reached! Trigger Victory Podium Celebration screen
+            gameState.status = 'podium';
             io.emit('syncState', gameState);
           }
         }
