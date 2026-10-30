@@ -17,20 +17,33 @@
         .choice-btn { background: #1a1d2d; border: 2px solid var(--primary); color: white; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: left; }
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 15px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
-        .paypal-btn { background: #ff9100; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; }
-
+        
+        .payment-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .paypal-btn { background: #ff9100; color: black; margin-top: 15px; display: block; text-decoration: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 16px; text-align: center; }
         .advert-banner-mobile { background: rgba(0, 229, 255, 0.1); border: 1px solid var(--accent); padding: 8px; border-radius: 8px; margin-top: 15px; font-size: 13px; color: var(--accent); display: none; }
     </style>
 </head>
 <body>
 
+    <!-- Payment Modal Screen -->
+    <div id="paymentModal" class="payment-modal">
+        <div class="card">
+            <h2 style="color:var(--accent); margin-top:0;">💳 Entry Fee Required</h2>
+            <p style="color: #8a8d9f; font-size: 14px;">This game has a <strong id="priceDisplay" style="color:white;"></strong> entry fee. Please pay via PayPal before joining:</p>
+            <a id="modalPaypalLink" href="#" target="_blank" class="paypal-btn">Pay Entry via PayPal</a>
+            <button style="background:#22263d; color:white; margin-top:15px;" onclick="confirmPaymentDone()">I've Paid! Enter Game</button>
+        </div>
+    </div>
+
+    <!-- Join Screen -->
     <div id="joinScreen" class="card">
         <h1>TriviaMania</h1>
         <p style="color: #8a8d9f; font-size: 14px;">Enter your team name to join:</p>
         <input type="text" id="playerName" placeholder="Team Name" maxlength="20">
-        <button onclick="joinGame()">Join Game</button>
+        <button onclick="attemptJoin()">Join Game</button>
     </div>
 
+    <!-- Main Game Screen -->
     <div id="gameScreen" class="game-screen">
         <div class="card">
             <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0;"></h2>
@@ -42,7 +55,6 @@
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
 
-            <a id="paypalLink" href="#" target="_blank" class="paypal-btn">💳 Pay Game Entry / Tip via PayPal</a>
             <div id="mobileAdvertNotice" class="advert-banner-mobile">📢 Special Featured Sponsor Active on Screen!</div>
         </div>
     </div>
@@ -51,39 +63,17 @@
     <script>
         const socket = io();
         let myTeamName = "";
-
-        function joinGame() {
-            myTeamName = document.getElementById('playerName').value.trim();
-            if (!myTeamName) {
-                alert('Please enter a team name!');
-                return;
-            }
-            socket.emit('playerJoin', { name: myTeamName });
-            document.getElementById('joinScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            document.getElementById('welcomeHeader').textContent = myTeamName;
-        }
-
-        function selectAnswer(optionText) {
-            if ("vibrate" in navigator) {
-                navigator.vibrate(60);
-            }
-            socket.emit('submitAnswer', { answer: optionText });
-            document.getElementById('answerSection').style.display = 'none';
-            document.getElementById('gameStatusText').textContent = `Locked in: "${optionText}"! Waiting for reveal...`;
-        }
+        let globalSettings = { entryPrice: '0', paypalUrl: '' };
 
         socket.on('syncState', (state) => {
+            globalSettings.entryPrice = state.entryPrice || '0';
+            globalSettings.paypalUrl = state.paypalUrl || '';
+
             const statusText = document.getElementById('gameStatusText');
             const answerSection = document.getElementById('answerSection');
             const promptEl = document.getElementById('currentQuestionPrompt');
             const optionsGrid = document.getElementById('playerOptionsGrid');
-            const paypalLink = document.getElementById('paypalLink');
             const mobileAdvertNotice = document.getElementById('mobileAdvertNotice');
-
-            if (state.paypalUrl) {
-                paypalLink.href = state.paypalUrl;
-            }
 
             if (state.advertActive) {
                 mobileAdvertNotice.style.display = 'block';
@@ -119,6 +109,43 @@
                 answerSection.style.display = 'none';
             }
         });
+
+        function attemptJoin() {
+            myTeamName = document.getElementById('playerName').value.trim();
+            if (!myTeamName) {
+                alert('Please enter a team name!');
+                return;
+            }
+
+            const priceNum = parseFloat(globalSettings.entryPrice);
+            if (priceNum > 0 && globalSettings.paypalUrl) {
+                // Show one-time payment modal if entry fee is set
+                document.getElementById('priceDisplay').textContent = `£${priceNum.toFixed(2)}`;
+                document.getElementById('modalPaypalLink').href = globalSettings.paypalUrl;
+                document.getElementById('paymentModal').style.display = 'flex';
+            } else {
+                finalizeJoin();
+            }
+        }
+
+        function confirmPaymentDone() {
+            document.getElementById('paymentModal').style.display = 'none';
+            finalizeJoin();
+        }
+
+        function finalizeJoin() {
+            socket.emit('playerJoin', { name: myTeamName });
+            document.getElementById('joinScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('welcomeHeader').textContent = myTeamName;
+        }
+
+        function selectAnswer(optionText) {
+            if ("vibrate" in navigator) navigator.vibrate(60);
+            socket.emit('submitAnswer', { answer: optionText });
+            document.getElementById('answerSection').style.display = 'none';
+            document.getElementById('gameStatusText').textContent = `Locked in: "${optionText}"! Waiting for reveal...`;
+        }
 
         socket.on('updatePlayers', (players) => {
             for (const id in players) {
