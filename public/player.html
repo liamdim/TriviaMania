@@ -74,7 +74,7 @@
                 }
             } else {
                 mobileAdvertModal.style.display = 'none';
-                dismissedAdvert = false; // Reset dismissal when host turns it off
+                dismissedAdvert = false;
             }
 
             if (state.status === 'active' && state.currentRound && state.currentRound.questions) {
@@ -112,7 +112,8 @@
         }
 
         function attemptJoin() {
-            myTeamName = document.getElementById('playerName'].value.trim();
+            const nameInput = document.getElementById('playerName');
+            myTeamName = nameInput.value.trim();
             if (!myTeamName) {
                 alert('Please enter a team name!');
                 return;
