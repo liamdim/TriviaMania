@@ -27,6 +27,12 @@
         .waiting-teams-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .team-pill { background: #1a1d2d; border: 1px solid var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 6px; }
 
+        /* Poll Display Box */
+        .poll-display { margin-top: 25px; background: rgba(26, 29, 45, 0.8); padding: 20px; border-radius: 14px; border: 1px solid var(--primary); display: none; }
+        .poll-bar-container { background: #131520; border-radius: 8px; margin: 8px 0; overflow: hidden; height: 30px; position: relative; border: 1px solid #333852; }
+        .poll-bar-fill { background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; width: 0%; transition: width 0.4s ease; }
+        .poll-bar-text { position: absolute; top: 0; left: 12px; height: 100%; display: flex; align-items: center; font-weight: bold; font-size: 15px; color: white; z-index: 2; }
+
         .question { font-size: 36px; margin-bottom: 30px; color: #fff; font-weight: 600; line-height: 1.3; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 24px; }
         .pill { background: rgba(26, 29, 45, 0.8); padding: 20px 25px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
@@ -47,7 +53,6 @@
         .advert-qr-corner { position: absolute; bottom: 30px; right: 30px; background: rgba(19, 21, 32, 0.9); padding: 12px; border-radius: 12px; border: 2px solid var(--accent); text-align: center; display: none; }
         .advert-qr-corner img { width: 110px; height: 110px; border-radius: 8px; background: white; padding: 4px; display: block; }
 
-        /* Floating Reactions Overlay */
         .floating-emoji { position: fixed; bottom: 50px; font-size: 45px; animation: floatUp 3s ease-out forwards; z-index: 9999; pointer-events: none; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
         @keyframes floatUp {
             0% { transform: translateY(0) scale(0.5); opacity: 1; }
@@ -79,6 +84,12 @@
                     <div class="waiting-teams-grid" id="waitingTeamsGrid">
                         <span style="color: #777; font-size: 14px;">Waiting for teams to join...</span>
                     </div>
+                </div>
+
+                <!-- Live Poll Results Box -->
+                <div id="projectorPollBox" class="poll-display">
+                    <h3 id="projectorPollQuestion" style="margin:0 0 12px 0; color:var(--accent); font-size:18px;"></h3>
+                    <div id="projectorPollBars"></div>
                 </div>
             </div>
             <div class="qr-box">
@@ -193,10 +204,40 @@
             const leaderboardBox = document.getElementById('leaderboardBox');
             const advertOverlay = document.getElementById('advertOverlay');
             const advertQrCorner = document.getElementById('advertQrCorner');
+            const projectorPollBox = document.getElementById('projectorPollBox');
+            const projectorPollQuestion = document.getElementById('projectorPollQuestion');
+            const projectorPollBars = document.getElementById('projectorPollBars');
 
             if (state.eventTitle) document.getElementById('eventTitleDisplay').textContent = state.eventTitle;
             if (state.welcomeMessage) document.getElementById('welcomeMessageDisplay').textContent = state.welcomeMessage;
             if (state.bannerText) document.getElementById('bannerText').textContent = `🌟 ${state.bannerText}`;
+
+            // Poll display handling
+            if (state.pollActive && state.status === 'waiting') {
+                projectorPollBox.style.display = 'block';
+                projectorPollQuestion.textContent = state.pollQuestion;
+                
+                const counts = {};
+                state.pollOptions.forEach((_, idx) => counts[idx] = 0);
+                const totalVotes = Object.keys(state.pollVotes).length;
+                Object.values(state.pollVotes).forEach(optIdx => {
+                    if (counts[optIdx] !== undefined) counts[optIdx]++;
+                });
+
+                projectorPollBars.innerHTML = '';
+                state.pollOptions.forEach((opt, idx) => {
+                    const votes = counts[idx] || 0;
+                    const pct = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+                    projectorPollBars.innerHTML += `
+                        <div class="poll-bar-container">
+                            <div class="poll-bar-fill" style="width: ${pct}%;"></div>
+                            <div class="poll-bar-text">${opt} — ${votes} votes (${pct}%)</div>
+                        </div>
+                    `;
+                });
+            } else {
+                projectorPollBox.style.display = 'none';
+            }
 
             if (state.projectorAdvertActive && state.advertImage) {
                 document.getElementById('advertImageDisplay').src = state.advertImage;
