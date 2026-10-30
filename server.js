@@ -7,6 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(express.json({ limit: '10mb' })); // Allow image uploads via base64
 app.use(express.static(path.join(__dirname, 'public')));
 
 let gameState = {
@@ -14,8 +15,10 @@ let gameState = {
   currentRound: null,
   timerSeconds: 10,
   betweenDelay: 5,
-  charityUrl: 'https://www.justgiving.com',
-  sponsorText: 'Sponsored by TriviaMania Charity Fund',
+  paypalUrl: 'https://paypal.me',
+  eventTitle: 'TriviaMania Live Event',
+  advertImage: null,
+  advertActive: false,
   players: {},
   answersSubmitted: {}
 };
@@ -56,9 +59,14 @@ io.on('connection', (socket) => {
         betweenDelay: payload.betweenDelay || 5
       };
       gameState.status = 'paused';
-    } else if (action === 'updateCharity' && payload) {
-      if (payload.charityUrl) gameState.charityUrl = payload.charityUrl;
-      if (payload.sponsorText) gameState.sponsorText = payload.sponsorText;
+    } else if (action === 'updateSettings' && payload) {
+      if (payload.paypalUrl) gameState.paypalUrl = payload.paypalUrl;
+      if (payload.eventTitle) gameState.eventTitle = payload.eventTitle;
+    } else if (action === 'pushAdvert' && payload) {
+      gameState.advertImage = payload.image;
+      gameState.advertActive = true;
+    } else if (action === 'hideAdvert') {
+      gameState.advertActive = false;
     } else if (action === 'resume') {
       if (gameState.currentRound) {
         gameState.status = 'active';
@@ -138,7 +146,6 @@ function startQuestionTimer() {
             io.emit('syncState', gameState);
             startQuestionTimer();
           } else {
-            // End of round reached! Trigger Victory Podium Celebration screen
             gameState.status = 'podium';
             io.emit('syncState', gameState);
           }
