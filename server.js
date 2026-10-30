@@ -29,6 +29,10 @@ let gameState = {
   tipJarActive: false,
   tipJarUrl: '',
   speedBonusEnabled: false,
+  pollActive: false,
+  pollQuestion: 'What is the greatest pub snack of all time?',
+  pollOptions: ['Crisps / Nuts', 'Pork Pies', 'Scampi Fries', 'Bowl of Chips'],
+  pollVotes: {},
   players: {},
   answersSubmitted: {}
 };
@@ -52,9 +56,20 @@ io.on('connection', (socket) => {
       id: socket.id,
       name: data.name || `Team ${Object.keys(gameState.players).length + 1}`,
       score: 0,
-      avatar: ['🍻', '🎯', '🚀', '🔥', '⚡', '🏆', '🍕', '🎸'][Math.floor(Math.random() * 8)]
+      avatar: data.avatar || '🍻',
+      motto: data.motto || 'Here for a good time!'
     };
     io.emit('updatePlayers', gameState.players);
+    io.emit('syncState', gameState);
+  });
+
+  socket.on('sendReaction', (data) => {
+    // Broadcast floating reactions to projector and all players
+    io.emit('triggerReaction', { emoji: data.emoji, teamName: data.teamName });
+  });
+
+  socket.on('submitPollVote', (data) => {
+    gameState.pollVotes[socket.id] = data.optionIndex;
     io.emit('syncState', gameState);
   });
 
@@ -80,6 +95,8 @@ io.on('connection', (socket) => {
       if (payload.tipJarUrl !== undefined) gameState.tipJarUrl = payload.tipJarUrl;
     } else if (action === 'toggleTipJar') {
       gameState.tipJarActive = !gameState.tipJarActive;
+    } else if (action === 'togglePoll') {
+      gameState.pollActive = !gameState.pollActive;
     } else if (action === 'pushAdvert' && payload) {
       gameState.advertImage = payload.image;
       if (payload.advertTitle !== undefined) gameState.advertTitle = payload.advertTitle;
@@ -132,7 +149,7 @@ io.on('connection', (socket) => {
     if (gameState.status !== 'active') return;
     if (!gameState.answersSubmitted[socket.id]) {
       const submitTime = Date.now();
-      const timeTaken = (submitTime - questionStartTime) / 1000; // seconds taken
+      const timeTaken = (submitTime - questionStartTime) / 1000;
       gameState.answersSubmitted[socket.id] = { answer: data.answer, timeTaken };
       io.emit('answerUpdate', { count: Object.keys(gameState.answersSubmitted).length });
     }
@@ -140,6 +157,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     delete gameState.players[socket.id];
+    delete gameState.pollVotes[socket.id];
     io.emit('updatePlayers', gameState.players);
     io.emit('syncState', gameState);
   });
@@ -158,7 +176,6 @@ function processRoundScores() {
     if (playerAnswer === correctAnswer) {
       if (gameState.players[socketId]) {
         let points = 10;
-        // Calculate speed bonus if enabled (up to 5 extra points for fast responses)
         if (gameState.currentRound.speedBonus) {
           const timeRatio = Math.max(0, (maxTimer - sub.timeTaken) / maxTimer);
           const bonus = Math.round(timeRatio * 5);
