@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriviaMania - Player Controller</title>
     <style>
-        :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; }
+        :root { --bg: #090a10; --card: #131520; --primary: #9c27b0; --accent: #00e5ff; --text: #ffffff; --success: #00e676; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; justify-content: center; align-items: center; }
         .card { background: var(--card); border: 2px solid var(--primary); border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(156, 39, 176, 0.4); text-align: center; box-sizing: border-box; }
         h1 { color: var(--accent); font-size: 32px; margin-top: 0; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
@@ -23,7 +23,7 @@
         .choice-btn:hover { background: var(--primary); color: white; }
         .score-badge { background: #1a1d2d; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); display: inline-block; margin-bottom: 15px; font-weight: bold; color: var(--accent); font-size: 16px; }
         
-        .audio-unlock-btn { background: #00e676; color: black; margin-bottom: 12px; font-size: 14px; padding: 10px; border-radius: 8px; font-weight: bold; width: 100%; border: none; cursor: pointer; }
+        .audio-unlock-btn { background: var(--success); color: black; margin-bottom: 12px; font-size: 14px; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; border: none; cursor: pointer; box-shadow: 0 0 10px rgba(0,230,118,0.4); }
         .poll-container { background: #1a1d2d; border: 1px solid var(--accent); padding: 15px; border-radius: 10px; margin-bottom: 15px; display: none; text-align: left; }
         .poll-btn { background: #22263d; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; margin-top: 8px; width: 100%; text-align: center; font-weight: bold; cursor: pointer; font-size: 14px; }
         .poll-btn:hover { background: var(--primary); }
@@ -65,7 +65,7 @@
 
     <div id="gameScreen" class="game-screen">
         <div class="card">
-            <button class="audio-unlock-btn" onclick="unlockAudio()">🔊 Tap Here to Enable Phone Audio</button>
+            <button id="audioUnlockBtn" class="audio-unlock-btn" onclick="unlockPhoneAudio()">🔊 Tap Here to Enable Phone Audio</button>
             <h2 id="welcomeHeader" style="color: var(--accent); margin-top:0; font-size: 22px;"></h2>
             <div class="score-badge">Score: <span id="playerScore">0</span> pts</div>
             <p id="gameStatusText" style="color: #a4a8bc; font-size: 15px; margin: 10px 0;">Waiting in lobby...</p>
@@ -80,9 +80,6 @@
                 <p id="currentQuestionPrompt" style="font-size: 15px; color: #fff; margin-bottom: 12px; font-weight: bold;"></p>
                 <div class="options-container" id="playerOptionsGrid"></div>
             </div>
-
-            <!-- Audio element for mobile music previews -->
-            <div id="mobileAudioContainer" style="display:none;"></div>
 
             <div class="reaction-tray">
                 <button class="reaction-btn" onclick="sendReaction('🍻')">🍻</button>
@@ -103,19 +100,21 @@
         let selectedAvatar = '🍻';
         let dismissedAdvert = false;
 
-        let audioCtx = null;
-        function unlockAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // Play silent buffer to unlock mobile audio context completely
-            const buffer = audioCtx.createBuffer(1, 1, 22050);
-            const source = audioCtx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioCtx.destination);
-            source.start(0);
+        // Persistent global audio element initialized on user tap
+        let globalPhoneAudio = new Audio();
+        globalPhoneAudio.preload = "auto";
 
-            alert('Phone audio enabled successfully!');
+        function unlockPhoneAudio() {
+            globalPhoneAudio.src = "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/36/53/b7/3653b7c8-7013-8898-7240-23a595c2f5d9/mza_10795287019777178351.m43.aac";
+            globalPhoneAudio.play().then(() => {
+                globalPhoneAudio.pause();
+                globalPhoneAudio.currentTime = 0;
+                document.getElementById('audioUnlockBtn').style.display = 'none';
+                alert('Phone audio unlocked successfully!');
+            }).catch(e => {
+                console.log("Audio unlock error:", e);
+                alert('Please tap again to enable audio.');
+            });
         }
 
         function selectAvatar(emoji, element) {
@@ -135,7 +134,6 @@
             const mobilePollBox = document.getElementById('mobilePollBox');
             const mobilePollQuestion = document.getElementById('mobilePollQuestion');
             const mobilePollOptions = document.getElementById('mobilePollOptions');
-            const mobileAudioContainer = document.getElementById('mobileAudioContainer');
 
             if (state.tipJarActive && state.tipJarUrl) {
                 tipJarLink.href = state.tipJarUrl;
@@ -188,27 +186,24 @@
                     });
                 }
 
-                // Play music preview on phone if available
+                // Trigger music playback via the unlocked global audio instance
                 if (currentQ.audioUrl) {
-                    mobileAudioContainer.innerHTML = `<audio autoplay src="${currentQ.audioUrl}"></audio>`;
-                    const phoneAudio = mobileAudioContainer.querySelector('audio');
-                    if (phoneAudio) {
-                        phoneAudio.play().catch(e => console.log("Phone audio autoplay restricted:", e));
-                    }
+                    globalPhoneAudio.src = currentQ.audioUrl;
+                    globalPhoneAudio.play().catch(e => console.log("Phone music playback restricted:", e));
                 } else {
-                    mobileAudioContainer.innerHTML = '';
+                    globalPhoneAudio.pause();
                 }
 
             } else if (isJoined && state.status === 'revealed') {
                 statusText.textContent = "Answer Revealed on Projector! Check leaderboard.";
                 answerSection.style.display = 'none';
-                mobileAudioContainer.innerHTML = '';
+                globalPhoneAudio.pause();
             } else if (isJoined && state.status === 'podium') {
                 statusText.textContent = "🎉 Game Over! Check projector for final podium winners!";
                 answerSection.style.display = 'none';
-                mobileAudioContainer.innerHTML = '';
+                globalPhoneAudio.pause();
             } else if (isJoined) {
-                mobileAudioContainer.innerHTML = '';
+                globalPhoneAudio.pause();
                 if (!state.mobileAdvertActive && !state.pollActive) {
                     statusText.textContent = "Waiting for host to start...";
                 } else if (state.pollActive) {
