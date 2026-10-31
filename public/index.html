@@ -71,6 +71,16 @@
         </div>
 
         <div class="panel">
+            <h2>📺 Quick Advert Control</h2>
+            <label>Select Stored Ad to Broadcast:</label>
+            <select id="quickAdSelect">
+                <option value="">-- Choose Ad --</option>
+            </select>
+            <button class="btn-api" style="background:#06b6d4; color:#000;" onclick="quickBroadcastAd()">📢 Broadcast Active Ad</button>
+            <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
+        </div>
+
+        <div class="panel">
             <h2>Active Playlist Queue</h2>
             <div id="hostPlaylistQueue" style="max-height: 200px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 13px;">No rounds loaded in queue yet.</p>
@@ -85,7 +95,7 @@
             <button class="btn-api" style="background:#10b981; color:#000; margin-top:10px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
         </div>
 
-        <div class="panel">
+        <div class="panel full-width">
             <h2>📊 Live Poll Votes Breakdown</h2>
             <div id="hostPollVotesList" style="max-height: 180px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 13px;">No active poll votes yet.</p>
@@ -166,7 +176,7 @@
                 <option value="projector">Projector Only</option>
                 <option value="mobile">Mobile Phones Only</option>
             </select>
-            <label>Upload Image:</label>
+            <label>Upload Image (JPG, PNG, WebP, GIF):</label>
             <input type="file" id="advertImageInput" accept="image/*" style="margin-bottom:12px;">
             <button class="btn-api" onclick="saveNewAdvert()">💾 Save to Library</button>
             <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
