@@ -24,6 +24,7 @@ let gameState = {
 };
 
 let players = {};
+let questionInterval = null;
 
 // --- SAFE API ENDPOINT FOR QUESTIONS ---
 app.get('/api/questions/:category', (req, res) => {
@@ -64,6 +65,28 @@ app.get('/api/questions/:category', (req, res) => {
     });
 });
 
+function startQuestionTimer() {
+    if (questionInterval) clearInterval(questionInterval);
+    
+    if (!gameState.currentRound || !gameState.currentRound.questions) return;
+    
+    let currentTime = gameState.currentRound.timer || 15;
+    gameState.timer = currentTime;
+    gameState.status = 'question';
+    io.emit('timerUpdate', gameState.timer);
+
+    questionInterval = setInterval(() => {
+        currentTime--;
+        gameState.timer = currentTime;
+        io.emit('timerUpdate', gameState.timer);
+
+        if (currentTime <= 0) {
+            clearInterval(questionInterval);
+            io.emit('revealAnswer'); // Auto-reveal when timer hits zero
+        }
+    }, 1000);
+}
+
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
@@ -80,29 +103,33 @@ io.on('connection', (socket) => {
 
     socket.on('hostAction', (data) => {
         if (data.action === 'loadRound') {
+            if (questionInterval) clearInterval(questionInterval);
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
             gameState.status = 'question';
             io.emit('gameStateUpdate', gameState);
-            io.emit('gameResumed', gameState);
+            startQuestionTimer();
         } else if (data.action === 'nextQuestion') {
             if (gameState.currentRound && gameState.currentRound.questions) {
                 if (gameState.currentQuestionIndex < gameState.currentRound.questions.length - 1) {
                     gameState.currentQuestionIndex++;
+                    io.emit('gameStateUpdate', gameState);
+                    startQuestionTimer();
                 } else {
-                    gameState.currentQuestionIndex = 0; // Loop or end
+                    if (questionInterval) clearInterval(questionInterval);
+                    gameState.status = 'finished';
+                    io.emit('gameStateUpdate', gameState);
                 }
-                io.emit('gameStateUpdate', gameState);
-                io.emit('gameResumed', gameState);
             }
         } else if (data.action === 'resume') {
-            gameState.status = 'question';
             io.emit('gameStateUpdate', gameState);
-            io.emit('gameResumed', gameState);
+            startQuestionTimer();
         } else if (data.action === 'pause') {
+            if (questionInterval) clearInterval(questionInterval);
             gameState.status = 'paused';
             io.emit('gamePaused');
         } else if (data.action === 'reveal') {
+            if (questionInterval) clearInterval(questionInterval);
             io.emit('revealAnswer');
         } else if (data.action === 'updateSettings') {
             if (data.payload && data.payload.eventTitle) {
