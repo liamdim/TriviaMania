@@ -70,19 +70,20 @@ function startQuestionTimer() {
     
     if (!gameState.currentRound || !gameState.currentRound.questions) return;
     
-    let currentTime = gameState.currentRound.timer || 15;
-    gameState.timer = currentTime;
+    let roundTimer = gameState.currentRound.timer || 15;
+    gameState.timer = roundTimer;
     gameState.status = 'question';
-    io.emit('timerUpdate', gameState.timer);
+    
+    io.emit('gameStateUpdate', gameState);
 
     questionInterval = setInterval(() => {
-        currentTime--;
-        gameState.timer = currentTime;
+        roundTimer--;
+        gameState.timer = roundTimer;
         io.emit('timerUpdate', gameState.timer);
 
-        if (currentTime <= 0) {
+        if (roundTimer <= 0) {
             clearInterval(questionInterval);
-            io.emit('revealAnswer'); // Auto-reveal when timer hits zero
+            io.emit('revealAnswer');
         }
     }, 1000);
 }
@@ -107,13 +108,11 @@ io.on('connection', (socket) => {
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
             gameState.status = 'question';
-            io.emit('gameStateUpdate', gameState);
             startQuestionTimer();
         } else if (data.action === 'nextQuestion') {
             if (gameState.currentRound && gameState.currentRound.questions) {
                 if (gameState.currentQuestionIndex < gameState.currentRound.questions.length - 1) {
                     gameState.currentQuestionIndex++;
-                    io.emit('gameStateUpdate', gameState);
                     startQuestionTimer();
                 } else {
                     if (questionInterval) clearInterval(questionInterval);
@@ -122,7 +121,6 @@ io.on('connection', (socket) => {
                 }
             }
         } else if (data.action === 'resume') {
-            io.emit('gameStateUpdate', gameState);
             startQuestionTimer();
         } else if (data.action === 'pause') {
             if (questionInterval) clearInterval(questionInterval);
