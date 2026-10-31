@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { maxHttpBufferSize: 1e7 }); // Allows larger image payloads over WebSockets
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -35,26 +35,11 @@ const backupQuestionBanks = {
         { q: "How many bones are in the adult human body?", a: "206", options: ["200", "206", "214", "198"] },
         { q: "What is the hardest natural substance on Earth?", a: "Diamond", options: ["Gold", "Iron", "Diamond", "Quartz"] },
         { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] },
-        { q: "In what year did the Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] },
-        { q: "What is the primary ingredient in traditional guacamole?", a: "Avocado", options: ["Tomato", "Avocado", "Lime", "Peas"] },
-        { q: "Which artist painted the ceiling of the Sistine Chapel?", a: "Michelangelo", options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"] },
-        { q: "What is the capital of Canada?", a: "Ottawa", options: ["Toronto", "Vancouver", "Ottawa", "Montreal"] },
-        { q: "Which gas makes up the majority of Earth's atmosphere?", a: "Nitrogen", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"] },
-        { q: "How many strings does a standard guitar have?", a: "6", options: ["4", "5", "6", "8"] },
-        { q: "What is the boiling point of water in Celsius?", a: "100°C", options: ["90°C", "100°C", "110°C", "120°C"] },
-        { q: "Which ocean is the largest by total area?", a: "Pacific Ocean", options: ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"] },
-        { q: "What is the currency of the United Kingdom?", a: "Pound Sterling", options: ["Euro", "Dollar", "Pound Sterling", "Franc"] },
-        { q: "In what country is Machu Picchu located?", a: "Peru", options: ["Chile", "Peru", "Brazil", "Colombia"] },
-        { q: "What is the main component of the sun?", a: "Hydrogen", options: ["Helium", "Hydrogen", "Carbon", "Oxygen"] },
-        { q: "How many sides does a hexagon have?", a: "6", options: ["5", "6", "7", "8"] },
-        { q: "What is the tallest mammal in the world?", a: "Giraffe", options: ["Elephant", "Giraffe", "Blue Whale", "Rhino"] },
-        { q: "Who wrote the play 'Hamlet'?", a: "William Shakespeare", options: ["Charles Dickens", "Jane Austen", "William Shakespeare", "Mark Twain"] },
-        { q: "What is the freezing point of water in Fahrenheit?", a: "32°F", options: ["0°F", "32°F", "50°F", "212°F"] }
+        { q: "In what year did the Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] }
     ],
     "movies": [
         { q: "Which film won Best Picture in 1994?", a: "Forrest Gump", options: ["Pulp Fiction", "The Shawshank Redemption", "Forrest Gump", "Quiz Show"] },
-        { q: "Who directed 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] },
-        { q: "What is Captain America's shield made of?", a: "Vibranium", options: ["Adamantium", "Unobtainium", "Vibranium", "Mithril"] }
+        { q: "Who directed 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] }
     ]
 };
 
