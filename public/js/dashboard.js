@@ -18,7 +18,7 @@ const socket = io();
 let playlist = [];
 let latestPlayersState = {};
 
-// --- EXPANDED FALLBACK QUESTION BANKS FOR ALL 20 CATEGORIES ---
+// --- LARGE EXPANDED BACKUP BANKS (Ensures 5, 10, 15, 20 counts work fully) ---
 const backupQuestionBanks = {
     "general": [
         { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
@@ -30,7 +30,17 @@ const backupQuestionBanks = {
         { q: "What is the primary ingredient in traditional guacamole?", a: "Avocado", options: ["Tomato", "Avocado", "Lime", "Peas"] },
         { q: "Which artist painted the ceiling of the Sistine Chapel?", a: "Michelangelo", options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"] },
         { q: "What is the capital of Canada?", a: "Ottawa", options: ["Toronto", "Vancouver", "Ottawa", "Montreal"] },
-        { q: "Which gas makes up the majority of Earth's atmosphere?", a: "Nitrogen", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"] }
+        { q: "Which gas makes up the majority of Earth's atmosphere?", a: "Nitrogen", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"] },
+        { q: "How many strings does a standard guitar have?", a: "6", options: ["4", "5", "6", "8"] },
+        { q: "What is the boiling point of water in Celsius?", a: "100°C", options: ["90°C", "100°C", "110°C", "120°C"] },
+        { q: "Which ocean is the largest by total area?", a: "Pacific Ocean", options: ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"] },
+        { q: "What is the currency of the United Kingdom?", a: "Pound Sterling", options: ["Euro", "Dollar", "Pound Sterling", "Franc"] },
+        { q: "In what country is the ancient site of Machu Picchu located?", a: "Peru", options: ["Chile", "Peru", "Brazil", "Colombia"] },
+        { q: "What is the main component of the sun?", a: "Hydrogen", options: ["Helium", "Hydrogen", "Carbon", "Oxygen"] },
+        { q: "How many sides does a hexagon have?", a: "6", options: ["5", "6", "7", "8"] },
+        { q: "What is the tallest mammal in the world?", a: "Giraffe", options: ["Elephant", "Giraffe", "Blue Whale", "Rhino"] },
+        { q: "Who wrote the play 'Hamlet'?", a: "William Shakespeare", options: ["Charles Dickens", "Jane Austen", "William Shakespeare", "Mark Twain"] },
+        { q: "What is the freezing point of water in Fahrenheit?", a: "32°F", options: ["0°F", "32°F", "50°F", "212°F"] }
     ],
     "animals": [
         { q: "What is the fastest land animal in the world?", a: "Cheetah", options: ["Lion", "Pronghorn", "Cheetah", "Leopard"] },
@@ -40,7 +50,9 @@ const backupQuestionBanks = {
         { q: "How many hearts does an octopus have?", a: "3", options: ["1", "2", "3", "4"] },
         { q: "What is a baby kangaroo called?", a: "Joey", options: ["Cub", "Pup", "Joey", "Calf"] },
         { q: "Which flightless bird is native to New Zealand?", a: "Kiwi", options: ["Penguin", "Ostrich", "Kiwi", "Emu"] },
-        { q: "What color is the tongue of a giraffe?", a: "Blue-black", options: ["Pink", "Red", "Blue-black", "Yellow"] }
+        { q: "What color is the tongue of a giraffe?", a: "Blue-black", options: ["Pink", "Red", "Blue-black", "Yellow"] },
+        { q: "What animal is known as the 'Ship of the Desert'?", a: "Camel", options: ["Horse", "Elephant", "Camel", "Donkey"] },
+        { q: "Which animal has black and white stripes?", a: "Zebra", options: ["Tiger", "Zebra", "Leopard", "Panda"] }
     ],
     "brain-teasers": [
         { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", a: "An echo", options: ["A shadow", "An echo", "A cloud", "A whisper"] },
@@ -132,13 +144,19 @@ const backupQuestionBanks = {
     ]
 };
 
-// --- DYNAMIC ROUND GENERATOR ---
+// --- DYNAMIC ROUND GENERATOR WITH TIMERS ---
 async function addTriviaRound() {
     const select = document.getElementById('triviaGenreSelect');
     const categoryKey = select ? select.value : "general";
     const genreName = select ? select.options[select.selectedIndex].text : "Trivia Round";
     const countSelect = document.getElementById('triviaCountSelect');
     const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
+    
+    const timerInput = document.getElementById('questionTimerInput');
+    const qTimer = timerInput ? parseInt(timerInput.value) || 15 : 15;
+
+    const delayInput = document.getElementById('betweenDelayInput');
+    const bDelay = delayInput ? parseInt(delayInput.value) || 5 : 5;
     
     let rawQuestions = [];
 
@@ -151,8 +169,8 @@ async function addTriviaRound() {
         console.log('Server file read failed, using backup question bank.');
     }
 
-    if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
-        const pool = backupQuestionBanks[categoryKey] || backupQuestionBanks["general"];
+    const pool = backupQuestionBanks[categoryKey] || backupQuestionBanks["general"];
+    if (!Array.isArray(rawQuestions) || rawQuestions.length < targetCount) {
         rawQuestions = [...pool];
     }
 
@@ -172,13 +190,13 @@ async function addTriviaRound() {
         id: Date.now(), 
         name: genreName + " (" + questions.length + " Qs)", 
         questions: questions, 
-        timer: 15, 
-        betweenDelay: 5, 
+        timer: qTimer, 
+        betweenDelay: bDelay, 
         speedBonus: true 
     });
     
     renderPlaylist();
-    alert('Successfully added ' + questions.length + ' questions for ' + genreName + ' to playlist!');
+    alert('Successfully added ' + questions.length + ' questions for ' + genreName + ' (Timer: ' + qTimer + 's)!');
 }
 
 function addKidsRound() { alert('Use the main Trivia dropdown for all categories!'); }
@@ -257,7 +275,7 @@ socket.on('updatePlayers', function(players) {
         var sorted = Object.values(players).sort(function(a, b) { return b.score - a.score; });
         var html = '';
         sorted.forEach(function(p, idx) {
-            html += '<label class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></label>';
+            html += '<div class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
         });
         listEl.innerHTML = html;
     }
