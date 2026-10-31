@@ -112,6 +112,9 @@ function advanceToNextQuestion() {
 io.on('connection', (socket) => {
     socket.emit('gameStateUpdate', gameState);
     socket.emit('pollUpdate', gameState.poll);
+    if (gameState.advert.active) {
+        socket.emit('advertUpdate', gameState.advert);
+    }
 
     socket.on('joinGame', (data) => {
         players[socket.id] = {
@@ -151,15 +154,27 @@ io.on('connection', (socket) => {
             if (delayTimeout) clearTimeout(delayTimeout);
             io.emit('revealAnswer');
         } else if (data.action === 'pushAdvert') {
-            gameState.advert = { active: true, title: data.payload.title || 'Sponsor Ad', image: data.payload.image || '', target: data.payload.target || 'both' };
+            gameState.advert = { 
+                active: true, 
+                title: data.payload.title || 'Sponsor Ad', 
+                image: data.payload.image || '', 
+                target: data.payload.target || 'both' 
+            };
             io.emit('advertUpdate', gameState.advert);
         } else if (data.action === 'hideAdvert') {
             gameState.advert.active = false;
             io.emit('advertUpdate', gameState.advert);
         } else if (data.action === 'updatePoll') {
             if (data.payload && data.payload.question) {
-                const optList = data.payload.options ? data.payload.options.split(',').map(s => s.trim()).filter(Boolean) : ['Yes', 'No'];
-                gameState.poll = { active: data.payload.active, question: data.payload.question, options: optList };
+                const optList = typeof data.payload.options === 'string' 
+                    ? data.payload.options.split(',').map(s => s.trim()).filter(Boolean) 
+                    : (data.payload.options || ['Yes', 'No']);
+                
+                gameState.poll = { 
+                    active: data.payload.active, 
+                    question: data.payload.question, 
+                    options: optList 
+                };
                 io.emit('pollUpdate', gameState.poll);
             }
         } else if (data.action === 'updateSettings') {
