@@ -10,11 +10,12 @@
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; box-sizing: border-box; text-align: center; }
         h1 { font-size: 42px; color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 10px; }
-        .card { background: var(--card); border: 2px solid #222538; border-radius: 20px; padding: 40px; width: 80%; max-width: 900px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
+        .card { background: var(--card); border: 2px solid #222538; border-radius: 20px; padding: 40px; width: 80%; max-width: 900px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); position: relative; }
         .question-text { font-size: 28px; font-weight: bold; margin-bottom: 30px; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .option-box { background: #1a1d2d; border: 2px solid #333852; padding: 20px; border-radius: 12px; font-size: 20px; font-weight: bold; }
         .status-msg { font-size: 24px; color: var(--muted); }
+        .timer-badge { position: absolute; top: 20px; right: 30px; background: var(--primary); padding: 8px 16px; border-radius: 10px; font-weight: bold; font-size: 18px; box-shadow: 0 0 10px var(--primary-glow); }
     </style>
 </head>
 <body>
@@ -28,13 +29,33 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        let currentGameData = null;
 
         socket.on('gameStateUpdate', function(state) {
+            currentGameData = state;
             renderState(state);
         });
 
         socket.on('gameResumed', function(state) {
+            currentGameData = state;
             renderState(state);
+        });
+
+        socket.on('revealAnswer', function() {
+            if (!currentGameData || !currentGameData.currentRound) return;
+            const qIndex = currentGameData.currentQuestionIndex || 0;
+            const currentQ = currentGameData.currentRound.questions[qIndex];
+            if (!currentQ) return;
+
+            // Highlight correct answer on projector
+            const boxes = document.querySelectorAll('.option-box');
+            boxes.forEach(box => {
+                if (box.textContent.trim() === currentQ.a.trim()) {
+                    box.style.background = '#00e676';
+                    box.style.color = '#000';
+                    box.style.borderColor = '#fff';
+                }
+            });
         });
 
         socket.on('updateSettings', function(settings) {
@@ -52,10 +73,11 @@
             }
 
             const qIndex = state.currentQuestionIndex || 0;
-            const currentQ = state.currentRound.questions[qIndex];
+            const questions = state.currentRound.questions;
+            const currentQ = questions[qIndex];
 
             if (!currentQ) {
-                card.innerHTML = '<div class="status-msg">Round complete! Check leaderboard.</div>';
+                card.innerHTML = '<div class="status-msg">🎉 Round complete! Check final leaderboard.</div>';
                 return;
             }
 
@@ -65,7 +87,8 @@
             });
 
             card.innerHTML = `
-                <div style="font-size: 14px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">${state.currentRound.name} (Question ${qIndex + 1} of ${state.currentRound.questions.length})</div>
+                <div class="timer-badge">Q ${qIndex + 1} / ${questions.length}</div>
+                <div style="font-size: 14px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">${state.currentRound.name}</div>
                 <div class="question-text">${currentQ.q}</div>
                 <div class="options-grid">${optionsHtml}</div>
             `;
