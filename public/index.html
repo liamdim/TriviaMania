@@ -58,7 +58,7 @@
     </div>
 
     <!-- TAB 1: CONTROL CENTER -->
-    <div id="tab-control" class="tab-content active">
+    <div id="tab-control" class="tab-content">
         <div class="panel">
             <h2>Master Game Controls</h2>
             <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
@@ -98,7 +98,7 @@
     </div>
 
     <!-- TAB 2: PLAYLIST BUILDER -->
-    <div id="tab-playlist" class="tab-content">
+    <div id="tab-playlist" class="tab-content active">
         <!-- SECTION 1: STANDARD TRIVIA -->
         <div class="panel">
             <h2>🧠 Standard Trivia Rounds</h2>
@@ -115,59 +115,23 @@
                 <div>
                     <label>Genre / Category:</label>
                     <select id="triviaGenreSelect">
-                        <optgroup label="🇬🇧 British Curated Banks">
-                            <option value="uk_general">British General Knowledge</option>
-                            <option value="uk_sports">British Sports & Football</option>
-                            <option value="uk_history">British History & Monarchy</option>
-                            <option value="uk_tv">British TV & Soaps</option>
-                            <option value="uk_music">British Music & Rock Anthems</option>
-                        </optgroup>
-                        <optgroup label="🌍 Global Categories (Online/Backup)">
-                            <option value="9">General Knowledge (Global)</option>
-                            <option value="17">Science & Nature</option>
-                            <option value="23">World History</option>
-                            <option value="22">Geography</option>
-                            <option value="11">Movies & Cinema</option>
-                        </optgroup>
+                        <option value="uk_general">British General Knowledge</option>
+                        <option value="uk_sports">British Sports & Football</option>
+                        <option value="uk_history">British History & Monarchy</option>
+                        <option value="uk_tv">British TV & Soaps</option>
+                        <option value="uk_music">British Music & Rock Anthems</option>
                     </select>
                 </div>
             </div>
             <button class="btn-api" onclick="addTriviaRound()">➕ Add Standard Trivia Round</button>
         </div>
-<!-- SECTION 2: PICTURE ROUNDS -->
-<div class="panel" style="border: 2px dashed var(--accent);">
-    <h2>🖼️ Picture Rounds</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-        <div>
-            <label>Question Count:</label>
-            <select id="pictureCountSelect">
-                <option value="5">5 Questions</option>
-                <option value="10" selected>10 Questions</option>
-                <option value="15">15 Questions</option>
-                <option value="20">20 Questions</option>
-            </select>
+
+        <!-- SECTION 2: PICTURE ROUNDS (Bypassed temporarily for stability) -->
+        <div class="panel" style="border: 2px dashed var(--accent); opacity: 0.7;">
+            <h2>🖼️ Picture Rounds</h2>
+            <p style="font-size: 12px; color: var(--muted); margin: 0 0 10px 0;">Currently streamlined. Use Standard, Kids, or Music trivia above.</p>
+            <button class="btn-api" style="background:#333; color:#aaa; cursor:not-allowed;" disabled>➕ Add Picture Round</button>
         </div>
-        <div>
-            <label>Picture Category:</label>
-            <select id="pictureGenreSelect">
-                <option value="landmarks">Famous World Landmarks</option>
-                <option value="animals">Animals & Wildlife</option>
-                <option value="celebs">Celebrity Faces & Actors</option>
-                <option value="logos">Famous Corporate Logos</option>
-                <option value="flags">Flags of the World</option>
-                <option value="football">Football Badges (World)</option>
-                <option value="cartoons">Cartoon Characters</option>
-                <option value="disney">Disney & Pixar Characters</option>
-                <option value="marvel">Marvel & DC Superheroes</option>
-                <option value="tv">Famous TV Shows</option>
-                <option value="movies">Movie Posters</option>
-                <option value="games">Video Game Characters</option>
-                <option value="food">World Foods & Dishes</option>
-            </select>
-        </div>
-    </div>
-    <button class="btn-api" style="background:var(--accent); color:black;" onclick="addPictureRound()">➕ Add Picture Round</button>
-</div>
 
         <!-- SECTION 3: KIDS & FAMILY -->
         <div class="panel">
@@ -185,17 +149,18 @@
                 <div>
                     <label>Kids Category:</label>
                     <select id="kidsGenreSelect">
-                        <option value="disney">Disney & Pixar Movies</option>
-                        <option value="pokemon">Pokémon & Gaming Trivia</option>
+                        <option value="kids_disney">Disney & Pixar Movies</option>
+                        <option value="kids_pokemon">Pokémon & Gaming Trivia</option>
+                        <option value="kids_roald_dahl">Roald Dahl & Children's Books</option>
                     </select>
                 </div>
             </div>
             <button class="btn-api" style="background:#00e676; color:black;" onclick="addKidsRound()">➕ Add Kids & Family Round</button>
         </div>
 
-        <!-- SECTION 4: MUSIC ROUNDS -->
+        <!-- SECTION 4: MUSIC TRIVIA ROUNDS -->
         <div class="panel" style="border: 2px dashed var(--primary);">
-            <h2>🎵 Music Round Tab</h2>
+            <h2>🎵 Music Trivia Round</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                 <div>
                     <label>Question Count:</label>
@@ -209,13 +174,13 @@
                 <div>
                     <label>Music Category:</label>
                     <select id="musicGenreSelect">
-                        <option value="classic_rock">Classic Rock Anthems</option>
-                        <option value="80s_hits">1980s Pop & Rock Hits</option>
-                        <option value="90s_hits">1990s Chart & Britpop Hits</option>
+                        <option value="music_classic_rock">Classic Rock Anthems</option>
+                        <option value="music_80s_90s">1980s & 1990s Pop Hits</option>
+                        <option value="music_soundtracks">Iconic Movie Soundtracks</option>
                     </select>
                 </div>
             </div>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicRound()">➕ Add Music Round</button>
+            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicRound()">➕ Add Music Trivia Round</button>
         </div>
 
         <!-- PLAYLIST QUEUE DISPLAY -->
@@ -235,10 +200,6 @@
             <input type="text" id="advertTitleInput" value="Featured Sponsor & Event Advert">
             <label>Select Image File:</label>
             <input type="file" id="imageUploadInput" accept="image/*" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
-            <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
-                <input type="checkbox" id="showAdvertQRCheckbox" style="width: 20px; height: 20px; margin:0; cursor:pointer;">
-                <label for="showAdvertQRCheckbox" style="cursor:pointer; color: white; font-size: 14px;">Show Join QR Code on projector advert</label>
-            </div>
             <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector</button>
         </div>
     </div>
