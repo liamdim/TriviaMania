@@ -262,7 +262,6 @@ async function addPictureRound() {
 
     const questions = selectedItems.map(item => {
         const correctAnswer = item.a;
-        // Use predefined options if available, otherwise pull from pool
         let options = item.options;
         if (!options) {
             const incorrectOptions = allPossibleAnswers
@@ -438,4 +437,10 @@ socket.on('updatePlayers', function(players) {
     var listEl = document.getElementById('hostScoreList');
     if (listEl && Object.keys(players).length > 0) {
         var sorted = Object.values(players).sort(function(a, b) { return b.score - a.score; });
-        var html =</i>
+        var html = '';
+        sorted.forEach(function(p, idx) {
+            html += '<div class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
+        });
+        listEl.innerHTML = html;
+    }
+});
