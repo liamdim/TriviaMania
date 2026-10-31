@@ -23,10 +23,8 @@ let latestPlayersState = {};
 let usedQuestionHistory = JSON.parse(localStorage.getItem('triviamania_history') || '[]');
 
 function filterUnusedQuestions(pool) {
-    // Filter out questions that have been used recently to prevent repeats
-    const fresh = pool.filter(item => !usedQuestionHistory.includes(item.q));
+    const fresh = pool.filter(item => !usedQuestionHistory.includes(item.q || item.img));
     if (fresh.length < pool.length * 0.3) {
-        // If we are running low on fresh questions, reset history
         usedQuestionHistory = [];
         localStorage.setItem('triviamania_history', JSON.stringify([]));
         return pool;
@@ -36,13 +34,13 @@ function filterUnusedQuestions(pool) {
 
 function markQuestionsAsUsed(questions) {
     questions.forEach(item => {
-        if (!usedQuestionHistory.includes(item.q)) {
-            usedQuestionHistory.push(item.q);
+        const key = item.image || item.q;
+        if (!usedQuestionHistory.includes(key)) {
+            usedQuestionHistory.push(key);
         }
     });
-    // Keep history capped at last 200 questions
-    if (usedQuestionHistory.length > 200) {
-        usedQuestionHistory = usedQuestionHistory.slice(-200);
+    if (usedQuestionHistory.length > 300) {
+        usedQuestionHistory = usedQuestionHistory.slice(-300);
     }
     localStorage.setItem('triviamania_history', JSON.stringify(usedQuestionHistory));
 }
@@ -178,7 +176,7 @@ async function addTriviaRound() {
     alert('Loaded ' + questions.length + ' questions for ' + genreName + '!');
 }
 
-// --- PICTURE ROUND GENERATOR (STRICTLY ROUTED) ---
+// --- PICTURE ROUND GENERATOR (STRICTLY ROUTED & MATCHED) ---
 function addPictureRound() {
     const select = document.getElementById('pictureGenreSelect');
     const genreKey = select ? select.value : "landmarks";
@@ -192,10 +190,12 @@ function addPictureRound() {
             { img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad", a: "Big Ben", options: ["Big Ben", "Tower Bridge", "Statue of Liberty", "Sydney Opera House"] },
             { img: "https://images.unsplash.com/photo-1525874684015-58379d421a52", a: "Colosseum", options: ["Parthenon", "Colosseum", "Pantheon", "St. Peter's Basilica"] },
             { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Taj Mahal", options: ["Taj Mahal", "Angkor Wat", "Burj Khalifa", "Petra"] },
-            { img: "https://images.unsplash.com/photo-1548013146-72479768bada", a: "Taj Mahal", options: ["Taj Mahal", "Red Fort", "Qutub Minar", "Hawa Mahal"] },
+            { img: "https://images.unsplash.com/photo-1548013146-72479768bada", a: "Red Fort", options: ["Taj Mahal", "Red Fort", "Qutub Minar", "Hawa Mahal"] },
             { img: "https://images.unsplash.com/photo-1485738422979-f5c462def9f7", a: "Statue of Liberty", options: ["Empire State", "Statue of Liberty", "Space Needle", "Golden Gate Bridge"] },
             { img: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29", a: "Golden Gate Bridge", options: ["Brooklyn Bridge", "Tower Bridge", "Golden Gate Bridge", "Sydney Harbour Bridge"] },
-            { img: "https://images.unsplash.com/photo-1526481280693-3bfa7568e0f3", a: "Sydney Opera House", options: ["Sydney Opera House", "Wembley Stadium", "Tokyo Tower", "Marina Bay Sands"] }
+            { img: "https://images.unsplash.com/photo-1526481280693-3bfa7568e0f3", a: "Sydney Opera House", options: ["Sydney Opera House", "Wembley Stadium", "Tokyo Tower", "Marina Bay Sands"] },
+            { img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad", a: "Tower Bridge", options: ["London Eye", "Tower Bridge", "Big Ben", "Shard"] },
+            { img: "https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83", a: "Leaning Tower of Pisa", options: ["Eiffel Tower", "Leaning Tower of Pisa", "Colosseum", "Duomo di Milano"] }
         ],
         "animals": [
             { img: "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7", a: "Panda", options: ["Grizzly Bear", "Panda", "Koala", "Polar Bear"] },
@@ -205,24 +205,40 @@ function addPictureRound() {
             { img: "https://images.unsplash.com/photo-1517849845537-4d257902454a", a: "Dog", options: ["Cat", "Dog", "Fox", "Wolf"] },
             { img: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba", a: "Cat", options: ["Dog", "Cat", "Rabbit", "Hamster"] },
             { img: "https://images.unsplash.com/photo-1474511320723-9a56873867b5", a: "Fox", options: ["Wolf", "Fox", "Jackal", "Coyote"] },
-            { img: "https://images.unsplash.com/photo-1456926631375-92c8ce872def", a: "Penguin", options: ["Puffin", "Penguin", "Seal", "Polar Bear"] }
+            { img: "https://images.unsplash.com/photo-1456926631375-92c8ce872def", a: "Penguin", options: ["Puffin", "Penguin", "Seal", "Polar Bear"] },
+            { img: "https://images.unsplash.com/photo-1534188752442-f952805345d2", a: "Cheetah", options: ["Tiger", "Cheetah", "Jaguar", "Lion"] },
+            { img: "https://images.unsplash.com/photo-1543946207-3979febfa6c6", a: "Kangaroo", options: ["Wallaby", "Kangaroo", "Koala", "Wombat"] }
         ],
         "celebs": [
-            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Hollywood Actor", options: ["Tom Cruise", "Brad Pitt", "Hollywood Actor", "Leonardo DiCaprio"] },
-            { img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e", a: "Portrait Star", options: ["George Clooney", "Portrait Star", "Matt Damon", "Ben Affleck"] },
-            { img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330", a: "Award Winner", options: ["Award Winner", "Emma Stone", "Scarlett Johansson", "Jennifer Lawrence"] }
+            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Tom Cruise", options: ["Tom Cruise", "Brad Pitt", "Matt Damon", "Leonardo DiCaprio"] },
+            { img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e", a: "George Clooney", options: ["George Clooney", "Brad Pitt", "Matt Damon", "Ben Affleck"] },
+            { img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330", a: "Emma Stone", options: ["Emma Stone", "Scarlett Johansson", "Jennifer Lawrence", "Margot Robbie"] },
+            { img: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7", a: "Ryan Reynolds", options: ["Ryan Reynolds", "Chris Hemsworth", "Chris Evans", "Henry Cavill"] },
+            { img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d", a: "Keanu Reeves", options: ["Johnny Depp", "Keanu Reeves", "Brad Pitt", "Tom Hanks"] },
+            { img: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61", a: "Will Smith", options: ["Denzel Washington", "Will Smith", "Jamie Foxx", "Idris Elba"] },
+            { img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb", a: "Angelina Jolie", options: ["Angelina Jolie", "Charlize Theron", "Julia Roberts", "Sandra Bullock"] },
+            { img: "https://images.unsplash.com/photo-1517841905240-472988babdf9", a: "Taylor Swift", options: ["Taylor Swift", "Beyoncé", "Ariana Grande", "Billie Eilish"] }
         ],
         "logos": [
-            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Social Media Brand", options: ["Search Engine", "Social Media Brand", "Streaming App", "Browser"] },
-            { img: "https://images.unsplash.com/photo-1557804506-669a67965ba0", a: "Corporate Tech", options: ["Retail Giant", "Corporate Tech", "Automotive", "Finance"] }
+            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Instagram", options: ["Facebook", "Instagram", "TikTok", "Twitter"] },
+            { img: "https://images.unsplash.com/photo-1557804506-669a67965ba0", a: "Google", options: ["Google", "Microsoft", "Apple", "Amazon"] },
+            { img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", a: "Nike", options: ["Adidas", "Puma", "Nike", "Reebok"] },
+            { img: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd", a: "Spotify", options: ["Apple Music", "Spotify", "SoundCloud", "Pandora"] },
+            { img: "https://images.unsplash.com/photo-1556742049-0a67d553c253", a: "Visa", options: ["Mastercard", "Visa", "PayPal", "American Express"] },
+            { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71", a: "Netflix", options: ["Amazon Prime", "Disney+", "Netflix", "Hulu"] },
+            { img: "https://images.unsplash.com/photo-1507679799987-c73779587ccf", a: "Apple", options: ["Microsoft", "Samsung", "Apple", "Sony"] },
+            { img: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3", a: "Twitter / X", options: ["LinkedIn", "Reddit", "Twitter / X", "Discord"] }
         ]
     };
 
-    // Strict lookup: defaults to landmarks only if the key is missing
     let pool = pictureLibraries[genreKey] || pictureLibraries["landmarks"];
     const availablePool = filterUnusedQuestions(pool);
     const shuffled = [...availablePool].sort(function() { return Math.random() - 0.5; });
-    const questions = shuffled.slice(0, targetCount).map(function(item) {
+    
+    // Ensure we respect the requested target count without exceeding available items
+    const selectedItems = shuffled.slice(0, targetCount);
+    
+    const questions = selectedItems.map(function(item) {
         return {
             q: "Identify what or who is shown in the image below:",
             image: item.img,
@@ -232,7 +248,7 @@ function addPictureRound() {
         };
     });
 
-    markQuestionsAsUsed(questions);
+    markQuestionsAsUsed(selectedItems);
     playlist.push({ 
         id: Date.now(), 
         name: "Picture: " + genreName + " (" + questions.length + " Qs)", 
@@ -255,7 +271,9 @@ function addKidsRound() {
     const pool = [
         { q: "Which Disney movie features the ice queen Elsa?", a: "Frozen", options: ["Cinderella", "Frozen", "Moana", "Tangled"] },
         { q: "What is the name of Mickey Mouse's pet dog?", a: "Pluto", options: ["Goofy", "Pluto", "Bolt", "Snoopy"] },
-        { q: "Which yellow Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] }
+        { q: "Which yellow Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] },
+        { q: "In The Lion King, what is the name of Simba's strict hornbill majordomo?", a: "Zazu", options: ["Timon", "Pumbaa", "Zazu", "Rafiki"] },
+        { q: "What kind of animal is Po in 'Kung Fu Panda'?", a: "Giant Panda", options: ["Red Panda", "Giant Panda", "Grizzly Bear", "Polar Bear"] }
     ];
 
     const availablePool = filterUnusedQuestions(pool);
@@ -279,7 +297,9 @@ function addMusicRound() {
     const pool = [
         { q: "Which band recorded 'Stairway to Heaven'?", a: "Led Zeppelin", options: ["The Beatles", "Led Zeppelin", "Queen", "Pink Floyd"] },
         { q: "Who sang the 1983 hit 'Billie Jean'?", a: "Michael Jackson", options: ["Prince", "Lionel Richie", "Michael Jackson", "George Michael"] },
-        { q: "Which Britpop band sang 'Wonderwall'?", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"] }
+        { q: "Which Britpop band sang 'Wonderwall'?", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"] },
+        { q: "Which singer is known as the 'King of Rock and Roll'?", a: "Elvis Presley", options: ["Chuck Berry", "Elvis Presley", "Buddy Holly", "Little Richard"] },
+        { q: "Which band released the iconic album 'The Dark Side of the Moon'?", a: "Pink Floyd", options: ["Led Zeppelin", "The Who", "Pink Floyd", "Genesis"] }
     ];
 
     const availablePool = filterUnusedQuestions(pool);
