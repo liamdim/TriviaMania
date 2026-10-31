@@ -2,174 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TriviaMania - Live Projector Display</title>
+    <title>TriviaMania - Projector Screen</title>
     <style>
         :root { 
             --bg: #090a10; --card: #131520; --primary: #9c27b0; --primary-glow: rgba(156, 39, 176, 0.4);
             --accent: #00e5ff; --accent-glow: rgba(0, 229, 255, 0.3); --text: #ffffff; --muted: #8a8d9f;
-            --danger: #ff1744; --success: #00e676;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 30px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow: hidden; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 28px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
-        .stats-badge { background: #1a1d2e; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--accent); font-size: 16px; font-weight: bold; }
-
-        .main-container { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; flex: 1; min-height: 0; }
-        
-        .quiz-panel { background: var(--card); border: 2px solid #222538; border-radius: 16px; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 15px 40px rgba(0,0,0,0.7); position: relative; }
-        
-        #roundTitle { font-size: 20px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 0; }
-        #questionText { font-size: 28px; font-weight: bold; margin: 15px 0; line-height: 1.4; text-align: center; }
-        
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .option-box { background: #1a1d2d; border: 2px solid #2a2e45; padding: 18px; border-radius: 12px; font-size: 20px; font-weight: bold; text-align: center; transition: all 0.2s; }
-        .option-box.correct { background: var(--success); color: black; border-color: white; box-shadow: 0 0 20px var(--success); }
-
-        .timer-bar-container { background: #1a1d2d; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 20px; border: 1px solid #333852; }
-        #timerBar { background: var(--accent); height: 100%; width: 100%; transition: width 1s linear, background-color 0.3s; box-shadow: 0 0 10px var(--accent); }
-
-        .sidebar-panel { display: flex; flex-direction: column; gap: 20px; }
-        .sub-panel { background: var(--card); border: 1px solid #222538; border-radius: 16px; padding: 20px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
-        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #222538; padding-bottom: 10px; color: var(--accent); }
-
-        .leaderboard-list { overflow-y: auto; flex: 1; }
-        .leaderboard-item { display: flex; justify-content: space-between; background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 18px; border: 1px solid #2a2e45; }
-        
-        #advertOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(9, 10, 16, 0.95); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; text-align: center; }
-        #advertOverlay img { max-height: 70vh; max-width: 80vw; border-radius: 16px; border: 3px solid var(--accent); box-shadow: 0 0 30px var(--accent-glow); margin-bottom: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; box-sizing: border-box; text-align: center; }
+        h1 { font-size: 42px; color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); margin-bottom: 10px; }
+        .card { background: var(--card); border: 2px solid #222538; border-radius: 20px; padding: 40px; width: 80%; max-width: 900px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
+        .question-text { font-size: 28px; font-weight: bold; margin-bottom: 30px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .option-box { background: #1a1d2d; border: 2px solid #333852; padding: 20px; border-radius: 12px; font-size: 20px; font-weight: bold; }
+        .status-msg { font-size: 24px; color: var(--muted); }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1 id="displayEventTitle">TriviaMania Live Event</h1>
-        <div class="stats-badge">Connected Teams: <span id="displayPlayerCount">0</span></div>
-    </header>
-
-    <div class="main-container">
-        <!-- LEFT: QUESTION & OPTIONS -->
-        <div class="quiz-panel">
-            <div>
-                <h3 id="roundTitle">Waiting for Host to Load Round...</h3>
-                <div id="questionText">Welcome! Get your phones ready and join the game at <span style="color:var(--accent)">/player.html</span></div>
-            </div>
-            
-            <div id="optionsContainer" class="options-grid"></div>
-
-            <div>
-                <div id="answerRevealBox" style="font-size: 24px; font-weight: bold; color: var(--success); text-align: center; min-height: 35px; margin-top: 15px;"></div>
-                <div class="timer-bar-container">
-                    <div id="timerBar"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- RIGHT: LEADERBOARD -->
-        <div class="sidebar-panel">
-            <div class="sub-panel">
-                <h2>🏆 Live Leaderboard</h2>
-                <div id="displayLeaderboard" class="leaderboard-list">
-                    <p style="color: var(--muted); text-align: center; margin-top: 40px;">No scores yet.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ADVERT OVERLAY -->
-    <div id="advertOverlay">
-        <h2 id="advertDisplayTitle" style="font-size: 36px; color: var(--accent); margin-top:0;">Featured Sponsor</h2>
-        <img id="advertDisplayImage" src="" alt="Sponsor Advert">
+    <h1 id="displayTitle">TriviaMania Live Event</h1>
+    
+    <div class="card" id="displayCard">
+        <div class="status-msg" id="statusMessage">Waiting for host to load a round and start...</div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
 
-        socket.on('syncState', (state) => {
-            if (state.eventTitle) {
-                document.getElementById('displayEventTitle').textContent = state.eventTitle;
-            }
+        socket.on('gameStateUpdate', function(state) {
+            renderState(state);
+        });
 
-            // Handle Advert Overlay
-            const advertOverlay = document.getElementById('advertOverlay');
-            if (state.projectorAdvertActive && state.advertImage) {
-                document.getElementById('advertDisplayImage').src = state.advertImage;
-                document.getElementById('advertDisplayTitle').textContent = state.advertTitle || 'Sponsor Advert';
-                advertOverlay.style.display = 'flex';
-            } else {
-                advertOverlay.style.display = 'none';
-            }
+        socket.on('gameResumed', function(state) {
+            renderState(state);
+        });
 
-            // Handle Round & Questions
-            if (state.currentRound) {
-                const round = state.currentRound;
-                document.getElementById('roundTitle').textContent = round.name + " (Question " + (round.currentIndex + 1) + " of " + round.questions.length + ")";
-                
-                const currentQ = round.questions[round.currentIndex];
-                if (currentQ) {
-                    // Smart HTML/Image builder renderer
-                    let htmlContent = currentQ.q;
-                    if (currentQ.image) {
-                        htmlContent = '<img src="' + currentQ.image + '" style="max-height:240px; max-width:80vw; border-radius:12px; border:2px solid var(--accent); display:block; margin: 0 auto 10px auto; object-fit:contain;" alt="Picture Round"><div style="font-size:22px;">' + currentQ.q + '</div>';
-                    }
-                    document.getElementById('questionText').innerHTML = htmlContent;
-
-                    const optionsContainer = document.getElementById('optionsContainer');
-                    optionsContainer.innerHTML = '';
-                    
-                    if (currentQ.options) {
-                        currentQ.options.forEach((opt, idx) => {
-                            const letter = ['A', 'B', 'C', 'D'][idx];
-                            const div = document.createElement('div');
-                            div.className = 'option-box';
-                            div.innerHTML = '<span style="color:var(--accent);">' + letter + ':</span> ' + opt;
-                            
-                            if (state.status === 'revealed' && opt.trim().toLowerCase() === currentQ.a.trim().toLowerCase()) {
-                                div.classList.add('correct');
-                            }
-                            optionsContainer.appendChild(div);
-                        });
-                    }
-
-                    const revealBox = document.getElementById('answerRevealBox');
-                    if (state.status === 'revealed') {
-                        revealBox.textContent = 'Correct Answer: ' + currentQ.a;
-                    } else {
-                        revealBox.textContent = '';
-                    }
-                }
+        socket.on('updateSettings', function(settings) {
+            if (settings.eventTitle) {
+                document.getElementById('displayTitle').textContent = settings.eventTitle;
             }
         });
 
-        socket.on('updatePlayers', (players) => {
-            const keys = Object.keys(players);
-            document.getElementById('displayPlayerCount').textContent = keys.length;
-
-            const listEl = document.getElementById('displayLeaderboard');
-            if (keys.length === 0) {
-                listEl.innerHTML = '<p style="color: var(--muted); text-align: center; margin-top: 40px;">No teams connected yet.</p>';
+        function renderState(state) {
+            const card = document.getElementById('displayCard');
+            
+            if (!state.currentRound || !state.currentRound.questions) {
+                card.innerHTML = '<div class="status-msg">Lobby open! Waiting for host to load a round...</div>';
                 return;
             }
 
-            const sorted = Object.values(players).sort((a, b) => b.score - a.score);
-            let html = '';
-            sorted.forEach((p, idx) => {
-                html += '<div class="leaderboard-item"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
-            });
-            listEl.innerHTML = html;
-        });
+            const qIndex = state.currentQuestionIndex || 0;
+            const currentQ = state.currentRound.questions[qIndex];
 
-        socket.on('timerTick', (timeLeft) => {
-            const bar = document.getElementById('timerBar');
-            const percentage = (timeLeft / 15) * 100;
-            bar.style.width = Math.max(0, percentage) + '%';
-            if (timeLeft <= 3) {
-                bar.style.backgroundColor = 'var(--danger)';
-            } else {
-                bar.style.backgroundColor = 'var(--accent)';
+            if (!currentQ) {
+                card.innerHTML = '<div class="status-msg">Round complete! Check leaderboard.</div>';
+                return;
             }
-        });
+
+            let optionsHtml = '';
+            currentQ.options.forEach(function(opt) {
+                optionsHtml += '<div class="option-box">' + opt + '</div>';
+            });
+
+            card.innerHTML = `
+                <div style="font-size: 14px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">${state.currentRound.name} (Question ${qIndex + 1} of ${state.currentRound.questions.length})</div>
+                <div class="question-text">${currentQ.q}</div>
+                <div class="options-grid">${optionsHtml}</div>
+            `;
+        }
     </script>
 </body>
 </html>
