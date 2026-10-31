@@ -36,9 +36,13 @@
             renderState(state);
         });
 
-        socket.on('gameResumed', function(state) {
-            currentGameData = state;
-            renderState(state);
+        socket.on('timerUpdate', function(timeLeft) {
+            const badge = document.getElementById('timerBadge');
+            if (badge && currentGameData && currentGameData.currentRound) {
+                const qIndex = currentGameData.currentQuestionIndex || 0;
+                const totalQ = currentGameData.currentRound.questions.length;
+                badge.textContent = `Q ${qIndex + 1} / ${totalQ} | ⏱️ ${timeLeft}s`;
+            }
         });
 
         socket.on('revealAnswer', function() {
@@ -75,7 +79,7 @@
             const questions = state.currentRound.questions;
             const currentQ = questions[qIndex];
 
-            if (!currentQ) {
+            if (!currentQ || state.status === 'finished') {
                 card.innerHTML = '<div class="status-msg">🎉 Round complete! Check final leaderboard.</div>';
                 return;
             }
@@ -86,7 +90,7 @@
             });
 
             card.innerHTML = `
-                <div class="timer-badge">Q ${qIndex + 1} / ${questions.length} | ⏱️ ${state.currentRound.timer || 15}s</div>
+                <div class="timer-badge" id="timerBadge">Q ${qIndex + 1} / ${questions.length} | ⏱️ ${state.timer || 15}s</div>
                 <div style="font-size: 14px; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">${state.currentRound.name}</div>
                 <div class="question-text">${currentQ.q}</div>
                 <div class="options-grid">${optionsHtml}</div>
