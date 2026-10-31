@@ -13,8 +13,13 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; box-sizing: border-box; }
         .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         input { width: 100%; padding: 12px; margin: 10px 0 20px 0; background: #10121a; border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
-        button { width: 100%; padding: 14px; font-weight: bold; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; cursor: pointer; }
+        button { width: 100%; padding: 14px; font-weight: bold; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
         
+        .question-box { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--accent); }
+        .option-btn { background: #1e2130; border: 1px solid var(--border); color: white; padding: 14px; margin: 8px 0; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; text-align: left; }
+        .option-btn:hover { background: var(--primary); border-color: var(--accent); }
+
         #mobileAdvertOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 14, 21, 0.95); z-index: 999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         #mobileAdvertOverlay h2 { color: var(--accent); font-size: 28px; margin-bottom: 15px; }
         #mobileAdvertOverlay img { max-width: 100%; max-height: 300px; border-radius: 10px; border: 2px solid var(--accent); object-fit: contain; }
@@ -36,8 +41,12 @@
     </div>
 
     <div class="panel" id="gamePanel" style="display:none;">
-        <h2 id="welcomeTeam">Welcome!</h2>
-        <p id="gameStatusMsg" style="color: var(--muted);">Waiting for round to start...</p>
+        <h2 id="welcomeTeam" style="margin-top:0; font-size:18px; color:var(--accent);">Welcome!</h2>
+        
+        <!-- Live Question Area -->
+        <div id="liveQuestionContainer">
+            <p id="gameStatusMsg" style="color: var(--muted);">Waiting for round to start...</p>
+        </div>
         
         <div id="pollModal">
             <h3 id="pollQuestionText" style="color: var(--accent); margin-top:0;">Icebreaker Poll</h3>
@@ -45,7 +54,7 @@
         </div>
 
         <div id="leaderboardSection" style="display:none; margin-top:20px;">
-            <h3 style="color: var(--accent);">🏆 Live Round Leaderboard</h3>
+            <h3 style="color: var(--accent);">🏆 Final Leaderboard</h3>
             <div id="mobileLeaderboardList"></div>
         </div>
     </div>
@@ -58,6 +67,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        let currentGameData = null;
 
         function joinGame() {
             const name = document.getElementById('teamNameInput').value.trim();
@@ -70,20 +80,67 @@
         }
 
         socket.on('gameStateUpdate', function(state) {
-            const statusMsg = document.getElementById('gameStatusMsg');
-            const lbSection = document.getElementById('leaderboardSection');
-            
-            if (state.status === 'finished') {
-                statusMsg.textContent = 'Round Complete!';
-                lbSection.style.display = 'block';
-            } else {
-                statusMsg.textContent = state.currentRound ? 'Live round in progress! Watch the main screen.' : 'Waiting for next round...';
-                lbSection.style.display = 'none';
-            }
+            currentGameData = state;
+            renderMobileGame(state);
         });
+
+        socket.on('timerUpdate', function(timeLeft) {
+            const timerEl = document.getElementById('mobileTimer');
+            if (timerEl) timerEl.textContent = '⏱️ Time Left: ' + timeLeft + 's';
+        });
+
+        function renderMobileGame(state) {
+            const container = document.getElementById('liveQuestionContainer');
+            const lbSection = document.getElementById('leaderboardSection');
+
+            if (state.status === 'finished') {
+                container.innerHTML = '<p style="color:var(--success); font-size:18px; font-weight:bold;">🎉 Round Complete!</p>';
+                lbSection.style.display = 'block';
+                return;
+            }
+
+            if (!state.currentRound || !state.currentRound.questions) {
+                container.innerHTML = '<p style="color: var(--muted);">Waiting for host to start next round...</p>';
+                lbSection.style.display = 'none';
+                return;
+            }
+
+            const qIndex = state.currentQuestionIndex || 0;
+            const currentQ = state.currentRound.questions[qIndex];
+
+            if (!currentQ) {
+                container.innerHTML = '<p style="color: var(--muted);">Round finished!</p>';
+                return;
+            }
+
+            let optionsHtml = '';
+            currentQ.options.forEach(opt => {
+                optionsHtml += `<button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}', '${currentQ.a.replace(/'/g, "\\'")}')">${opt}</button>`;
+            });
+
+            container.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:10px;">
+                    <span>Q ${qIndex + 1} / ${state.currentRound.questions.length}</span>
+                    <span id="mobileTimer" style="color:var(--accent);">⏱️ ${state.timer || 15}s</span>
+                </div>
+                <div class="question-box">${currentQ.q}</div>
+                <div>${optionsHtml}</div>
+            `;
+            lbSection.style.display = 'none';
+        }
+
+        function submitAnswer(selectedOpt, correctOpt) {
+            const isCorrect = selectedOpt.trim() === correctOpt.trim();
+            if (isCorrect) {
+                alert('✅ Correct Answer!');
+            } else {
+                alert('❌ Incorrect! The correct answer was: ' + correctOpt);
+            }
+        }
 
         socket.on('updatePlayers', function(players) {
             const listEl = document.getElementById('mobileLeaderboardList');
+            if (!listEl) return;
             const sorted = Object.values(players).sort((a, b) => b.score - a.score);
             let html = '';
             sorted.forEach((p, idx) => {
