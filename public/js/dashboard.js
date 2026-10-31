@@ -18,7 +18,7 @@ const socket = io();
 let playlist = [];
 let latestPlayersState = {};
 
-// --- COMPREHENSIVE FALLBACK QUESTION BANKS ---
+// --- EXPANDED FALLBACK QUESTION BANKS FOR ALL 20 CATEGORIES ---
 const backupQuestionBanks = {
     "general": [
         { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
@@ -26,34 +26,109 @@ const backupQuestionBanks = {
         { q: "How many bones are in the adult human body?", a: "206", options: ["200", "206", "214", "198"] },
         { q: "What is the hardest natural substance on Earth?", a: "Diamond", options: ["Gold", "Iron", "Diamond", "Quartz"] },
         { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] },
-        { q: "In what year did the American Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] }
+        { q: "In what year did the American Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] },
+        { q: "What is the primary ingredient in traditional guacamole?", a: "Avocado", options: ["Tomato", "Avocado", "Lime", "Peas"] },
+        { q: "Which artist painted the ceiling of the Sistine Chapel?", a: "Michelangelo", options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"] },
+        { q: "What is the capital of Canada?", a: "Ottawa", options: ["Toronto", "Vancouver", "Ottawa", "Montreal"] },
+        { q: "Which gas makes up the majority of Earth's atmosphere?", a: "Nitrogen", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"] }
     ],
-    "movies": [
+    "animals": [
+        { q: "What is the fastest land animal in the world?", a: "Cheetah", options: ["Lion", "Pronghorn", "Cheetah", "Leopard"] },
+        { q: "What is a group of crows called?", a: "A murder", options: ["A flock", "A murder", "A pack", "A gaggle"] },
+        { q: "Which mammal is known to have the most powerful bite?", a: "Hippopotamus", options: ["Lion", "Crocodile", "Hippopotamus", "Grizzly Bear"] },
+        { q: "What is the only mammal capable of sustained flight?", a: "Bat", options: ["Flying Squirrel", "Bat", "Sugar Glider", "Fruit Bat"] },
+        { q: "How many hearts does an octopus have?", a: "3", options: ["1", "2", "3", "4"] },
+        { q: "What is a baby kangaroo called?", a: "Joey", options: ["Cub", "Pup", "Joey", "Calf"] },
+        { q: "Which flightless bird is native to New Zealand?", a: "Kiwi", options: ["Penguin", "Ostrich", "Kiwi", "Emu"] },
+        { q: "What color is the tongue of a giraffe?", a: "Blue-black", options: ["Pink", "Red", "Blue-black", "Yellow"] }
+    ],
+    "brain-teasers": [
+        { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", a: "An echo", options: ["A shadow", "An echo", "A cloud", "A whisper"] },
+        { q: "What has to be broken before you can use it?", a: "An egg", options: ["A coconut", "A promise", "An egg", "A glass"] },
+        { q: "I have keys but no locks. I have space and no room. You can enter, but can't go outside. What am I?", a: "A keyboard", options: ["A piano", "A keyboard", "A map", "A house"] },
+        { q: "What goes up and down but never moves?", a: "Stairs", options: ["An elevator", "Stairs", "A thermometer", "A kite"] }
+    ],
+    "celebrities": [
+        { q: "Who is known as the 'King of Pop'?", a: "Michael Jackson", options: ["Prince", "Elvis Presley", "Michael Jackson", "Justin Timberlake"] },
+        { q: "Which famous Hollywood actor starred in Mission: Impossible and Top Gun?", a: "Tom Cruise", options: ["Brad Pitt", "Tom Cruise", "Matt Damon", "Will Smith"] },
+        { q: "Who starred as Jack Dawson in Titanic?", a: "Leonardo DiCaprio", options: ["Brad Pitt", "Leonardo DiCaprio", "Johnny Depp", "Tom Hanks"] },
+        { q: "Which pop singer is known for her album 'Eras Tour'?", a: "Taylor Swift", options: ["Beyoncé", "Taylor Swift", "Ariana Grande", "Lady Gaga"] }
+    ],
+    "entertainment": [
         { q: "Which film won the Academy Award for Best Picture in 1994?", a: "Forrest Gump", options: ["Pulp Fiction", "The Shawshank Redemption", "Forrest Gump", "Quiz Show"] },
         { q: "Who directed the legendary sci-fi epic movie 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] },
-        { q: "What is the name of the fictional metal that Captain America's shield is made of?", a: "Vibranium", options: ["Adamantium", "Unobtainium", "Vibranium", "Mithril"] },
-        { q: "Who directed the 1994 cult classic crime film 'Pulp Fiction'?", a: "Quentin Tarantino", options: ["Martin Scorsese", "Quentin Tarantino", "Christopher Nolan", "David Fincher"] }
+        { q: "What is the name of the fictional wizard school in Harry Potter?", a: "Hogwarts", options: ["Beauxbatons", "Durmstrang", "Hogwarts", "Ilvermorny"] },
+        { q: "Which TV show features Walter White?", a: "Breaking Bad", options: ["The Wire", "Breaking Bad", "Ozark", "Better Call Saul"] }
     ],
-    "history": [
-        { q: "In what year did World War II end?", a: "1945", options: ["1944", "1945", "1946", "1939"] },
-        { q: "Who was the second President of the United States?", a: "John Adams", options: ["Thomas Jefferson", "John Adams", "James Madison", "Benjamin Franklin"] },
-        { q: "In what year did the Great Fire of London take place?", a: "1666", options: ["1066", "1215", "1666", "1805"] },
-        { q: "Who was the British Prime Minister during most of World War II?", a: "Winston Churchill", options: ["Neville Chamberlain", "Winston Churchill", "Clement Attlee", "Anthony Eden"] }
+    "for-kids": [
+        { q: "What color is a polar bear's skin underneath its white fur?", a: "Black", options: ["Pink", "White", "Black", "Brown"] },
+        { q: "How many legs does a spider have?", a: "8", options: ["6", "8", "10", "12"] },
+        { q: "What Disney princess has a pet tiger named Rajah?", a: "Jasmine", options: ["Cinderella", "Ariel", "Jasmine", "Belle"] },
+        { q: "What animal is Mickey Mouse?", a: "Mouse", options: ["Cat", "Dog", "Mouse", "Bear"] }
     ],
     "geography": [
         { q: "What is the longest river in the world?", a: "Nile River", options: ["Amazon River", "Nile River", "Yangtze River", "Mississippi River"] },
         { q: "Which country has the most natural lakes in the world?", a: "Canada", options: ["Russia", "USA", "Canada", "Finland"] },
-        { q: "What is the highest mountain peak in the United Kingdom?", a: "Ben Nevis", options: ["Snowdon", "Scafell Pike", "Ben Nevis", "Slieve Donard"] }
+        { q: "What is the capital city of Japan?", a: "Tokyo", options: ["Kyoto", "Osaka", "Tokyo", "Hiroshima"] },
+        { q: "Which desert is the largest hot desert in the world?", a: "Sahara Desert", options: ["Gobi Desert", "Kalahari Desert", "Sahara Desert", "Mojave Desert"] }
     ],
-    "sports": [
-        { q: "How many players are on the field for a single team in a standard soccer match?", a: "11", options: ["9", "10", "11", "12"] },
-        { q: "How many holes are played in a standard round of golf?", a: "18", options: ["9", "12", "18", "20"] },
-        { q: "Which English football club has won the most top-flight league titles?", a: "Manchester United", options: ["Liverpool", "Manchester United", "Arsenal", "Manchester City"] }
+    "history": [
+        { q: "In what year did World War II end?", a: "1945", options: ["1944", "1945", "1946", "1939"] },
+        { q: "Who was the second President of the United States?", a: "John Adams", options: ["Thomas Jefferson", "John Adams", "James Madison", "Benjamin Franklin"] },
+        { q: "In what year did the Titanic sink?", a: "1912", options: ["1910", "1912", "1915", "1905"] },
+        { q: "Who was the first Emperor of Rome?", a: "Augustus", options: ["Julius Caesar", "Nero", "Augustus", "Constantine"] }
+    ],
+    "hobbies": [
+        { q: "What term is used in gardening for cutting back plant branches?", a: "Pruning", options: ["Weeding", "Pruning", "Mulching", "Grafting"] },
+        { q: "In photography, what does DSLR stand for?", a: "Digital Single-Lens Reflex", options: ["Digital Standard Light Resolution", "Digital Single-Lens Reflex", "Dual Shutter Lens Recorder", "Direct Sensor Light Reader"] }
+    ],
+    "humanities": [
+        { q: "Who wrote 'Thus Spoke Zarathustra'?", a: "Friedrich Nietzsche", options: ["Karl Marx", "Immanuel Kant", "Friedrich Nietzsche", "Plato"] },
+        { q: "Which ancient Greek philosopher taught Alexander the Great?", a: "Aristotle", options: ["Socrates", "Plato", "Aristotle", "Pythagoras"] }
+    ],
+    "literature": [
+        { q: "Who wrote 'Pride and Prejudice'?", a: "Jane Austen", options: ["Charlotte Brontë", "Jane Austen", "Charles Dickens", "Virginia Woolf"] },
+        { q: "What is the name of the hobbit protagonist in 'The Hobbit'?", a: "Bilbo Baggins", options: ["Frodo Baggins", "Bilbo Baggins", "Samwise Gamgee", "Pippin Took"] },
+        { q: "Who wrote 'Romeo and Juliet'?", a: "William Shakespeare", options: ["Charles Dickens", "Mark Twain", "William Shakespeare", "Jane Austen"] }
+    ],
+    "movies": [
+        { q: "What is the name of Captain America's shield metal?", a: "Vibranium", options: ["Adamantium", "Unobtainium", "Vibranium", "Mithril"] },
+        { q: "Who directed 'Pulp Fiction'?", a: "Quentin Tarantino", options: ["Martin Scorsese", "Quentin Tarantino", "Christopher Nolan", "David Fincher"] },
+        { q: "Which movie features the quote 'May the Force be with you'?", a: "Star Wars", options: ["Star Trek", "Star Wars", "Matrix", "Interstellar"] }
     ],
     "music": [
-        { q: "Which iconic British rock band released the 1977 album 'Rumours'?", a: "Fleetwood Mac", options: ["The Beatles", "Led Zeppelin", "Fleetwood Mac", "Pink Floyd"] },
+        { q: "Which iconic British rock band released 'Rumours' in 1977?", a: "Fleetwood Mac", options: ["The Beatles", "Led Zeppelin", "Fleetwood Mac", "Pink Floyd"] },
         { q: "Who sang the massive 1992 global hit 'I Will Always Love You'?", a: "Whitney Houston", options: ["Mariah Carey", "Celine Dion", "Whitney Houston", "Madonna"] },
-        { q: "Which band released the iconic rock anthem 'Bohemian Rhapsody'?", a: "Queen", options: ["Led Zeppelin", "Queen", "Pink Floyd", "Black Sabbath"] }
+        { q: "Which band released 'Bohemian Rhapsody'?", a: "Queen", options: ["Led Zeppelin", "Queen", "Pink Floyd", "Black Sabbath"] }
+    ],
+    "people": [
+        { q: "Who invented the practical incandescent light bulb?", a: "Thomas Edison", options: ["Nikola Tesla", "Thomas Edison", "Alexander Graham Bell", "Benjamin Franklin"] },
+        { q: "Who was the first woman to fly solo across the Atlantic Ocean?", a: "Amelia Earhart", options: ["Bessie Coleman", "Amelia Earhart", "Valentina Tereshkova", "Harriet Quimby"] }
+    ],
+    "religion-faith": [
+        { q: "In what city was the Prophet Muhammad born?", a: "Mecca", options: ["Medina", "Jerusalem", "Mecca", "Cairo"] },
+        { q: "What is the holy book of Islam called?", a: "Quran", options: ["Bible", "Torah", "Quran", "Vedas"] }
+    ],
+    "science-technology": [
+        { q: "What does CPU stand for in computer hardware?", a: "Central Processing Unit", options: ["Computer Personal Unit", "Central Processing Unit", "Core Processing Utility", "Central Program Utility"] },
+        { q: "What is the chemical symbol for gold?", a: "Au", options: ["Ag", "Au", "Pb", "Fe"] }
+    ],
+    "sports": [
+        { q: "How many players are on the field for a single team in soccer?", a: "11", options: ["9", "10", "11", "12"] },
+        { q: "How many holes are played in a standard round of golf?", a: "18", options: ["9", "12", "18", "20"] },
+        { q: "Which country hosts the Australian Open tennis tournament?", a: "Australia", options: ["USA", "UK", "Australia", "France"] }
+    ],
+    "television": [
+        { q: "What is the name of the coffee shop in 'Friends'?", a: "Central Perk", options: ["Monk's Café", "Central Perk", "Luke's Diner", "Pals Cafe"] },
+        { q: "Which animated family lives in Springfield?", a: "The Simpsons", options: ["The Griffins", "The Simpsons", "The Belchers", "The Flintstones"] }
+    ],
+    "video-games": [
+        { q: "What is the name of Nintendo's iconic plumber?", a: "Mario", options: ["Luigi", "Mario", "Toad", "Wario"] },
+        { q: "In Minecraft, what material is required to build a nether portal?", a: "Obsidian", options: ["Bedrock", "Obsidian", "Diamond", "Netherrack"] }
+    ],
+    "world": [
+        { q: "Which country spans across both Europe and Asia?", a: "Turkey", options: ["Egypt", "Turkey", "Brazil", "Australia"] },
+        { q: "What is the largest desert in the world by area?", a: "Antarctic Desert", options: ["Sahara Desert", "Gobi Desert", "Antarctic Desert", "Arabian Desert"] }
     ]
 };
 
@@ -182,7 +257,7 @@ socket.on('updatePlayers', function(players) {
         var sorted = Object.values(players).sort(function(a, b) { return b.score - a.score; });
         var html = '';
         sorted.forEach(function(p, idx) {
-            html += '<div class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
+            html += '<label class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></label>';
         });
         listEl.innerHTML = html;
     }
