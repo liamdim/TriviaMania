@@ -135,7 +135,6 @@ io.on('connection', (socket) => {
     socket.emit('pollUpdate', gameState.poll);
     socket.emit('updatePlayers', players);
     
-    // Send current advert state immediately upon connection
     if (gameState.advert.active) {
         socket.emit('advertUpdate', gameState.advert);
     }
