@@ -21,12 +21,28 @@ let gameState = {
         eventTitle: 'TriviaMania Live Event'
     },
     advert: { active: false, title: '', image: '', target: 'none' },
-    poll: { active: false, question: 'What is your favorite pub drink?', options: ['Beer / Cider', 'Wine / Prosecco', 'Cocktails', 'Soft Drinks'] }
+    poll: { active: false, question: 'What is your favorite pub drink?', options: ['Beer / Cider', 'Wine / Prosecco', 'Cocktails', 'Soft Drinks'], votes: {} }
 };
 
 let players = {};
 let questionInterval = null;
 let delayTimeout = null;
+
+// Fallback question banks to guarantee loading
+const backupQuestionBanks = {
+    "general": [
+        { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
+        { q: "Which chemical element has the symbol 'Au'?", a: "Gold", options: ["Silver", "Gold", "Copper", "Argon"] },
+        { q: "How many bones are in the adult human body?", a: "206", options: ["200", "206", "214", "198"] },
+        { q: "What is the hardest natural substance on Earth?", a: "Diamond", options: ["Gold", "Iron", "Diamond", "Quartz"] },
+        { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] }
+    ],
+    "movies": [
+        { q: "Which film won the Academy Award for Best Picture in 1994?", a: "Forrest Gump", options: ["Pulp Fiction", "The Shawshank Redemption", "Forrest Gump", "Quiz Show"] },
+        { q: "Who directed 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] },
+        { q: "What is Captain America's shield made of?", a: "Vibranium", options: ["Adamantium", "Unobtainium", "Vibranium", "Mithril"] }
+    ]
+};
 
 app.get('/api/questions/:category', (req, res) => {
     const category = req.params.category;
@@ -34,12 +50,15 @@ app.get('/api/questions/:category', (req, res) => {
     const filePath = path.join(__dirname, 'categories', `${category}.txt`);
 
     if (!fs.existsSync(filePath)) {
-        return res.status(204).send();
+        const pool = backupQuestionBanks[category] || backupQuestionBanks["general"];
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        return res.json(shuffled.slice(0, count));
     }
 
     fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
-            return res.status(204).send();
+            const pool = backupQuestionBanks[category] || backupQuestionBanks["general"];
+            return res.json(pool.slice(0, count));
         }
 
         const lines = data.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -59,10 +78,12 @@ app.get('/api/questions/:category', (req, res) => {
             }
         }
 
-        const shuffled = questions.sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, count);
+        if (questions.length === 0) {
+            questions = backupQuestionBanks["general"];
+        }
 
-        res.json(selected);
+        const shuffled = questions.sort(() => Math.random() - 0.5);
+        res.json(shuffled.slice(0, count));
     });
 });
 
@@ -112,6 +133,7 @@ function advanceToNextQuestion() {
 io.on('connection', (socket) => {
     socket.emit('gameStateUpdate', gameState);
     socket.emit('pollUpdate', gameState.poll);
+    socket.emit('updatePlayers', players);
     if (gameState.advert.active) {
         socket.emit('advertUpdate', gameState.advert);
     }
@@ -123,6 +145,13 @@ io.on('connection', (socket) => {
             score: 0
         };
         io.emit('updatePlayers', players);
+    });
+
+    socket.on('submitVote', (data) => {
+        if (socket.id && players[socket.id]) {
+            gameState.poll.votes[socket.id] = { name: players[socket.id].name, vote: data.vote };
+            io.emit('pollUpdate', gameState.poll);
+        }
     });
 
     socket.on('hostAction', (data) => {
@@ -170,11 +199,16 @@ io.on('connection', (socket) => {
                     ? data.payload.options.split(',').map(s => s.trim()).filter(Boolean) 
                     : (data.payload.options || ['Yes', 'No']);
                 
-                gameState.poll = { 
-                    active: data.payload.active, 
-                    question: data.payload.question, 
-                    options: optList 
-                };
+                if (!data.payload.active) {
+                    gameState.poll.active = false;
+                } else {
+                    gameState.poll = { 
+                        active: true, 
+                        question: data.payload.question, 
+                        options: optList,
+                        votes: {} // Reset votes on new poll
+                    };
+                }
                 io.emit('pollUpdate', gameState.poll);
             }
         } else if (data.action === 'updateSettings') {
