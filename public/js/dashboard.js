@@ -9,14 +9,14 @@ const socket = io();
 let playlist = [];
 let latestPlayersState = {};
 
-// Comprehensive backup question banks
 const backupQuestionBanks = {
     "general": [
         { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
         { q: "Which chemical element has the symbol 'Au'?", a: "Gold", options: ["Silver", "Gold", "Copper", "Argon"] },
         { q: "How many bones are in the adult human body?", a: "206", options: ["200", "206", "214", "198"] },
         { q: "What is the hardest natural substance on Earth?", a: "Diamond", options: ["Gold", "Iron", "Diamond", "Quartz"] },
-        { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] }
+        { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] },
+        { q: "In what year did the Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] }
     ],
     "movies": [
         { q: "Which film won Best Picture in 1994?", a: "Forrest Gump", options: ["Pulp Fiction", "The Shawshank Redemption", "Forrest Gump", "Quiz Show"] },
@@ -73,7 +73,6 @@ async function addTriviaRound() {
 
 function sendAction(action) { socket.emit('hostAction', { action: action }); }
 
-// Advert Library with LocalStorage
 function getSavedAds() {
     try { return JSON.parse(localStorage.getItem('trivia_saved_ads')) || []; } catch(e) { return []; }
 }
@@ -90,7 +89,7 @@ function saveNewAdvert() {
             ads.push({ id: Date.now(), title, target, image: e.target.result });
             localStorage.setItem('trivia_saved_ads', JSON.stringify(ads));
             renderSavedAds();
-            alert('Advert saved to local library!');
+            alert('Advert saved to library!');
         };
         reader.readAsDataURL(fileInput.files[0]);
     } else {
@@ -98,7 +97,7 @@ function saveNewAdvert() {
         ads.push({ id: Date.now(), title, target, image: '' });
         localStorage.setItem('trivia_saved_ads', JSON.stringify(ads));
         renderSavedAds();
-        alert('Advert saved to local library!');
+        alert('Advert saved to library!');
     }
 }
 
@@ -107,12 +106,13 @@ function renderSavedAds() {
     if (!container) return;
     const ads = getSavedAds();
     if (ads.length === 0) {
-        container.innerHTML = '<p style="color:var(--muted); font-size:12px;">No saved adverts in library.</p>';
+        container.innerHTML = '<p style="color:var(--muted); font-size:12px;">No stored adverts found.</p>';
         return;
     }
     let html = '';
     ads.forEach(ad => {
-        html += `<div class="ad-item"><span><strong>${ad.title}</strong> (${ad.target})</span><div><button class="btn-play" style="padding:4px 8px; font-size:11px;" onclick="broadcastAd(${ad.id})">📺 Broadcast</button><button class="btn-danger" onclick="deleteAd(${ad.id})">Delete</button></div></div>`;
+        let thumb = ad.image ? `<img src="${ad.image}" style="width:40px; height:30px; object-fit:cover; border-radius:4px; margin-right:8px; vertical-align:middle;">` : '';
+        html += `<div class="ad-item"><span>${thumb}<strong>${ad.title}</strong> (${ad.target})</span><div><button class="btn-play" style="padding:4px 8px; font-size:11px;" onclick="broadcastAd(${ad.id})">📺 Broadcast</button><button class="btn-danger" onclick="deleteAd(${ad.id})">Delete</button></div></div>`;
     });
     container.innerHTML = html;
 }
@@ -231,13 +231,12 @@ socket.on('pollUpdate', function(poll) {
     }
 
     let html = '';
-    Object.values(poll.votes.forEach ? poll.votes : Object.values(poll.votes)).forEach(v => {
+    Object.values(poll.votes).forEach(v => {
         html += `<div class="score-row"><span><strong>${v.name}</strong></span><span style="color:var(--accent);">${v.vote}</span></div>`;
     });
     votesListEl.innerHTML = html;
 });
 
-// Initialize saved ads on load
 window.onload = function() {
     renderSavedAds();
 };
