@@ -43,7 +43,7 @@ function markQuestionsAsUsed(questions) {
     localStorage.setItem('triviamania_history', JSON.stringify(usedQuestionHistory));
 }
 
-// --- FULL MASTER TRIVIA BANKS MAPPED TO ALL OPENTRIVIAQA CATEGORIES ---
+// --- MASTER QUESTION BANKS FOR ALL 20 OPENTRIVIAQA CATEGORIES ---
 const masterTriviaBanks = {
     "general": [
         { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
@@ -51,9 +51,7 @@ const masterTriviaBanks = {
         { q: "How many bones are in the adult human body?", a: "206", options: ["200", "206", "214", "198"] },
         { q: "What is the hardest natural substance on Earth?", a: "Diamond", options: ["Gold", "Iron", "Diamond", "Quartz"] },
         { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] },
-        { q: "In what year did the American Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] },
-        { q: "What is the primary ingredient in traditional guacamole?", a: "Avocado", options: ["Tomato", "Avocado", "Lime", "Peas"] },
-        { q: "Which artist painted the ceiling of the Sistine Chapel?", a: "Michelangelo", options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"] }
+        { q: "In what year did the American Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] }
     ],
     "animals": [
         { q: "What is the fastest land animal in the world?", a: "Cheetah", options: ["Lion", "Pronghorn", "Cheetah", "Leopard"] },
@@ -181,7 +179,7 @@ function addPictureRound() { alert('Picture rounds are streamlined.'); }
 // Control & Action Handlers
 function sendAction(action) { socket.emit('hostAction', { action: action }); }
 function pushAdvert(target) { socket.emit('hostAction', { action: 'pushAdvert', payload: { target: target } }); alert('Advert action triggered.'); }
-function hideAdvert(target) { socket.emit('hostAction', { action: 'hideAdvert', payload: { target: target } }); alert('Advert hidden.' ); }
+function hideAdvert(target) { socket.emit('hostAction', { action: 'hideAdvert', payload: { target: target } }); alert('Advert hidden.'); }
 function toggleTipJar() { socket.emit('hostAction', { action: 'toggleTipJar' }); }
 function togglePoll() { socket.emit('hostAction', { action: 'togglePoll' }); }
 
