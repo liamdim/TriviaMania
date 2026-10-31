@@ -11,18 +11,16 @@
             --border: #272a3b; --success: #10b981;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; box-sizing: border-box; }
-        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         input { width: 100%; padding: 12px; margin: 10px 0 20px 0; background: #10121a; border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
         button { width: 100%; padding: 14px; font-weight: bold; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; cursor: pointer; }
         
-        /* Mobile Advert Overlay */
         #mobileAdvertOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 14, 21, 0.95); z-index: 999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         #mobileAdvertOverlay h2 { color: var(--accent); font-size: 28px; margin-bottom: 15px; }
         #mobileAdvertOverlay img { max-width: 100%; max-height: 300px; border-radius: 10px; border: 2px solid var(--accent); }
 
-        /* Poll Modal */
         #pollModal { display: none; background: #1e2130; border: 2px solid var(--accent); padding: 15px; border-radius: 10px; margin-top: 20px; }
-        .poll-btn { background: #272a3b; border: 1px solid var(--accent); color: white; padding: 10px; margin: 5px 0; border-radius: 6px; width: 100%; cursor: pointer; font-size: 14px; }
+        .poll-btn { background: #272a3b; border: 1px solid var(--accent); color: white; padding: 12px; margin: 6px 0; border-radius: 6px; width: 100%; cursor: pointer; font-size: 15px; }
         .poll-btn:hover { background: var(--accent); color: #000; }
     </style>
 </head>
@@ -39,16 +37,19 @@
 
     <div class="panel" id="gamePanel" style="display:none;">
         <h2 id="welcomeTeam">Welcome!</h2>
-        <p style="color: var(--muted);">Waiting for the next question to appear...</p>
+        <p id="gameStatusMsg" style="color: var(--muted);">Waiting for round to start...</p>
         
-        <!-- Live Icebreaker Poll Container -->
         <div id="pollModal">
             <h3 id="pollQuestionText" style="color: var(--accent); margin-top:0;">Icebreaker Poll</h3>
             <div id="pollOptionsContainer"></div>
         </div>
+
+        <div id="leaderboardSection" style="display:none; margin-top:20px;">
+            <h3 style="color: var(--accent);">🏆 Live Round Leaderboard</h3>
+            <div id="mobileLeaderboardList"></div>
+        </div>
     </div>
 
-    <!-- Mobile Ad Overlay -->
     <div id="mobileAdvertOverlay">
         <h2 id="mobAdTitle">Sponsor Advert</h2>
         <img id="mobAdImage" src="" alt="Sponsor" style="display:none;">
@@ -67,6 +68,29 @@
             document.getElementById('gamePanel').style.display = 'block';
             document.getElementById('welcomeTeam').textContent = 'Team: ' + name;
         }
+
+        socket.on('gameStateUpdate', function(state) {
+            const statusMsg = document.getElementById('gameStatusMsg');
+            const lbSection = document.getElementById('leaderboardSection');
+            
+            if (state.status === 'finished') {
+                statusMsg.textContent = 'Round Complete!';
+                lbSection.style.display = 'block';
+            } else {
+                statusMsg.textContent = state.currentRound ? 'Live round in progress! Watch the main screen.' : 'Waiting for next round...';
+                lbSection.style.display = 'none';
+            }
+        });
+
+        socket.on('updatePlayers', function(players) {
+            const listEl = document.getElementById('mobileLeaderboardList');
+            const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+            let html = '';
+            sorted.forEach((p, idx) => {
+                html += `<div style="display:flex; justify-content:space-between; background:#10121a; padding:8px; margin-bottom:5px; border-radius:6px;"><span>${idx + 1}. ${p.name}</span><span style="color:var(--accent);">${p.score} pts</span></div>`;
+            });
+            listEl.innerHTML = html;
+        });
 
         socket.on('advertUpdate', function(advert) {
             const overlay = document.getElementById('mobileAdvertOverlay');
@@ -100,7 +124,8 @@
                     btn.className = 'poll-btn';
                     btn.textContent = opt;
                     btn.onclick = function() {
-                        alert('Vote registered for: ' + opt);
+                        socket.emit('submitVote', { vote: opt });
+                        alert('Vote submitted: ' + opt);
                         modal.style.display = 'none';
                     };
                     optsContainer.appendChild(btn);
