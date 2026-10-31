@@ -57,18 +57,6 @@ app.get('/api/questions/:category', (req, res) => {
             }
         }
 
-        if (questions.length === 0) {
-            for (let i = 0; i < lines.length; i += 2) {
-                if (lines[i] && lines[i+1]) {
-                    questions.push({
-                        q: lines[i],
-                        a: lines[i+1],
-                        options: [lines[i+1], "Option A", "Option B", "Option C"]
-                    });
-                }
-            }
-        }
-
         const shuffled = questions.sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, count);
 
@@ -79,7 +67,6 @@ app.get('/api/questions/:category', (req, res) => {
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-    // Send current game state immediately upon connection
     socket.emit('gameStateUpdate', gameState);
 
     socket.on('joinGame', (data) => {
@@ -98,7 +85,16 @@ io.on('connection', (socket) => {
             gameState.status = 'question';
             io.emit('gameStateUpdate', gameState);
             io.emit('gameResumed', gameState);
-            console.log('Round loaded into live queue:', data.payload.name);
+        } else if (data.action === 'nextQuestion') {
+            if (gameState.currentRound && gameState.currentRound.questions) {
+                if (gameState.currentQuestionIndex < gameState.currentRound.questions.length - 1) {
+                    gameState.currentQuestionIndex++;
+                } else {
+                    gameState.currentQuestionIndex = 0; // Loop or end
+                }
+                io.emit('gameStateUpdate', gameState);
+                io.emit('gameResumed', gameState);
+            }
         } else if (data.action === 'resume') {
             gameState.status = 'question';
             io.emit('gameStateUpdate', gameState);
