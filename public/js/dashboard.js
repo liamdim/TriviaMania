@@ -19,6 +19,34 @@ let playlist = [];
 let storedAdvertBase64 = null;
 let latestPlayersState = {};
 
+// --- ANTI-REPEAT QUESTION HISTORY TRACKER ---
+let usedQuestionHistory = JSON.parse(localStorage.getItem('triviamania_history') || '[]');
+
+function filterUnusedQuestions(pool) {
+    // Filter out questions that have been used recently to prevent repeats
+    const fresh = pool.filter(item => !usedQuestionHistory.includes(item.q));
+    if (fresh.length < pool.length * 0.3) {
+        // If we are running low on fresh questions, reset history
+        usedQuestionHistory = [];
+        localStorage.setItem('triviamania_history', JSON.stringify([]));
+        return pool;
+    }
+    return fresh;
+}
+
+function markQuestionsAsUsed(questions) {
+    questions.forEach(item => {
+        if (!usedQuestionHistory.includes(item.q)) {
+            usedQuestionHistory.push(item.q);
+        }
+    });
+    // Keep history capped at last 200 questions
+    if (usedQuestionHistory.length > 200) {
+        usedQuestionHistory = usedQuestionHistory.slice(-200);
+    }
+    localStorage.setItem('triviamania_history', JSON.stringify(usedQuestionHistory));
+}
+
 // --- STANDARD TRIVIA GENERATOR ---
 async function addTriviaRound() {
     const select = document.getElementById('triviaGenreSelect');
@@ -93,8 +121,8 @@ async function addTriviaRound() {
     };
 
     if (customBanks[categoryKey]) {
-        const pool = customBanks[categoryKey];
-        const shuffled = [...pool].sort(function() { return Math.random() - 0.5; });
+        const availablePool = filterUnusedQuestions(customBanks[categoryKey]);
+        const shuffled = [...availablePool].sort(function() { return Math.random() - 0.5; });
         questions = shuffled.slice(0, targetCount).map(function(item) {
             return {
                 q: item.q,
@@ -137,6 +165,7 @@ async function addTriviaRound() {
         }
     }
 
+    markQuestionsAsUsed(questions);
     playlist.push({ 
         id: Date.now(), 
         name: "Trivia: " + genreName + " (" + questions.length + " Qs)", 
@@ -149,7 +178,7 @@ async function addTriviaRound() {
     alert('Loaded ' + questions.length + ' questions for ' + genreName + '!');
 }
 
-// --- PICTURE ROUND GENERATOR ---
+// --- PICTURE ROUND GENERATOR (STRICTLY ROUTED) ---
 function addPictureRound() {
     const select = document.getElementById('pictureGenreSelect');
     const genreKey = select ? select.value : "landmarks";
@@ -179,16 +208,20 @@ function addPictureRound() {
             { img: "https://images.unsplash.com/photo-1456926631375-92c8ce872def", a: "Penguin", options: ["Puffin", "Penguin", "Seal", "Polar Bear"] }
         ],
         "celebs": [
-            { img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb", a: "Portrait Subject 1", options: ["Tom Cruise", "Brad Pitt", "Portrait Subject 1", "Leonardo DiCaprio"] },
-            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Portrait Subject 2", options: ["George Clooney", "Portrait Subject 2", "Matt Damon", "Ben Affleck"] }
+            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Hollywood Actor", options: ["Tom Cruise", "Brad Pitt", "Hollywood Actor", "Leonardo DiCaprio"] },
+            { img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e", a: "Portrait Star", options: ["George Clooney", "Portrait Star", "Matt Damon", "Ben Affleck"] },
+            { img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330", a: "Award Winner", options: ["Award Winner", "Emma Stone", "Scarlett Johansson", "Jennifer Lawrence"] }
         ],
         "logos": [
-            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Social Media Icon", options: ["Search Engine", "Social Media Icon", "Streaming App", "Browser"] }
+            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Social Media Brand", options: ["Search Engine", "Social Media Brand", "Streaming App", "Browser"] },
+            { img: "https://images.unsplash.com/photo-1557804506-669a67965ba0", a: "Corporate Tech", options: ["Retail Giant", "Corporate Tech", "Automotive", "Finance"] }
         ]
     };
 
+    // Strict lookup: defaults to landmarks only if the key is missing
     let pool = pictureLibraries[genreKey] || pictureLibraries["landmarks"];
-    const shuffled = [...pool].sort(function() { return Math.random() - 0.5; });
+    const availablePool = filterUnusedQuestions(pool);
+    const shuffled = [...availablePool].sort(function() { return Math.random() - 0.5; });
     const questions = shuffled.slice(0, targetCount).map(function(item) {
         return {
             q: "Identify what or who is shown in the image below:",
@@ -199,6 +232,7 @@ function addPictureRound() {
         };
     });
 
+    markQuestionsAsUsed(questions);
     playlist.push({ 
         id: Date.now(), 
         name: "Picture: " + genreName + " (" + questions.length + " Qs)", 
@@ -224,10 +258,12 @@ function addKidsRound() {
         { q: "Which yellow Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] }
     ];
 
-    const questions = pool.slice(0, targetCount).map(function(item) {
+    const availablePool = filterUnusedQuestions(pool);
+    const questions = availablePool.slice(0, targetCount).map(function(item) {
         return { q: item.q, a: item.a, options: [...item.options].sort(function() { return Math.random() - 0.5; }), type: 'trivia' };
     });
 
+    markQuestionsAsUsed(questions);
     playlist.push({ id: Date.now(), name: "Kids: " + genreName + " (" + questions.length + " Qs)", questions: questions, timer: 10, betweenDelay: 5, speedBonus: true });
     renderPlaylist();
     alert('Loaded ' + questions.length + ' kids questions!');
@@ -246,10 +282,12 @@ function addMusicRound() {
         { q: "Which Britpop band sang 'Wonderwall'?", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"] }
     ];
 
-    const questions = pool.slice(0, targetCount).map(function(item) {
+    const availablePool = filterUnusedQuestions(pool);
+    const questions = availablePool.slice(0, targetCount).map(function(item) {
         return { q: item.q, a: item.a, options: [...item.options].sort(function() { return Math.random() - 0.5; }), type: 'trivia' };
     });
 
+    markQuestionsAsUsed(questions);
     playlist.push({ id: Date.now(), name: "Music: " + genreName + " (" + questions.length + " Qs)", questions: questions, timer: 10, betweenDelay: 5, speedBonus: true });
     renderPlaylist();
     alert('Loaded ' + questions.length + ' music questions!');
