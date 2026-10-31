@@ -79,7 +79,7 @@ app.get('/api/questions/:category', (req, res) => {
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-    // Send current state to newly connected clients (Projector/Player)
+    // Send current game state immediately upon connection
     socket.emit('gameStateUpdate', gameState);
 
     socket.on('joinGame', (data) => {
@@ -98,7 +98,7 @@ io.on('connection', (socket) => {
             gameState.status = 'question';
             io.emit('gameStateUpdate', gameState);
             io.emit('gameResumed', gameState);
-            console.log('Round loaded and broadcasted:', data.payload.name);
+            console.log('Round loaded into live queue:', data.payload.name);
         } else if (data.action === 'resume') {
             gameState.status = 'question';
             io.emit('gameStateUpdate', gameState);
