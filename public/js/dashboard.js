@@ -176,7 +176,7 @@ async function addTriviaRound() {
     alert('Loaded ' + questions.length + ' questions for ' + genreName + '!');
 }
 
-// --- LIVE WIKIPEDIA / WIKIMEDIA PICTURE ROUND GENERATOR ---
+// --- PICTURE ROUND GENERATOR (WITH ALL NEW CATEGORIES) ---
 async function addPictureRound() {
     const select = document.getElementById('pictureGenreSelect');
     const genreKey = select ? select.value : "landmarks";
@@ -184,19 +184,26 @@ async function addPictureRound() {
     const countSelect = document.getElementById('pictureCountSelect');
     const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
 
-    // Map categories to Wikipedia search queries for live infinite pictures
     const wikiQueries = {
         "landmarks": "Famous building monument landmark architecture",
         "animals": "Mammal wildlife animal zoology species",
         "celebs": "Academy Award winning actor cinema celebrity portrait",
-        "logos": "Brand trademark corporate logo symbol"
+        "logos": "Brand trademark corporate logo symbol",
+        "flags": "National flag country banner emblem",
+        "football": "Association football club crest stadium match",
+        "cartoons": "Animation cartoon character comic strip",
+        "disney": "Animation film fairy tale character",
+        "marvel": "Superhero comic book fiction character",
+        "tv": "Television show series broadcast drama",
+        "movies": "Film cinema movie poster production",
+        "games": "Video game character console franchise",
+        "food": "Cuisine dish meal traditional food"
     };
 
     let fetchedItems = [];
     const query = wikiQueries[genreKey] || wikiQueries["landmarks"];
 
     try {
-        // Query Wikipedia API for pages with images matching the category
         const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=30&prop=pageimages|info&piprop=original&inprop=url&format=json&origin=*`;
         const res = await fetch(wikiUrl);
         const data = await res.json();
@@ -205,12 +212,11 @@ async function addPictureRound() {
             const pages = Object.values(data.query.pages);
             pages.forEach(page => {
                 if (page.original && page.original.source && page.title) {
-                    // Filter out non-image files or generic icons
                     const imgUrl = page.original.source;
                     if (!imgUrl.toLowerCase().includes('.svg') && !imgUrl.toLowerCase().includes('icon')) {
                         fetchedItems.push({
                             img: imgUrl,
-                            a: page.title.replace(/\s*\(.*?\)\s*/g, '') // Clean parentheses from titles
+                            a: page.title.replace(/\s*\(.*?\)\s*/g, '')
                         });
                     }
                 }
@@ -220,7 +226,6 @@ async function addPictureRound() {
         console.log("Wikipedia live fetch fallback triggered.");
     }
 
-    // Fallback static banks if Wikipedia fetch returns too few items
     const staticFallbacks = {
         "landmarks": [
             { img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34", a: "Eiffel Tower" },
@@ -248,6 +253,49 @@ async function addPictureRound() {
             { img: "https://images.unsplash.com/photo-1557804506-669a67965ba0", a: "Google" },
             { img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", a: "Nike" },
             { img: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd", a: "Spotify" }
+        ],
+        "flags": [
+            { img: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1", a: "United Kingdom" },
+            { img: "https://images.unsplash.com/photo-1617957753549-65fde554cbe5", a: "United States" },
+            { img: "https://images.unsplash.com/photo-1532375810709-75b1da00537c", a: "Canada" },
+            { img: "https://images.unsplash.com/photo-1544717305-2782549b5136", a: "France" }
+        ],
+        "football": [
+            { img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2", a: "Real Madrid" },
+            { img: "https://images.unsplash.com/photo-1522778119026-d647f0596c20", a: "Manchester United" },
+            { img: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6", a: "FC Barcelona" },
+            { img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018", a: "Liverpool FC" }
+        ],
+        "cartoons": [
+            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Classic Animation" },
+            { img: "https://images.unsplash.com/photo-1563089145-599997674d42", a: "Comic Character" },
+            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Animated Mascot" }
+        ],
+        "disney": [
+            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Mickey Mouse" },
+            { img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23", a: "Cinderella Castle" },
+            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Disney Animation" }
+        ],
+        "marvel": [
+            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Spider-Man" },
+            { img: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1", a: "Iron Man" },
+            { img: "https://images.unsplash.com/photo-1563089145-599997674d42", a: "Batman (DC)" }
+        ],
+        "tv": [
+            { img: "https://images.unsplash.com/photo-1593784991095-a205069470b6", a: "Smart TV / Streaming" },
+            { img: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37", a: "Drama Series" }
+        ],
+        "movies": [
+            { img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba", a: "Blockbuster Film" },
+            { img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1", a: "Classic Movie Poster" }
+        ],
+        "games": [
+            { img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f", a: "Video Game Controller" },
+            { img: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc", a: "Esports Tournament" }
+        ],
+        "food": [
+            { img: "https://images.unsplash.com/photo-1513104890138-7c749659a591", a: "Pizza" },
+            { img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd", a: "Burger" }
         ]
     };
 
@@ -256,17 +304,14 @@ async function addPictureRound() {
         fetchedItems = [...fetchedItems, ...fallback];
     }
 
-    // Filter against anti-repeat history
     const availablePool = filterUnusedQuestions(fetchedItems);
     const shuffled = [...availablePool].sort(() => Math.random() - 0.5);
     const selectedItems = shuffled.slice(0, targetCount);
 
-    // Build multiple choice options dynamically from the pool of answers
     const allPossibleAnswers = fetchedItems.map(item => item.a);
 
     const questions = selectedItems.map(item => {
         const correctAnswer = item.a;
-        // Grab 3 random incorrect answers from other items
         const incorrectOptions = allPossibleAnswers
             .filter(ans => ans.toLowerCase() !== correctAnswer.toLowerCase())
             .sort(() => Math.random() - 0.5)
@@ -293,7 +338,7 @@ async function addPictureRound() {
         speedBonus: true 
     });
     renderPlaylist();
-    alert('Loaded ' + questions.length + ' live Wikipedia picture questions for ' + genreName + '!');
+    alert('Loaded ' + questions.length + ' live picture questions for ' + genreName + '!');
 }
 
 // --- KIDS & FAMILY GENERATOR ---
@@ -306,9 +351,7 @@ function addKidsRound() {
     const pool = [
         { q: "Which Disney movie features the ice queen Elsa?", a: "Frozen", options: ["Cinderella", "Frozen", "Moana", "Tangled"] },
         { q: "What is the name of Mickey Mouse's pet dog?", a: "Pluto", options: ["Goofy", "Pluto", "Bolt", "Snoopy"] },
-        { q: "Which yellow Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] },
-        { q: "In The Lion King, what is the name of Simba's strict hornbill majordomo?", a: "Zazu", options: ["Timon", "Pumbaa", "Zazu", "Rafiki"] },
-        { q: "What kind of animal is Po in 'Kung Fu Panda'?", a: "Giant Panda", options: ["Red Panda", "Giant Panda", "Grizzly Bear", "Polar Bear"] }
+        { q: "Which yellow Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] }
     ];
 
     const availablePool = filterUnusedQuestions(pool);
@@ -332,9 +375,7 @@ function addMusicRound() {
     const pool = [
         { q: "Which band recorded 'Stairway to Heaven'?", a: "Led Zeppelin", options: ["The Beatles", "Led Zeppelin", "Queen", "Pink Floyd"] },
         { q: "Who sang the 1983 hit 'Billie Jean'?", a: "Michael Jackson", options: ["Prince", "Lionel Richie", "Michael Jackson", "George Michael"] },
-        { q: "Which Britpop band sang 'Wonderwall'?", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"] },
-        { q: "Which singer is known as the 'King of Rock and Roll'?", a: "Elvis Presley", options: ["Chuck Berry", "Elvis Presley", "Buddy Holly", "Little Richard"] },
-        { q: "Which band released the iconic album 'The Dark Side of the Moon'?", a: "Pink Floyd", options: ["Led Zeppelin", "The Who", "Pink Floyd", "Genesis"] }
+        { q: "Which Britpop band sang 'Wonderwall'?", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"] }
     ];
 
     const availablePool = filterUnusedQuestions(pool);
