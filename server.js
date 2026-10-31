@@ -13,7 +13,7 @@ app.use(express.json());
 
 // Game State
 let gameState = {
-    status: 'lobby', // lobby, question, leaderboard, finished
+    status: 'lobby',
     currentRound: null,
     currentQuestionIndex: 0,
     timer: 15,
@@ -25,25 +25,25 @@ let gameState = {
 
 let players = {};
 
-// --- DYNAMIC QUESTION LOADER FROM CATEGORIES FOLDER ---
+// --- SAFE API ENDPOINT FOR QUESTIONS ---
 app.get('/api/questions/:category', (req, res) => {
     const category = req.params.category;
     const count = parseInt(req.query.count) || 10;
     const filePath = path.join(__dirname, 'categories', `${category}.txt`);
 
+    // If file doesn't exist on server, return 204 (No Content) so frontend gracefully uses its local backup
     if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Category file not found' });
+        return res.status(204).send();
     }
 
     fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
-            return res.status(500).json({ error: 'Failed to read category file' });
+            return res.status(204).send();
         }
 
         const lines = data.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         let questions = [];
 
-        // Parse OpenTriviaQA file formatting blocks
         for (let i = 0; i < lines.length; i++) {
             if (i + 4 < lines.length) {
                 let possibleQ = {
@@ -58,7 +58,6 @@ app.get('/api/questions/:category', (req, res) => {
             }
         }
 
-        // Fallback parsing if line structures differ
         if (questions.length === 0) {
             for (let i = 0; i < lines.length; i += 2) {
                 if (lines[i] && lines[i+1]) {
@@ -71,7 +70,6 @@ app.get('/api/questions/:category', (req, res) => {
             }
         }
 
-        // Shuffle and slice to requested count
         const shuffled = questions.sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, count);
 
@@ -95,7 +93,7 @@ io.on('connection', (socket) => {
         if (data.action === 'loadRound') {
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
-            io.emit(' gameState', gameState);
+            io.emit('gameResumed', gameState);
         } else if (data.action === 'resume') {
             io.emit('gameResumed', gameState);
         } else if (data.action === 'pause') {
