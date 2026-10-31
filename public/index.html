@@ -134,32 +134,40 @@
             </div>
             <button class="btn-api" onclick="addTriviaRound()">➕ Add Standard Trivia Round</button>
         </div>
-
-        <!-- SECTION 2: PICTURE ROUNDS -->
-        <div class="panel" style="border: 2px dashed var(--accent);">
-            <h2>🖼️ Picture Rounds</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                <div>
-                    <label>Question Count:</label>
-                    <select id="pictureCountSelect">
-                        <option value="5">5 Questions</option>
-                        <option value="10" selected>10 Questions</option>
-                        <option value="15">15 Questions</option>
-                        <option value="20">20 Questions</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Picture Category:</label>
-                    <select id="pictureGenreSelect">
-                        <option value="landmarks">Famous World Landmarks</option>
-                        <option value="animals">Animals & Wildlife</option>
-                        <option value="celebs">Celebrity Faces & Actors</option>
-                        <option value="logos">Famous Corporate Logos</option>
-                    </select>
-                </div>
-            </div>
-            <button class="btn-api" style="background:var(--accent); color:black;" onclick="addPictureRound()">➕ Add Picture Round</button>
+<!-- SECTION 2: PICTURE ROUNDS -->
+<div class="panel" style="border: 2px dashed var(--accent);">
+    <h2>🖼️ Picture Rounds</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+            <label>Question Count:</label>
+            <select id="pictureCountSelect">
+                <option value="5">5 Questions</option>
+                <option value="10" selected>10 Questions</option>
+                <option value="15">15 Questions</option>
+                <option value="20">20 Questions</option>
+            </select>
         </div>
+        <div>
+            <label>Picture Category:</label>
+            <select id="pictureGenreSelect">
+                <option value="landmarks">Famous World Landmarks</option>
+                <option value="animals">Animals & Wildlife</option>
+                <option value="celebs">Celebrity Faces & Actors</option>
+                <option value="logos">Famous Corporate Logos</option>
+                <option value="flags">Flags of the World</option>
+                <option value="football">Football Badges (World)</option>
+                <option value="cartoons">Cartoon Characters</option>
+                <option value="disney">Disney & Pixar Characters</option>
+                <option value="marvel">Marvel & DC Superheroes</option>
+                <option value="tv">Famous TV Shows</option>
+                <option value="movies">Movie Posters</option>
+                <option value="games">Video Game Characters</option>
+                <option value="food">World Foods & Dishes</option>
+            </select>
+        </div>
+    </div>
+    <button class="btn-api" style="background:var(--accent); color:black;" onclick="addPictureRound()">➕ Add Picture Round</button>
+</div>
 
         <!-- SECTION 3: KIDS & FAMILY -->
         <div class="panel">
