@@ -99,10 +99,10 @@
 
     <!-- TAB 2: PLAYLIST BUILDER -->
     <div id="tab-playlist" class="tab-content active">
-        <!-- SECTION 1: STANDARD TRIVIA -->
-        <div class="panel">
-            <h2>🧠 Standard Trivia Rounds</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <!-- OPEN-TRIVIA-QA MASTER SECTION -->
+        <div class="panel full-width" style="border: 2px solid var(--primary);">
+            <h2>🧠 Trivia Question Generator (OpenTriviaQA Dataset)[cite: 1]</h2>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 10px;">
                 <div>
                     <label>Question Count:</label>
                     <select id="triviaCountSelect">
@@ -113,76 +113,32 @@
                     </select>
                 </div>
                 <div>
-                    <label>Genre / Category:</label>
+                    <label>Category:</label>
                     <select id="triviaGenreSelect">
-                        <option value="uk_general">British General Knowledge</option>
-                        <option value="uk_sports">British Sports & Football</option>
-                        <option value="uk_history">British History & Monarchy</option>
-                        <option value="uk_tv">British TV & Soaps</option>
-                        <option value="uk_music">British Music & Rock Anthems</option>
+                        <option value="general">General Knowledge</option>
+                        <option value="animals">Animals[cite: 1]</option>
+                        <option value="brain-teasers">Brain Teasers[cite: 1]</option>
+                        <option value="celebrities">Celebrities[cite: 1]</option>
+                        <option value="entertainment">Entertainment[cite: 1]</option>
+                        <option value="for-kids">For Kids[cite: 1]</option>
+                        <option value="geography">Geography[cite: 1]</option>
+                        <option value="history">History[cite: 1]</option>
+                        <option value="hobbies">Hobbies[cite: 1]</option>
+                        <option value="humanities">Humanities[cite: 1]</option>
+                        <option value="literature">Literature[cite: 1]</option>
+                        <option value="movies">Movies[cite: 1]</option>
+                        <option value="music">Music[cite: 1]</option>
+                        <option value="people">People[cite: 1]</option>
+                        <option value="religion-faith">Religion & Faith[cite: 1]</option>
+                        <option value="science-technology">Science & Technology[cite: 1]</option>
+                        <option value="sports">Sports[cite: 1]</option>
+                        <option value="television">Television[cite: 1]</option>
+                        <option value="video-games">Video Games[cite: 1]</option>
+                        <option value="world">World[cite: 1]</option>
                     </select>
                 </div>
             </div>
-            <button class="btn-api" onclick="addTriviaRound()">➕ Add Standard Trivia Round</button>
-        </div>
-
-        <!-- SECTION 2: PICTURE ROUNDS (Bypassed temporarily for stability) -->
-        <div class="panel" style="border: 2px dashed var(--accent); opacity: 0.7;">
-            <h2>🖼️ Picture Rounds</h2>
-            <p style="font-size: 12px; color: var(--muted); margin: 0 0 10px 0;">Currently streamlined. Use Standard, Kids, or Music trivia above.</p>
-            <button class="btn-api" style="background:#333; color:#aaa; cursor:not-allowed;" disabled>➕ Add Picture Round</button>
-        </div>
-
-        <!-- SECTION 3: KIDS & FAMILY -->
-        <div class="panel">
-            <h2>🧸 Kids & Family Section</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                <div>
-                    <label>Question Count:</label>
-                    <select id="kidsCountSelect">
-                        <option value="5">5 Questions</option>
-                        <option value="10" selected>10 Questions</option>
-                        <option value="15">15 Questions</option>
-                        <option value="20">20 Questions</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Kids Category:</label>
-                    <select id="kidsGenreSelect">
-    <option value="kids_disney">Disney & Pixar Movies</option>
-    <option value="kids_pokemon">Pokémon & Gaming Trivia</option>
-    <option value="kids_roald_dahl">Roald Dahl & Children's Books</option>
-    <option value="kids_harry_potter">Harry Potter & Wizarding World</option>
-</select>
-                </div>
-            </div>
-            <button class="btn-api" style="background:#00e676; color:black;" onclick="addKidsRound()">➕ Add Kids & Family Round</button>
-        </div>
-
-        <!-- SECTION 4: MUSIC TRIVIA ROUNDS -->
-        <div class="panel" style="border: 2px dashed var(--primary);">
-            <h2>🎵 Music Trivia Round</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                <div>
-                    <label>Question Count:</label>
-                    <select id="musicCountSelect">
-                        <option value="5">5 Questions</option>
-                        <option value="10" selected>10 Questions</option>
-                        <option value="15">15 Questions</option>
-                        <option value="20">20 Questions</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Music Category:</label>
-                    <select id="musicGenreSelect">
-    <option value="music_classic_rock">Classic Rock Anthems</option>
-    <option value="music_80s_90s">1980s & 1990s Pop Hits</option>
-    <option value="music_soundtracks">Iconic Movie Soundtracks</option>
-    <option value="music_pop_divas">Pop Superstars & Divas</option>
-</select>
-                </div>
-            </div>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="addMusicRound()">➕ Add Music Trivia Round</button>
+            <button class="btn-api" onclick="addTriviaRound()">➕ Add Round to Playlist</button>
         </div>
 
         <!-- PLAYLIST QUEUE DISPLAY -->
