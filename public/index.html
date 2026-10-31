@@ -5,40 +5,42 @@
     <title>TriviaMania - Host Control Center</title>
     <style>
         :root { 
-            --bg: #090a10; --card: #131520; --primary: #9c27b0; --primary-glow: rgba(156, 39, 176, 0.4);
-            --accent: #00e5ff; --accent-glow: rgba(0, 229, 255, 0.3); --text: #ffffff; --muted: #8a8d9f;
-            --danger: #ff1744; --success: #00e676;
+            --bg: #0d0e15; --card: #161824; --primary: #7c3aed; --primary-hover: #6d28d9;
+            --accent: #06b6d4; --text: #f3f4f6; --muted: #9ca3af;
+            --danger: #ef4444; --success: #10b981; --border: #272a3b;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222538; padding-bottom: 15px; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 26px; color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
-        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 20px; font-weight: bold; background: #1a1d2e; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; box-sizing: border-box; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { background: #131520; border: 1px solid #2a2e45; color: var(--muted); padding: 12px 20px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--accent); box-shadow: 0 0 15px var(--primary-glow); }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 0.5px; }
+        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 12px; font-size: 13px; font-weight: 600; background: #1e2130; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); }
+        
+        /* Streamlined compact tabs */
+        .tabs { display: flex; gap: 6px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .tab-btn { background: #161824; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 10px rgba(124, 58, 237, 0.4); }
         
         .tab-content { display: none; }
-        .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full-width { grid-column: span 2; }
 
-        .panel { background: var(--card); border: 1px solid #222538; border-radius: 14px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-        h2 { font-size: 18px; margin-top: 0; border-bottom: 1px solid #222538; padding-bottom: 12px; color: var(--accent); }
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        h2 { font-size: 15px; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--accent); }
         
-        button { padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #22263d; color: white; width: 100%; margin-top: 10px; transition: all 0.2s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-play { background: var(--success); color: black; }
-        .btn-reveal { background: var(--accent); color: black; }
-        .btn-restart { background: #ff9100; color: black; }
-        .btn-next { background: #00e5ff; color: black; font-size: 16px; }
-        .btn-danger { background: var(--danger); width: auto; padding: 6px 12px; margin-top: 0; font-size: 12px; }
-        .btn-api { background: var(--primary); color: white; font-size: 15px; box-shadow: 0 0 10px var(--primary-glow); }
+        button { padding: 10px 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: #222638; color: white; width: 100%; margin-top: 8px; font-size: 13px; transition: opacity 0.2s; }
+        button:hover { opacity: 0.85; }
+        .btn-play { background: var(--success); color: #000; }
+        .btn-reveal { background: var(--accent); color: #000; }
+        .btn-restart { background: #f59e0b; color: #000; }
+        .btn-next { background: #38bdf8; color: #000; font-weight: 700; }
+        .btn-danger { background: var(--danger); width: auto; padding: 6px 10px; margin-top: 0; font-size: 11px; }
+        .btn-api { background: var(--primary); color: white; }
 
-        .playlist-card { background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .playlist-card { background: #1e2130; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--accent); display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         
-        select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        label { font-size: 12px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .score-row { display: flex; justify-content: space-between; align-items: center; background: #1a1d2d; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #2a2e45; }
+        select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 10px; margin: 5px 0 12px 0; background: #10121a; border: 1px solid var(--border); color: white; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
+        label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+        .score-row { display: flex; justify-content: space-between; align-items: center; background: #10121a; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border); font-size: 13px; }
     </style>
 </head>
 <body>
@@ -47,19 +49,20 @@
         <h1>⚡ TriviaMania Host Dashboard</h1>
         <div class="nav-links">
             <a href="/display.html" target="_blank">📺 Projector Display</a>
-            <a href="/player.html" target="_blank">📱 Player Join Link</a>
+            <a href="/player.html" target="_blank">📱 Player Link</a>
         </div>
     </header>
 
+    <!-- Compact Clean Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Control Center & Queue</button>
+        <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Controls & Queue</button>
         <button class="tab-btn" onclick="switchTab('playlist', this)">🎵 Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('media', this)">🖼️ Adverts & Media</button>
-        <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings & Polls</button>
+        <button class="tab-btn" onclick="switchTab('media', this)">🖼️ Adverts & Polls</button>
+        <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings</button>
     </div>
 
     <!-- TAB 1: CONTROL CENTER -->
-    <div id="tab-control" class="tab-content">
+    <div id="tab-control" class="tab-content active">
         <div class="panel">
             <h2>Master Game Controls</h2>
             <button class="btn-next" onclick="sendAction('nextQuestion')">➡️ Next Question</button>
@@ -71,36 +74,25 @@
 
         <div class="panel">
             <h2>Active Playlist Queue</h2>
-            <div id="hostPlaylistQueue" style="max-height: 220px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 14px;">No rounds loaded in queue yet.</p>
+            <div id="hostPlaylistQueue" style="max-height: 200px; overflow-y: auto;">
+                <p style="color: var(--muted); font-size: 13px;">No rounds loaded in queue yet.</p>
             </div>
         </div>
 
-        <div class="panel">
-            <h2>Interactive Lobby & Screen Controls</h2>
-            <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector Only</button>
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="pushAdvert('mobile')">📱 Push Ad to Mobile Phones Only</button>
-            <button class="btn-api" style="background:var(--primary);" onclick="pushAdvert('both')">📢 Push Ad to BOTH Screens</button>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn-danger" style="width:100%;" onclick="hideAdvert('projector')">❌ Hide Projector Ad</button>
-                <button class="btn-danger" style="width:100%;" onclick="hideAdvert('mobile')">❌ Hide Mobile Ad</button>
-            </div>
-        </div>
-
-        <div class="panel">
+        <div class="panel full-width">
             <h2>🏆 Connected Teams (<span id="playerCount">0</span>)</h2>
-            <button class="btn-api" style="background:#00e676; color:black; margin-bottom:15px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
-            <div id="hostScoreList" style="max-height: 180px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 14px;">No teams connected yet.</p>
+            <button class="btn-api" style="background:#10b981; color:#000; margin-bottom:10px; width:auto; padding:8px 16px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
+            <div id="hostScoreList" style="max-height: 150px; overflow-y: auto;">
+                <p style="color: var(--muted); font-size: 13px;">No teams connected yet.</p>
             </div>
         </div>
     </div>
 
     <!-- TAB 2: PLAYLIST BUILDER -->
-    <div id="tab-playlist" class="tab-content active">
-        <div class="panel full-width" style="border: 2px solid var(--primary);">
+    <div id="tab-playlist" class="tab-content">
+        <div class="panel full-width" style="border: 1px solid var(--primary);">
             <h2>🧠 Trivia Question Generator & Timers</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
                 <div>
                     <label>Question Count:</label>
                     <select id="triviaCountSelect">
@@ -136,7 +128,7 @@
                     </select>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                     <label>Question Timer (Seconds):</label>
                     <input type="number" id="questionTimerInput" value="15" min="5" max="60">
@@ -151,33 +143,42 @@
 
         <div class="panel full-width">
             <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
-            <div id="playlistContainer" style="max-height: 250px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>
+            <div id="playlistContainer" style="max-height: 200px; overflow-y: auto;">
+                <p style="color: var(--muted); font-size: 13px;">No rounds in playlist yet.</p>
             </div>
         </div>
     </div>
 
-    <!-- TAB 3: ADVERTS & MEDIA -->
+    <!-- TAB 3: ADVERTS & POLLS -->
     <div id="tab-media" class="tab-content">
-        <div class="panel full-width">
-            <h2>🖼️ Upload Advert or Sponsor Image</h2>
+        <div class="panel">
+            <h2>🖼️ Push Advert / Sponsor Ad</h2>
             <label>Advert Title:</label>
             <input type="text" id="advertTitleInput" value="Featured Sponsor & Event Advert">
-            <label>Select Image File:</label>
-            <input type="file" id="imageUploadInput" accept="image/*" style="background:#1a1d2d; padding:10px; border-radius:8px; border:1px solid #333; color:white; width:100%; box-sizing:border-box;">
-            <button class="btn-api" style="background:var(--accent); color:black;" onclick="pushAdvert('projector')">📺 Push Ad to Projector</button>
+            <label>Target Screen:</label>
+            <select id="advertTargetInput">
+                <option value="both">Both Screens</option>
+                <option value="projector">Projector Only</option>
+                <option value="mobile">Mobile Phones Only</option>
+            </select>
+            <button class="btn-api" onclick="pushCustomAdvert()">📺 Broadcast Ad</button>
+            <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
+        </div>
+
+        <div class="panel">
+            <h2>📊 Pre-Game Icebreaker Poll</h2>
+            <p style="font-size: 13px; color: var(--muted);">Trigger an interactive poll on all connected player devices instantly.</p>
+            <button class="btn-api" style="background:#06b6d4; color:#000;" onclick="togglePoll()">📊 Toggle Icebreaker Poll On/Off</button>
         </div>
     </div>
 
-    <!-- TAB 4: SETTINGS & POLLS -->
+    <!-- TAB 4: SETTINGS -->
     <div id="tab-settings" class="tab-content">
         <div class="panel full-width">
-            <h2>⚙️ Editable Display Text & Tip Jar</h2>
+            <h2>⚙️ System Settings</h2>
             <label>Event Title:</label>
             <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
-            <label>Welcome Message:</label>
-            <input type="text" id="welcomeMessageInput" value="Welcome to the ultimate pub quiz experience!">
-            <button class="btn-api" style="background:#00e676; color:black;" onclick="saveSettings()">💾 Save Settings</button>
+            <button class="btn-api" style="background:#10b981; color:#000;" onclick="saveSettings()">💾 Save Settings</button>
         </div>
     </div>
 
