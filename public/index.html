@@ -15,7 +15,6 @@
         h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 0.5px; }
         .nav-links a { color: var(--accent); text-decoration: none; margin-left: 12px; font-size: 13px; font-weight: 600; background: #1e2130; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); }
         
-        /* Streamlined compact tabs */
         .tabs { display: flex; gap: 6px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         .tab-btn { background: #161824; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
         .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 10px rgba(124, 58, 237, 0.4); }
@@ -53,7 +52,6 @@
         </div>
     </header>
 
-    <!-- Compact Clean Tabs -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Controls & Queue</button>
         <button class="tab-btn" onclick="switchTab('playlist', this)">🎵 Playlist Builder</button>
@@ -161,14 +159,20 @@
                 <option value="projector">Projector Only</option>
                 <option value="mobile">Mobile Phones Only</option>
             </select>
+            <label>Upload Sponsor Image:</label>
+            <input type="file" id="advertImageInput" accept="image/*" style="margin-bottom:12px;">
             <button class="btn-api" onclick="pushCustomAdvert()">📺 Broadcast Ad</button>
             <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
         </div>
 
         <div class="panel">
-            <h2>📊 Pre-Game Icebreaker Poll</h2>
-            <p style="font-size: 13px; color: var(--muted);">Trigger an interactive poll on all connected player devices instantly.</p>
-            <button class="btn-api" style="background:#06b6d4; color:#000;" onclick="togglePoll()">📊 Toggle Icebreaker Poll On/Off</button>
+            <h2>📊 Custom Icebreaker Poll Creator</h2>
+            <label>Poll Question:</label>
+            <input type="text" id="pollQuestionInput" value="What is your favorite pub drink?">
+            <label>Options (Comma separated):</label>
+            <input type="text" id="pollOptionsInput" value="Beer / Cider, Wine / Prosecco, Cocktails, Soft Drinks">
+            <button class="btn-api" style="background:#06b6d4; color:#000;" onclick="triggerCustomPoll(true)">🚀 Launch Poll on Phones</button>
+            <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="triggerCustomPoll(false)">⏹️ Close Poll</button>
         </div>
     </div>
 
@@ -183,6 +187,61 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script>
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        const socket = io();
+        let playlist = [];
+        let latestPlayersState = {};
+
+        function sendAction(action) { socket.emit('hostAction', { action: action }); }
+
+        function pushCustomAdvert() {
+            const title = document.getElementById('advertTitleInput').value;
+            const target = document.getElementById('advertTargetInput').value;
+            const fileInput = document.getElementById('advertImageInput');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    socket.emit('hostAction', { action: 'pushAdvert', payload: { title: title, target: target, image: e.target.result } });
+                    alert('Advert with image pushed successfully!');
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                socket.emit('hostAction', { action: 'pushAdvert', payload: { title: title, target: target, image: '' } });
+                alert('Advert pushed successfully!');
+            }
+        }
+
+        function hideAdvert() {
+            socket.emit('hostAction', { action: 'hideAdvert' });
+            alert('Advert hidden.');
+        }
+
+        function triggerCustomPoll(isActive) {
+            const q = document.getElementById('pollQuestionInput').value;
+            const opts = document.getElementById('pollOptionsInput').value;
+            socket.emit('hostAction', { 
+                action: 'updatePoll', 
+                payload: { active: isActive, question: q, options: opts } 
+            });
+            alert(isActive ? 'Poll launched to all mobile players!' : 'Poll closed.');
+        }
+
+        function saveSettings() {
+            const title = document.getElementById('eventTitleInput').value;
+            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle: title } });
+            alert('Settings saved.');
+        }
+
+        // Include your addTriviaRound, renderPlaylist, loadRound, deleteRound, exportLeaderboardCSV from prior dashboard code here
+    </script>
     <script src="/js/dashboard.js"></script>
 </body>
 </html>
