@@ -18,7 +18,7 @@ const socket = io();
 let playlist = [];
 let latestPlayersState = {};
 
-// --- COMPREHENSIVE FALLBACK QUESTION BANKS (Guaranteed to work instantly) ---
+// --- COMPREHENSIVE FALLBACK QUESTION BANKS ---
 const backupQuestionBanks = {
     "general": [
         { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
@@ -57,7 +57,7 @@ const backupQuestionBanks = {
     ]
 };
 
-// --- ROBUST ROUND GENERATOR WITH AUTOMATIC SERVER / LOCAL FALLBACK ---
+// --- DYNAMIC ROUND GENERATOR ---
 async function addTriviaRound() {
     const select = document.getElementById('triviaGenreSelect');
     const categoryKey = select ? select.value : "general";
@@ -76,7 +76,6 @@ async function addTriviaRound() {
         console.log('Server file read failed, using backup question bank.');
     }
 
-    // If server file wasn't found or returned empty, use local backup banks
     if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
         const pool = backupQuestionBanks[categoryKey] || backupQuestionBanks["general"];
         rawQuestions = [...pool];
@@ -142,7 +141,7 @@ function exportLeaderboardCSV() {
 function renderPlaylist() {
     const container = document.getElementById('playlistContainer');
     const queueEl = document.getElementById('hostPlaylistQueue');
-    if (document.getElementById('playlistCount')) { document.getElementById('playlistCount').textContent = playlist.length; }
+    if (document.getElementById('playlistCount')) { document.getElementById('playlistCount'].textContent = playlist.length; }
     
     if (playlist.length === 0) {
         if (container) container.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>';
@@ -161,8 +160,10 @@ function renderPlaylist() {
 
 function loadRound(index) {
     const round = playlist[index];
+    if (!round) return alert('Round not found!');
+    
     socket.emit('hostAction', { action: 'loadRound', payload: round });
-    alert('Loaded "' + round.name + '" into game queue!');
+    alert('Loaded "' + round.name + '" into live game queue! Check your Projector Display tab.');
 }
 
 function deleteRound(index) {
