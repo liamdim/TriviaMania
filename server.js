@@ -11,7 +11,6 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// Game State
 let gameState = {
     status: 'lobby',
     currentRound: null,
@@ -26,7 +25,6 @@ let gameState = {
 let players = {};
 let questionInterval = null;
 
-// --- SAFE API ENDPOINT FOR QUESTIONS ---
 app.get('/api/questions/:category', (req, res) => {
     const category = req.params.category;
     const count = parseInt(req.query.count) || 10;
@@ -89,8 +87,6 @@ function startQuestionTimer() {
 }
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-
     socket.emit('gameStateUpdate', gameState);
 
     socket.on('joinGame', (data) => {
@@ -140,7 +136,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         delete players[socket.id];
         io.emit('updatePlayers', players);
-        console.log('User disconnected:', socket.id);
     });
 });
 
