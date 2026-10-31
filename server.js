@@ -31,7 +31,6 @@ app.get('/api/questions/:category', (req, res) => {
     const count = parseInt(req.query.count) || 10;
     const filePath = path.join(__dirname, 'categories', `${category}.txt`);
 
-    // If file doesn't exist on server, return 204 (No Content) so frontend gracefully uses its local backup
     if (!fs.existsSync(filePath)) {
         return res.status(204).send();
     }
@@ -93,10 +92,14 @@ io.on('connection', (socket) => {
         if (data.action === 'loadRound') {
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
+            gameState.status = 'question';
             io.emit('gameResumed', gameState);
+            console.log('Round loaded:', data.payload.name);
         } else if (data.action === 'resume') {
+            gameState.status = 'question';
             io.emit('gameResumed', gameState);
         } else if (data.action === 'pause') {
+            gameState.status = 'paused';
             io.emit('gamePaused');
         } else if (data.action === 'reveal') {
             io.emit('revealAnswer');
