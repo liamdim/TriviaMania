@@ -19,7 +19,9 @@ let gameState = {
     scores: {},
     settings: {
         eventTitle: 'TriviaMania Live Event'
-    }
+    },
+    advert: { active: false, title: '', image: '', target: 'none' },
+    poll: { active: false, question: 'What is your favorite pub drink?', options: ['Beer / Cider', 'Wine / Prosecco', 'Cocktails', 'Soft Drinks'] }
 };
 
 let players = {};
@@ -85,7 +87,6 @@ function startQuestionTimer() {
             clearInterval(questionInterval);
             io.emit('revealAnswer');
 
-            // Automatically advance to next question after the delay period
             const betweenDelay = (gameState.currentRound.betweenDelay || 5) * 1000;
             delayTimeout = setTimeout(() => {
                 advanceToNextQuestion();
@@ -128,6 +129,11 @@ io.on('connection', (socket) => {
             gameState.currentQuestionIndex = 0;
             gameState.status = 'question';
             startQuestionTimer();
+        } else if (data.action === 'restart') {
+            if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
+            gameState.currentQuestionIndex = 0;
+            startQuestionTimer();
         } else if (data.action === 'nextQuestion') {
             if (questionInterval) clearInterval(questionInterval);
             if (delayTimeout) clearTimeout(delayTimeout);
@@ -143,6 +149,15 @@ io.on('connection', (socket) => {
             if (questionInterval) clearInterval(questionInterval);
             if (delayTimeout) clearTimeout(delayTimeout);
             io.emit('revealAnswer');
+        } else if (data.action === 'pushAdvert') {
+            gameState.advert = { active: true, title: data.payload.title || 'Sponsor Ad', image: data.payload.image || '', target: data.payload.target || 'both' };
+            io.emit('advertUpdate', gameState.advert);
+        } else if (data.action === 'hideAdvert') {
+            gameState.advert.active = false;
+            io.emit('advertUpdate', gameState.advert);
+        } else if (data.action === 'togglePoll') {
+            gameState.poll.active = !gameState.poll.active;
+            io.emit('pollUpdate', gameState.poll);
         } else if (data.action === 'updateSettings') {
             if (data.payload && data.payload.eventTitle) {
                 gameState.settings.eventTitle = data.payload.eventTitle;
