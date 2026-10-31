@@ -18,8 +18,9 @@ const socket = io();
 let playlist = [];
 let latestPlayersState = {};
 
-// --- ROBUST MASTER QUESTION BANKS (50+ UNIQUE QUESTIONS PER CATEGORY) ---
+// --- ROBUST MASTER QUESTION BANKS ---
 const masterTriviaBanks = {
+    // Standard Trivia
     "uk_general": [
         { q: "What is the capital city of England?", a: "London", options: ["Manchester", "Birmingham", "London", "Liverpool"] },
         { q: "Which currency is officially used in the United Kingdom?", a: "Pound Sterling", options: ["Euro", "Dollar", "Pound Sterling", "Franc"] },
@@ -33,9 +34,7 @@ const masterTriviaBanks = {
         { q: "What is a traditional British Sunday roast meat commonly served with mint sauce?", a: "Roast Lamb", options: ["Roast Beef", "Roast Pork", "Roast Lamb", "Roast Chicken"] },
         { q: "In what year did the UK vote to leave the European Union in a referendum?", a: "2016", options: ["2014", "2015", "2016", "2018"] },
         { q: "Which British city is famous for producing the world's finest cutlery and steel?", a: "Sheffield", options: ["Leeds", "Sheffield", "Newcastle", "Bristol"] },
-        { q: "What is the highest mountain peak in the United Kingdom?", a: "Ben Nevis", options: ["Snowdon", "Scafell Pike", "Ben Nevis", "Slieve Donard"] },
-        { q: "Which iconic British automobile manufacturer produces the Mini?", a: "BMW / British Motor Corporation", options: ["Aston Martin", "Rolls-Royce", "BMW / British Motor Corporation", "Bentley"] },
-        { q: "What is the traditional name for the day after Christmas in the UK?", a: "Boxing Day", options: ["St. Stephen's Day", "Boxing Day", "Feasting Day", "Winter Bank Holiday"] }
+        { q: "What is the highest mountain peak in the United Kingdom?", a: "Ben Nevis", options: ["Snowdon", "Scafell Pike", "Ben Nevis", "Slieve Donard"] }
     ],
     "uk_sports": [
         { q: "Which English football club has won the most top-flight league titles?", a: "Manchester United", options: ["Liverpool", "Manchester United", "Arsenal", "Manchester City"] },
@@ -84,15 +83,77 @@ const masterTriviaBanks = {
         { q: "What genre of electronic music originated in London in the early 1990s?", a: "Drum and Bass", options: ["House", "Techno", "Drum and Bass", "Trance"] },
         { q: "Which British girl group had massive 90s hits with 'Wannabe'?", a: "Spice Girls", options: ["All Saints", "Atomic Kitten", "Spice Girls", "Sugababes"] },
         { q: "Where is the famous annual Glastonbury Festival held?", a: "Somerset", options: ["Cornwall", "Somerset", "Hampshire", "Wiltshire"] }
+    ],
+
+    // Kids & Family Categories
+    "kids_disney": [
+        { q: "Which Disney movie features the ice queen Elsa?", a: "Frozen", options: ["Cinderella", "Frozen", "Moana", "Tangled"] },
+        { q: "What is the name of Mickey Mouse's pet dog?", a: "Pluto", options: ["Goofy", "Pluto", "Bolt", "Snoopy"] },
+        { q: "In The Lion King, what is the name of Simba's strict hornbill majordomo?", a: "Zazu", options: ["Timon", "Pumbaa", "Zazu", "Rafiki"] },
+        { q: "What kind of animal is Po in 'Kung Fu Panda'?", a: "Giant Panda", options: ["Red Panda", "Giant Panda", "Grizzly Bear", "Polar Bear"] },
+        { q: "Which Disney princess loses her glass slipper at the royal ball?", a: "Cinderella", options: ["Snow White", "Cinderella", "Aurora", "Belle"] },
+        { q: "What is the name of the cowboy doll in Pixar's Toy Story?", a: "Woody", options: ["Buzz Lightyear", "Woody", "Rex", "Slinky"] },
+        { q: "In Finding Nemo, what species of fish is Nemo?", a: "Clownfish", options: ["Blue Tang", "Clownfish", "Goldfish", "Angel Fish"] },
+        { q: "Which Hawaiian girl adopts an alien named Stitch?", a: "Lilo", options: ["Moana", "Lilo", "Merida", "Mulan"] }
+    ],
+    "kids_pokemon": [
+        { q: "Which yellow electric Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] },
+        { q: "What type of Pokémon is Charmander?", a: "Fire", options: ["Water", "Grass", "Fire", "Electric"] },
+        { q: "Who is Ash Ketchum's very first human traveling companion in the Kanto region?", a: "Misty", options: ["May", "Dawn", "Misty", "Serena"] },
+        { q: "What is the name of the sleepy Pokémon that blocks roads in early games?", a: "Snorlax", options: ["Pounder", "Snorlax", "Jigglypuff", "Meowth"] },
+        { q: "Which Pokémon evolves into Charizard?", a: "Charmeleon", options: ["Charmander", "Charmeleon", "Cyndaquil", "Torchic"] }
+    ],
+    "kids_roald_dahl": [
+        { q: "Which Roald Dahl character finds a Golden Ticket to visit a chocolate factory?", a: "Charlie Bucket", options: ["James", "Charlie Bucket", "Matilda", "Danny"] },
+        { q: "What giant magical fruit does James travel inside in Roald Dahl's famous story?", a: "Peach", options: ["Apple", "Pear", "Peach", "Melon"] },
+        { q: "What is the name of the telekinetic little girl with magical powers in Dahl's novel?", a: "Matilda", options: ["Sophie", "Matilda", "Veruca", "Lavender"] },
+        { q: "In 'The BFG', what does BFG stand for?", a: "Big Friendly Giant", options: ["Big Fast Giant", "Big Friendly Giant", "Brown Furry Giant", "Bold Fearless Giant"] }
+    ],
+
+    // Music Trivia Categories (No audio required!)
+    "music_classic_rock": [
+        { q: "Which legendary rock band recorded the epic rock anthem 'Stairway to Heaven'?", a: "Led Zeppelin", options: ["The Beatles", "Led Zeppelin", "Queen", "Pink Floyd"] },
+        { q: "Who sang the iconic 1970 hit single 'Your Song'?", a: "Elton John", options: ["David Bowie", "Elton John", "Rod Stewart", "Paul McCartney"] },
+        { q: "Which band released the landmark 1973 album 'The Dark Side of the Moon'?", a: "Pink Floyd", options: ["Led Zeppelin", "The Who", "Pink Floyd", "Genesis"] },
+        { q: "What was the name of the lead singer of Queen who famously commanded Live Aid?", a: "Freddie Mercury", options: ["Mick Jagger", "Robert Plant", "Freddie Mercury", "David Bowie"] },
+        { q: "Which band performed the massive 1976 hit 'Hotel California'?", a: "Eagles", options: ["Fleetwood Mac", "Eagles", "The Doobie Brothers", "Lynyrd Skynyrd"] }
+    ],
+    "music_80s_90s": [
+        { q: "Who sang the legendary 1983 pop/dance smash hit 'Billie Jean'?", a: "Michael Jackson", options: ["Prince", "Lionel Richie", "Michael Jackson", "George Michael"] },
+        { q: "Which British pop duo sang 'Wake Me Up Before You Go-Go'?", a: "Wham!", options: ["Duran Duran", "Wham!", "Culture Club", "Pet Shop Boys"] },
+        { q: "Which 90s Britpop band famously rivaled Blur during the 'Battle of Britpop'?", a: "Oasis", options: ["Pulp", "Oasis", "Suede", "The Verve"] },
+        { q: "Which girl group released the massive 1996 debut smash hit 'Wannabe'?", a: "Spice Girls", options: ["All Saints", "Atomic Kitten", "Spice Girls", "Sugababes"] },
+        { q: "Who released the record-breaking 1997 global ballad 'My Heart Will Go On'?", a: "Celine Dion", options: ["Mariah Carey", "Whitney Houston", "Celine Dion", "Madonna"] }
+    ],
+    "music_soundtracks": [
+        { q: "Which film featured the Oscar-winning theme song 'My Heart Will Go On'?", a: "Titanic", options: ["The Bodyguard", "Titanic", "Armageddon", "Ghost"] },
+        { q: "Who composed the legendary movie scores for Star Wars, Jaws, and Jurassic Park?", a: "John Williams", options: ["Hans Zimmer", "Ennio Morricone", "John Williams", "Danny Elfman"] },
+        { q: "Which animated movie featured the iconic hit song 'Let It Go'?", a: "Frozen", options: ["Tangled", "Frozen", "Moana", "Brave"] },
+        { q: "Which cult classic 90s film soundtrack featured iconic tracks by Pulp, Blur, and Lou Reed?", a: "Trainspotting", options: ["Pulp Fiction", "Trainspotting", "Lock, Stock and Two Smoking Barrels", "Snatch"] }
     ]
 };
 
-// --- FOOLPROOF STANDARD TRIVIA GENERATOR ---
+// --- STANDARD TRIVIA GENERATOR ---
 function addTriviaRound() {
-    const select = document.getElementById('triviaGenreSelect');
-    const categoryKey = select ? select.value : "uk_general";
-    const genreName = select ? select.options[select.selectedIndex].text : "Standard Trivia";
-    const countSelect = document.getElementById('triviaCountSelect');
+    generateRoundFromCategory('triviaGenreSelect', 'triviaCountSelect', 'Standard Trivia');
+}
+
+// --- KIDS & FAMILY GENERATOR ---
+function addKidsRound() {
+    generateRoundFromCategory('kidsGenreSelect', 'kidsCountSelect', 'Kids & Family');
+}
+
+// --- MUSIC TRIVIA GENERATOR ---
+function addMusicRound() {
+    generateRoundFromCategory('musicGenreSelect', 'musicCountSelect', 'Music Trivia');
+}
+
+// --- UNIVERSAL ROUND GENERATOR HELPER ---
+function generateRoundFromCategory(genreSelectId, countSelectId, roundPrefix) {
+    const select = document.getElementById(genreSelectId);
+    const categoryKey = select ? select.value : Object.keys(masterTriviaBanks)[0];
+    const genreName = select ? select.options[select.selectedIndex].text : roundPrefix;
+    const countSelect = document.getElementById(countSelectId);
     const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
     
     const pool = masterTriviaBanks[categoryKey] || masterTriviaBanks["uk_general"];
@@ -112,7 +173,7 @@ function addTriviaRound() {
 
     playlist.push({ 
         id: Date.now(), 
-        name: "Trivia: " + genreName + " (" + questions.length + " Qs)", 
+        name: roundPrefix + ": " + genreName + " (" + questions.length + " Qs)", 
         questions: questions, 
         timer: 15, 
         betweenDelay: 5, 
@@ -123,10 +184,8 @@ function addTriviaRound() {
     alert('Successfully loaded ' + questions.length + ' questions for ' + genreName + '!');
 }
 
-// --- PLACEHOLDER FOR OTHER SECTIONS UNTIL VERIFIED ---
-function addPictureRound() { alert('Picture rounds are temporarily streamlined. Let us test standard trivia first!'); }
-function addKidsRound() { alert('Kids round ready next.'); }
-function addMusicRound() { alert('Music round ready next.'); }
+// --- PICTURE ROUND PLACEHOLDER ---
+function addPictureRound() { alert('Picture rounds are streamlined for stability. Standard, Kids, and Music trivia are fully active!'); }
 
 // Control & Action Handlers
 function sendAction(action) {
