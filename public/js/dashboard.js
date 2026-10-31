@@ -103,8 +103,18 @@ function saveNewAdvert() {
 
 function renderSavedAds() {
     const container = document.getElementById('savedAdsContainer');
-    if (!container) return;
+    const quickSelect = document.getElementById('quickAdSelect');
     const ads = getSavedAds();
+    
+    if (quickSelect) {
+        let qHtml = '<option value="">-- Choose Ad --</option>';
+        ads.forEach(ad => {
+            qHtml += `<option value="${ad.id}">${ad.title} (${ad.target})</option>`;
+        });
+        quickSelect.innerHTML = qHtml;
+    }
+
+    if (!container) return;
     if (ads.length === 0) {
         container.innerHTML = '<p style="color:var(--muted); font-size:12px;">No stored adverts found.</p>';
         return;
@@ -123,6 +133,12 @@ function broadcastAd(id) {
     if (!ad) return;
     socket.emit('hostAction', { action: 'pushAdvert', payload: { title: ad.title, target: ad.target, image: ad.image } });
     alert('Broadcasting "' + ad.title + '"!');
+}
+
+function quickBroadcastAd() {
+    const quickSelect = document.getElementById('quickAdSelect');
+    if (!quickSelect || !quickSelect.value) return alert('Please select an ad from the dropdown first!');
+    broadcastAd(parseInt(quickSelect.value));
 }
 
 function deleteAd(id) {
