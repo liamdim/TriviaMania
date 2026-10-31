@@ -24,6 +24,7 @@ let gameState = {
 
 let players = {};
 let questionInterval = null;
+let delayTimeout = null;
 
 app.get('/api/questions/:category', (req, res) => {
     const category = req.params.category;
@@ -65,6 +66,7 @@ app.get('/api/questions/:category', (req, res) => {
 
 function startQuestionTimer() {
     if (questionInterval) clearInterval(questionInterval);
+    if (delayTimeout) clearTimeout(delayTimeout);
     
     if (!gameState.currentRound || !gameState.currentRound.questions) return;
     
@@ -82,8 +84,28 @@ function startQuestionTimer() {
         if (roundTimer <= 0) {
             clearInterval(questionInterval);
             io.emit('revealAnswer');
+
+            // Automatically advance to next question after the delay period
+            const betweenDelay = (gameState.currentRound.betweenDelay || 5) * 1000;
+            delayTimeout = setTimeout(() => {
+                advanceToNextQuestion();
+            }, betweenDelay);
         }
     }, 1000);
+}
+
+function advanceToNextQuestion() {
+    if (gameState.currentRound && gameState.currentRound.questions) {
+        if (gameState.currentQuestionIndex < gameState.currentRound.questions.length - 1) {
+            gameState.currentQuestionIndex++;
+            startQuestionTimer();
+        } else {
+            if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
+            gameState.status = 'finished';
+            io.emit('gameStateUpdate', gameState);
+        }
+    }
 }
 
 io.on('connection', (socket) => {
@@ -101,29 +123,25 @@ io.on('connection', (socket) => {
     socket.on('hostAction', (data) => {
         if (data.action === 'loadRound') {
             if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
             gameState.status = 'question';
             startQuestionTimer();
         } else if (data.action === 'nextQuestion') {
-            if (gameState.currentRound && gameState.currentRound.questions) {
-                if (gameState.currentQuestionIndex < gameState.currentRound.questions.length - 1) {
-                    gameState.currentQuestionIndex++;
-                    startQuestionTimer();
-                } else {
-                    if (questionInterval) clearInterval(questionInterval);
-                    gameState.status = 'finished';
-                    io.emit('gameStateUpdate', gameState);
-                }
-            }
+            if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
+            advanceToNextQuestion();
         } else if (data.action === 'resume') {
             startQuestionTimer();
         } else if (data.action === 'pause') {
             if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
             gameState.status = 'paused';
             io.emit('gamePaused');
         } else if (data.action === 'reveal') {
             if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
             io.emit('revealAnswer');
         } else if (data.action === 'updateSettings') {
             if (data.payload && data.payload.eventTitle) {
