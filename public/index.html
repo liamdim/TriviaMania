@@ -5,19 +5,19 @@
     <title>TriviaMania - Host Control Center</title>
     <style>
         :root { 
-            --bg: #0d0e15; --card: #161824; --primary: #7c3aed; --primary-hover: #6d28d9;
+            --bg: #0d0e15; --card: #161824; --primary: #7c3aed; 
             --accent: #06b6d4; --text: #f3f4f6; --muted: #9ca3af;
             --danger: #ef4444; --success: #10b981; --border: #272a3b;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; box-sizing: border-box; }
         
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px; }
-        h1 { margin: 0; font-size: 20px; color: var(--accent); letter-spacing: 0.5px; }
+        h1 { margin: 0; font-size: 20px; color: var(--accent); }
         .nav-links a { color: var(--accent); text-decoration: none; margin-left: 12px; font-size: 13px; font-weight: 600; background: #1e2130; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); }
         
         .tabs { display: flex; gap: 6px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .tab-btn { background: #161824; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 10px rgba(124, 58, 237, 0.4); }
+        .tab-btn { background: #161824; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         
         .tab-content { display: none; }
         .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -26,7 +26,7 @@
         .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
         h2 { font-size: 15px; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--accent); }
         
-        button { padding: 10px 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: #222638; color: white; width: 100%; margin-top: 8px; font-size: 13px; transition: opacity 0.2s; }
+        button { padding: 10px 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: #222638; color: white; width: 100%; margin-top: 8px; font-size: 13px; }
         button:hover { opacity: 0.85; }
         .btn-play { background: var(--success); color: #000; }
         .btn-reveal { background: var(--accent); color: #000; }
@@ -35,7 +35,7 @@
         .btn-danger { background: var(--danger); width: auto; padding: 6px 10px; margin-top: 0; font-size: 11px; }
         .btn-api { background: var(--primary); color: white; }
 
-        .playlist-card { background: #1e2130; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--accent); display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .playlist-card, .ad-item { background: #1e2130; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--accent); display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         
         select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 10px; margin: 5px 0 12px 0; background: #10121a; border: 1px solid var(--border); color: white; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
         label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
@@ -77,11 +77,18 @@
             </div>
         </div>
 
-        <div class="panel full-width">
-            <h2>🏆 Connected Teams (<span id="playerCount">0</span>)</h2>
-            <button class="btn-api" style="background:#10b981; color:#000; margin-bottom:10px; width:auto; padding:8px 16px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
-            <div id="hostScoreList" style="max-height: 150px; overflow-y: auto;">
+        <div class="panel">
+            <h2>🏆 Live Team Scores</h2>
+            <div id="hostScoreList" style="max-height: 180px; overflow-y: auto;">
                 <p style="color: var(--muted); font-size: 13px;">No teams connected yet.</p>
+            </div>
+            <button class="btn-api" style="background:#10b981; color:#000; margin-top:10px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
+        </div>
+
+        <div class="panel">
+            <h2>📊 Live Poll Votes Breakdown</h2>
+            <div id="hostPollVotesList" style="max-height: 180px; overflow-y: auto;">
+                <p style="color: var(--muted); font-size: 13px;">No active poll votes yet.</p>
             </div>
         </div>
     </div>
@@ -150,19 +157,22 @@
     <!-- TAB 3: ADVERTS & POLLS -->
     <div id="tab-media" class="tab-content">
         <div class="panel">
-            <h2>🖼️ Push Advert / Sponsor Ad</h2>
+            <h2>🖼️ Saved Adverts Library (Local Storage)</h2>
             <label>Advert Title:</label>
-            <input type="text" id="advertTitleInput" value="Featured Sponsor & Event Advert">
+            <input type="text" id="advertTitleInput" value="Sponsor Ad">
             <label>Target Screen:</label>
             <select id="advertTargetInput">
                 <option value="both">Both Screens</option>
                 <option value="projector">Projector Only</option>
                 <option value="mobile">Mobile Phones Only</option>
             </select>
-            <label>Upload Sponsor Image:</label>
+            <label>Upload Image:</label>
             <input type="file" id="advertImageInput" accept="image/*" style="margin-bottom:12px;">
-            <button class="btn-api" onclick="pushCustomAdvert()">📺 Broadcast Ad</button>
+            <button class="btn-api" onclick="saveNewAdvert()">💾 Save to Library</button>
             <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
+            
+            <h3 style="font-size:13px; color:var(--accent); margin-top:15px;">Your Saved Adverts:</h3>
+            <div id="savedAdsContainer" style="max-height:150px; overflow-y:auto;"></div>
         </div>
 
         <div class="panel">
@@ -187,61 +197,6 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            btn.classList.add('active');
-        }
-
-        const socket = io();
-        let playlist = [];
-        let latestPlayersState = {};
-
-        function sendAction(action) { socket.emit('hostAction', { action: action }); }
-
-        function pushCustomAdvert() {
-            const title = document.getElementById('advertTitleInput').value;
-            const target = document.getElementById('advertTargetInput').value;
-            const fileInput = document.getElementById('advertImageInput');
-            
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    socket.emit('hostAction', { action: 'pushAdvert', payload: { title: title, target: target, image: e.target.result } });
-                    alert('Advert with image pushed successfully!');
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                socket.emit('hostAction', { action: 'pushAdvert', payload: { title: title, target: target, image: '' } });
-                alert('Advert pushed successfully!');
-            }
-        }
-
-        function hideAdvert() {
-            socket.emit('hostAction', { action: 'hideAdvert' });
-            alert('Advert hidden.');
-        }
-
-        function triggerCustomPoll(isActive) {
-            const q = document.getElementById('pollQuestionInput').value;
-            const opts = document.getElementById('pollOptionsInput').value;
-            socket.emit('hostAction', { 
-                action: 'updatePoll', 
-                payload: { active: isActive, question: q, options: opts } 
-            });
-            alert(isActive ? 'Poll launched to all mobile players!' : 'Poll closed.');
-        }
-
-        function saveSettings() {
-            const title = document.getElementById('eventTitleInput').value;
-            socket.emit('hostAction', { action: 'updateSettings', payload: { eventTitle: title } });
-            alert('Settings saved.');
-        }
-
-        // Include your addTriviaRound, renderPlaylist, loadRound, deleteRound, exportLeaderboardCSV from prior dashboard code here
-    </script>
     <script src="/js/dashboard.js"></script>
 </body>
 </html>
