@@ -111,6 +111,7 @@ function advanceToNextQuestion() {
 
 io.on('connection', (socket) => {
     socket.emit('gameStateUpdate', gameState);
+    socket.emit('pollUpdate', gameState.poll);
 
     socket.on('joinGame', (data) => {
         players[socket.id] = {
@@ -155,9 +156,12 @@ io.on('connection', (socket) => {
         } else if (data.action === 'hideAdvert') {
             gameState.advert.active = false;
             io.emit('advertUpdate', gameState.advert);
-        } else if (data.action === 'togglePoll') {
-            gameState.poll.active = !gameState.poll.active;
-            io.emit('pollUpdate', gameState.poll);
+        } else if (data.action === 'updatePoll') {
+            if (data.payload && data.payload.question) {
+                const optList = data.payload.options ? data.payload.options.split(',').map(s => s.trim()).filter(Boolean) : ['Yes', 'No'];
+                gameState.poll = { active: data.payload.active, question: data.payload.question, options: optList };
+                io.emit('pollUpdate', gameState.poll);
+            }
         } else if (data.action === 'updateSettings') {
             if (data.payload && data.payload.eventTitle) {
                 gameState.settings.eventTitle = data.payload.eventTitle;
