@@ -22,9 +22,9 @@ let latestPlayersState = {};
 // --- STANDARD TRIVIA GENERATOR ---
 async function addTriviaRound() {
     const select = document.getElementById('triviaGenreSelect');
-    const categoryKey = select ? select.value : "general";
+    const categoryKey = select ? select.value : "uk_general";
     const genreName = select ? select.options[select.selectedIndex].text : "Standard Trivia";
-    const countSelect = document.getElementById('questionCountSelect');
+    const countSelect = document.getElementById('triviaCountSelect');
     const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
     
     let questions = [];
@@ -104,11 +104,7 @@ async function addTriviaRound() {
             };
         });
     } else {
-        let url = 'https://opentdb.com/api.php?amount=' + targetCount + '&type=multiple';
-        if (categoryKey) {
-            url += '&category=' + categoryKey;
-        }
-
+        let url = 'https://opentdb.com/api.php?amount=' + targetCount + '&type=multiple&category=' + categoryKey;
         try {
             const response = await fetch(url);
             const data = await response.json();
@@ -136,9 +132,7 @@ async function addTriviaRound() {
             questions = [
                 { q: "What is the capital of France?", a: "Paris", options: ["London", "Paris", "Berlin", "Madrid"] },
                 { q: "Which planet is known as the Red Planet?", a: "Mars", options: ["Venus", "Mars", "Jupiter", "Saturn"] },
-                { q: "How many sides does a hexagon have?", a: "6", options: ["5", "6", "7", "8"] },
-                { q: "What is the largest ocean on Earth?", a: "Pacific Ocean", options: ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"] },
-                { q: "Who wrote 'Romeo and Juliet'?", a: "William Shakespeare", options: ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"] }
+                { q: "How many sides does a hexagon have?", a: "6", options: ["5", "6", "7", "8"] }
             ].slice(0, targetCount);
         }
     }
@@ -160,7 +154,7 @@ function addPictureRound() {
     const select = document.getElementById('pictureGenreSelect');
     const genreKey = select ? select.value : "landmarks";
     const genreName = select ? select.options[select.selectedIndex].text : "Picture Round";
-    const countSelect = document.getElementById('questionCountSelect');
+    const countSelect = document.getElementById('pictureCountSelect');
     const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
 
     const pictureLibraries = {
@@ -183,6 +177,13 @@ function addPictureRound() {
             { img: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba", a: "Cat", options: ["Dog", "Cat", "Rabbit", "Hamster"] },
             { img: "https://images.unsplash.com/photo-1474511320723-9a56873867b5", a: "Fox", options: ["Wolf", "Fox", "Jackal", "Coyote"] },
             { img: "https://images.unsplash.com/photo-1456926631375-92c8ce872def", a: "Penguin", options: ["Puffin", "Penguin", "Seal", "Polar Bear"] }
+        ],
+        "celebs": [
+            { img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb", a: "Portrait Subject 1", options: ["Tom Cruise", "Brad Pitt", "Portrait Subject 1", "Leonardo DiCaprio"] },
+            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Portrait Subject 2", options: ["George Clooney", "Portrait Subject 2", "Matt Damon", "Ben Affleck"] }
+        ],
+        "logos": [
+            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Social Media Icon", options: ["Search Engine", "Social Media Icon", "Streaming App", "Browser"] }
         ]
     };
 
@@ -208,6 +209,50 @@ function addPictureRound() {
     });
     renderPlaylist();
     alert('Loaded ' + questions.length + ' picture questions for ' + genreName + '!');
+}
+
+// --- KIDS & FAMILY GENERATOR ---
+function addKidsRound() {
+    const select = document.getElementById('kidsGenreSelect');
+    const genreName = select ? select.options[select.selectedIndex].text : "Kids Round";
+    const countSelect = document.getElementById('kidsCountSelect');
+    const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
+
+    const pool = [
+        { q: "Which Disney movie features the ice queen Elsa?", a: "Frozen", options: ["Cinderella", "Frozen", "Moana", "Tangled"] },
+        { q: "What is the name of Mickey Mouse's pet dog?", a: "Pluto", options: ["Goofy", "Pluto", "Bolt", "Snoopy"] },
+        { q: "Which yellow Pokémon is the mascot of the franchise?", a: "Pikachu", options: ["Charmander", "Bulbasaur", "Pikachu", "Squirtle"] }
+    ];
+
+    const questions = pool.slice(0, targetCount).map(function(item) {
+        return { q: item.q, a: item.a, options: [...item.options].sort(function() { return Math.random() - 0.5; }), type: 'trivia' };
+    });
+
+    playlist.push({ id: Date.now(), name: "Kids: " + genreName + " (" + questions.length + " Qs)", questions: questions, timer: 10, betweenDelay: 5, speedBonus: true });
+    renderPlaylist();
+    alert('Loaded ' + questions.length + ' kids questions!');
+}
+
+// --- MUSIC ROUND GENERATOR ---
+function addMusicRound() {
+    const select = document.getElementById('musicGenreSelect');
+    const genreName = select ? select.options[select.selectedIndex].text : "Music Round";
+    const countSelect = document.getElementById('musicCountSelect');
+    const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
+
+    const pool = [
+        { q: "Which band recorded 'Stairway to Heaven'?", a: "Led Zeppelin", options: ["The Beatles", "Led Zeppelin", "Queen", "Pink Floyd"] },
+        { q: "Who sang the 1983 hit 'Billie Jean'?", a: "Michael Jackson", options: ["Prince", "Lionel Richie", "Michael Jackson", "George Michael"] },
+        { q: "Which Britpop band sang 'Wonderwall'?", a: "Oasis", options: ["Blur", "Pulp", "Oasis", "Suede"] }
+    ];
+
+    const questions = pool.slice(0, targetCount).map(function(item) {
+        return { q: item.q, a: item.a, options: [...item.options].sort(function() { return Math.random() - 0.5; }), type: 'trivia' };
+    });
+
+    playlist.push({ id: Date.now(), name: "Music: " + genreName + " (" + questions.length + " Qs)", questions: questions, timer: 10, betweenDelay: 5, speedBonus: true });
+    renderPlaylist();
+    alert('Loaded ' + questions.length + ' music questions!');
 }
 
 function decodeHtml(html) {
@@ -243,9 +288,7 @@ function saveSettings() {
     const titleInput = document.getElementById('eventTitleInput');
     socket.emit('hostAction', { 
         action: 'updateSettings', 
-        payload: { 
-            eventTitle: titleInput ? titleInput.value : '' 
-        } 
+        payload: { eventTitle: titleInput ? titleInput.value : '' } 
     });
     alert('Settings saved.');
 }
@@ -266,10 +309,6 @@ function exportLeaderboardCSV() {
     a.setAttribute('download', 'TriviaMania_Leaderboard.csv');
     a.click();
 }
-
-// Section placeholders
-function addKidsRound() { alert('Kids round ready next.'); }
-function addMusicRound() { alert('Music round ready next.'); }
 
 function renderPlaylist() {
     const container = document.getElementById('playlistContainer');
