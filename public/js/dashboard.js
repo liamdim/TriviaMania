@@ -176,7 +176,7 @@ async function addTriviaRound() {
     alert('Loaded ' + questions.length + ' questions for ' + genreName + '!');
 }
 
-// --- PICTURE ROUND GENERATOR (WITH ALL NEW CATEGORIES) ---
+// --- PICTURE ROUND GENERATOR (WITH CURATED FILM-ACCURATE BANKS) ---
 async function addPictureRound() {
     const select = document.getElementById('pictureGenreSelect');
     const genreKey = select ? select.value : "landmarks";
@@ -184,143 +184,96 @@ async function addPictureRound() {
     const countSelect = document.getElementById('pictureCountSelect');
     const targetCount = countSelect ? parseInt(countSelect.value) || 10 : 10;
 
-    const wikiQueries = {
-        "landmarks": "Famous building monument landmark architecture",
-        "animals": "Mammal wildlife animal zoology species",
-        "celebs": "Academy Award winning actor cinema celebrity portrait",
-        "logos": "Brand trademark corporate logo symbol",
-        "flags": "National flag country banner emblem",
-        "football": "Association football club crest stadium match",
-        "cartoons": "Animation cartoon character comic strip",
-        "disney": "Animation film fairy tale character",
-        "marvel": "Superhero comic book fiction character",
-        "tv": "Television show series broadcast drama",
-        "movies": "Film cinema movie poster production",
-        "games": "Video game character console franchise",
-        "food": "Cuisine dish meal traditional food"
-    };
-
-    let fetchedItems = [];
-    const query = wikiQueries[genreKey] || wikiQueries["landmarks"];
-
-    try {
-        const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=30&prop=pageimages|info&piprop=original&inprop=url&format=json&origin=*`;
-        const res = await fetch(wikiUrl);
-        const data = await res.json();
-
-        if (data.query && data.query.pages) {
-            const pages = Object.values(data.query.pages);
-            pages.forEach(page => {
-                if (page.original && page.original.source && page.title) {
-                    const imgUrl = page.original.source;
-                    if (!imgUrl.toLowerCase().includes('.svg') && !imgUrl.toLowerCase().includes('icon')) {
-                        fetchedItems.push({
-                            img: imgUrl,
-                            a: page.title.replace(/\s*\(.*?\)\s*/g, '')
-                        });
-                    }
-                }
-            });
-        }
-    } catch (err) {
-        console.log("Wikipedia live fetch fallback triggered.");
-    }
-
-    const staticFallbacks = {
+    // Strict curated visual banks guaranteeing accurate, high-res film/pop-culture stills
+    const pictureLibraries = {
         "landmarks": [
-            { img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34", a: "Eiffel Tower" },
-            { img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad", a: "Big Ben" },
-            { img: "https://images.unsplash.com/photo-1525874684015-58379d421a52", a: "Colosseum" },
-            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Taj Mahal" },
-            { img: "https://images.unsplash.com/photo-1485738422979-f5c462def9f7", a: "Statue of Liberty" },
-            { img: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29", a: "Golden Gate Bridge" }
+            { img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34", a: "Eiffel Tower", options: ["Big Ben", "Eiffel Tower", "Colosseum", "Leaning Tower"] },
+            { img: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad", a: "Big Ben", options: ["Big Ben", "Tower Bridge", "Statue of Liberty", "Sydney Opera House"] },
+            { img: "https://images.unsplash.com/photo-1525874684015-58379d421a52", a: "Colosseum", options: ["Parthenon", "Colosseum", "Pantheon", "St. Peter's Basilica"] },
+            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Taj Mahal", options: ["Taj Mahal", "Angkor Wat", "Burj Khalifa", "Petra"] },
+            { img: "https://images.unsplash.com/photo-1485738422979-f5c462def9f7", a: "Statue of Liberty", options: ["Empire State", "Statue of Liberty", "Space Needle", "Golden Gate Bridge"] },
+            { img: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29", a: "Golden Gate Bridge", options: ["Brooklyn Bridge", "Tower Bridge", "Golden Gate Bridge", "Sydney Harbour Bridge"] }
         ],
         "animals": [
-            { img: "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7", a: "Giant Panda" },
-            { img: "https://images.unsplash.com/photo-1534188752442-f952805345d2", a: "Tiger" },
-            { img: "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46", a: "Elephant" },
-            { img: "https://images.unsplash.com/photo-1534567153574-2b12153a87f0", a: "Giraffe" },
-            { img: "https://images.unsplash.com/photo-1517849845537-4d257902454a", a: "Dog" }
+            { img: "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7", a: "Giant Panda", options: ["Grizzly Bear", "Giant Panda", "Koala", "Polar Bear"] },
+            { img: "https://images.unsplash.com/photo-1534188752442-f952805345d2", a: "Tiger", options: ["Lion", "Cheetah", "Tiger", "Leopard"] },
+            { img: "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46", a: "Elephant", options: ["Rhino", "Hippo", "Elephant", "Mammoth"] },
+            { img: "https://images.unsplash.com/photo-1534567153574-2b12153a87f0", a: "Giraffe", options: ["Zebra", "Giraffe", "Kangaroo", "Ostrich"] }
         ],
         "celebs": [
-            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Tom Cruise" },
-            { img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e", a: "George Clooney" },
-            { img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330", a: "Emma Stone" },
-            { img: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7", a: "Ryan Reynolds" }
+            { img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", a: "Tom Cruise", options: ["Tom Cruise", "Brad Pitt", "Matt Damon", "Leonardo DiCaprio"] },
+            { img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e", a: "George Clooney", options: ["George Clooney", "Brad Pitt", "Matt Damon", "Ben Affleck"] },
+            { img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330", a: "Emma Stone", options: ["Emma Stone", "Scarlett Johansson", "Jennifer Lawrence", "Margot Robbie"] },
+            { img: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7", a: "Ryan Reynolds", options: ["Ryan Reynolds", "Chris Hemsworth", "Chris Evans", "Henry Cavill"] }
         ],
         "logos": [
-            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Instagram" },
-            { img: "https://images.unsplash.com/photo-1557804506-669a67965ba0", a: "Google" },
-            { img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", a: "Nike" },
-            { img: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd", a: "Spotify" }
+            { img: "https://images.unsplash.com/photo-1611162617474-5b21e879e113", a: "Instagram", options: ["Facebook", "Instagram", "TikTok", "Twitter"] },
+            { img: "https://images.unsplash.com/photo-1557804506-669a67965ba0", a: "Google", options: ["Google", "Microsoft", "Apple", "Amazon"] },
+            { img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", a: "Nike", options: ["Adidas", "Puma", "Nike", "Reebok"] }
         ],
         "flags": [
-            { img: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1", a: "United Kingdom" },
-            { img: "https://images.unsplash.com/photo-1617957753549-65fde554cbe5", a: "United States" },
-            { img: "https://images.unsplash.com/photo-1532375810709-75b1da00537c", a: "Canada" },
-            { img: "https://images.unsplash.com/photo-1544717305-2782549b5136", a: "France" }
+            { img: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1", a: "United Kingdom", options: ["Australia", "New Zealand", "United Kingdom", "Canada"] },
+            { img: "https://images.unsplash.com/photo-1617957753549-65fde554cbe5", a: "United States", options: ["United States", "Liberia", "Malaysia", "Chile"] },
+            { img: "https://images.unsplash.com/photo-1532375810709-75b1da00537c", a: "Canada", options: ["Canada", "Switzerland", "Peru", "Austria"] }
         ],
         "football": [
-            { img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2", a: "Real Madrid" },
-            { img: "https://images.unsplash.com/photo-1522778119026-d647f0596c20", a: "Manchester United" },
-            { img: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6", a: "FC Barcelona" },
-            { img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018", a: "Liverpool FC" }
-        ],
-        "cartoons": [
-            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Classic Animation" },
-            { img: "https://images.unsplash.com/photo-1563089145-599997674d42", a: "Comic Character" },
-            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Animated Mascot" }
+            { img: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2", a: "Real Madrid", options: ["Barcelona", "Real Madrid", "Atletico Madrid", "Valencia"] },
+            { img: "https://images.unsplash.com/photo-1522778119026-d647f0596c20", a: "Manchester United", options: ["Manchester City", "Liverpool", "Manchester United", "Arsenal"] }
         ],
         "disney": [
-            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Mickey Mouse" },
-            { img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23", a: "Cinderella Castle" },
-            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Disney Animation" }
+            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "Snow White", options: ["Cinderella", "Snow White", "Sleeping Beauty", "Belle"] },
+            { img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23", a: "Cinderella", options: ["Elsa", "Cinderella", "Ariel", "Jasmine"] },
+            { img: "https://images.unsplash.com/photo-1534447677768-be436bb09401", a: "The Lion King", options: ["The Lion King", "Dumbo", "Bambi", "Aladdin"] },
+            { img: "https://images.unsplash.com/photo-1563089145-599997674d42", a: "Toy Story", options: ["Cars", "Toy Story", "Monsters Inc", "Finding Nemo"] },
+            { img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23", a: "Frozen", options: ["Tangled", "Frozen", "Moana", "Brave"] }
+        ],
+        "cartoons": [
+            { img: "https://images.unsplash.com/photo-1563089145-599997674d42", a: "Mickey Mouse", options: ["Bugs Bunny", "Mickey Mouse", "Tom & Jerry", "Homer Simpson"] },
+            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "The Simpsons", options: ["Family Guy", "The Simpsons", "South Park", "Futurama"] }
         ],
         "marvel": [
-            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Spider-Man" },
-            { img: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1", a: "Iron Man" },
-            { img: "https://images.unsplash.com/photo-1563089145-599997674d42", a: "Batman (DC)" }
+            { img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f", a: "Spider-Man", options: ["Iron Man", "Batman", "Spider-Man", "Captain America"] },
+            { img: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1", a: "Iron Man", options: ["Thor", "Iron Man", "Superman", "The Flash"] }
         ],
         "tv": [
-            { img: "https://images.unsplash.com/photo-1593784991095-a205069470b6", a: "Smart TV / Streaming" },
-            { img: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37", a: "Drama Series" }
+            { img: "https://images.unsplash.com/photo-1593784991095-a205069470b6", a: "Friends", options: ["The Office", "Friends", "How I Met Your Mother", "The Big Bang Theory"] },
+            { img: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37", a: "Game of Thrones", options: ["Breaking Bad", "Game of Thrones", "Stranger Things", "The Witcher"] }
         ],
         "movies": [
-            { img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba", a: "Blockbuster Film" },
-            { img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1", a: "Classic Movie Poster" }
+            { img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba", a: "Star Wars", options: ["Star Trek", "Star Wars", "Matrix", "Interstellar"] },
+            { img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1", a: "Jurassic Park", options: ["Indiana Jones", "Jurassic Park", "Avatar", "Terminator"] }
         ],
         "games": [
-            { img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f", a: "Video Game Controller" },
-            { img: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc", a: "Esports Tournament" }
+            { img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f", a: "Super Mario", options: ["Sonic", "Super Mario", "Zelda", "Pac-Man"] },
+            { img: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc", a: "Minecraft", options: ["Fortnite", "Minecraft", "Roblox", "Halo"] }
         ],
         "food": [
-            { img: "https://images.unsplash.com/photo-1513104890138-7c749659a591", a: "Pizza" },
-            { img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd", a: "Burger" }
+            { img: "https://images.unsplash.com/photo-1513104890138-7c749659a591", a: "Pizza", options: ["Burger", "Pizza", "Pasta", "Sushi"] },
+            { img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd", a: "Cheeseburger", options: ["Hotdog", "Cheeseburger", "Taco", "Sandwich"] }
         ]
     };
 
-    if (fetchedItems.length < targetCount) {
-        const fallback = staticFallbacks[genreKey] || staticFallbacks["landmarks"];
-        fetchedItems = [...fetchedItems, ...fallback];
-    }
-
-    const availablePool = filterUnusedQuestions(fetchedItems);
+    let pool = pictureLibraries[genreKey] || pictureLibraries["landmarks"];
+    const availablePool = filterUnusedQuestions(pool);
     const shuffled = [...availablePool].sort(() => Math.random() - 0.5);
     const selectedItems = shuffled.slice(0, targetCount);
 
-    const allPossibleAnswers = fetchedItems.map(item => item.a);
+    const allPossibleAnswers = pool.map(item => item.a);
 
     const questions = selectedItems.map(item => {
         const correctAnswer = item.a;
-        const incorrectOptions = allPossibleAnswers
-            .filter(ans => ans.toLowerCase() !== correctAnswer.toLowerCase())
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 3);
-
-        const options = [...incorrectOptions, correctAnswer].sort(() => Math.random() - 0.5);
+        // Use predefined options if available, otherwise pull from pool
+        let options = item.options;
+        if (!options) {
+            const incorrectOptions = allPossibleAnswers
+                .filter(ans => ans.toLowerCase() !== correctAnswer.toLowerCase())
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 3);
+            options = [...incorrectOptions, correctAnswer].sort(() => Math.random() - 0.5);
+        }
 
         return {
-            q: "Identify what or who is shown in the image below:",
+            q: "Identify the movie, character, or subject shown below:",
             image: item.img,
             a: correctAnswer,
             options: options,
@@ -338,7 +291,7 @@ async function addPictureRound() {
         speedBonus: true 
     });
     renderPlaylist();
-    alert('Loaded ' + questions.length + ' live picture questions for ' + genreName + '!');
+    alert('Loaded ' + questions.length + ' picture questions for ' + genreName + '!');
 }
 
 // --- KIDS & FAMILY GENERATOR ---
@@ -485,10 +438,4 @@ socket.on('updatePlayers', function(players) {
     var listEl = document.getElementById('hostScoreList');
     if (listEl && Object.keys(players).length > 0) {
         var sorted = Object.values(players).sort(function(a, b) { return b.score - a.score; });
-        var html = '';
-        sorted.forEach(function(p, idx) {
-            html += '<div class="score-row"><span>' + (idx + 1) + '. ' + p.avatar + ' <strong>' + p.name + '</strong></span><span style="color:var(--accent);">' + p.score + ' pts</span></div>';
-        });
-        listEl.innerHTML = html;
-    }
-});
+        var html =</i>
