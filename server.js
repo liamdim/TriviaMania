@@ -27,6 +27,7 @@ let gameState = {
 let players = {};
 let questionInterval = null;
 let delayTimeout = null;
+let answeredThisQuestion = new Set(); // Tracks who answered correctly this turn
 
 const backupQuestionBanks = {
     "general": [
@@ -111,6 +112,7 @@ function startQuestionTimer() {
     let roundTimer = gameState.currentRound.timer || 15;
     gameState.timer = roundTimer;
     gameState.status = 'question';
+    answeredThisQuestion.clear(); // Reset answered lock for new question
     
     io.emit('gameStateUpdate', gameState);
 
@@ -161,6 +163,32 @@ io.on('connection', (socket) => {
             score: 0
         };
         io.emit('updatePlayers', players);
+    });
+
+    socket.on('submitAnswer', (data) => {
+        if (!players[socket.id] || answeredThisQuestion.has(socket.id)) return;
+        
+        const qIndex = gameState.currentQuestionIndex || 0;
+        const currentRound = gameState.currentRound;
+        if (!currentRound || !currentRound.questions || !currentRound.questions[qIndex]) return;
+
+        const currentQ = currentRound.questions[qIndex];
+        const isCorrect = data.answer.trim() === currentQ.a.trim();
+
+        if (isCorrect) {
+            answeredThisQuestion.add(socket.id);
+            // Calculate speed points: starts at 100, drops down with remaining time
+            const maxTimer = currentRound.timer || 15;
+            const timeLeft = gameState.timer || 0;
+            const earnedPoints = Math.round(50 + (50 * (timeLeft / maxTimer))); // Range 50 to 100 pts
+            
+            players[socket.id].score += earnedPoints;
+            io.emit('updatePlayers', players);
+            socket.emit('answerResult', { correct: true, points: earnedPoints });
+        } else {
+            answeredThisQuestion.add(socket.id);
+            socket.emit('answerResult', { correct: false, points: 0 });
+        }
     });
 
     socket.on('submitVote', (data) => {
