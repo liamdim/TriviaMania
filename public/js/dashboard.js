@@ -141,7 +141,8 @@ function exportLeaderboardCSV() {
 function renderPlaylist() {
     const container = document.getElementById('playlistContainer');
     const queueEl = document.getElementById('hostPlaylistQueue');
-    if (document.getElementById('playlistCount')) { document.getElementById('playlistCount'].textContent = playlist.length; }
+    const countEl = document.getElementById('playlistCount');
+    if (countEl) { countEl.textContent = playlist.length; }
     
     if (playlist.length === 0) {
         if (container) container.innerHTML = '<p style="color: var(--muted); font-size: 14px;">No rounds in playlist yet.</p>';
