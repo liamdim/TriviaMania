@@ -30,12 +30,13 @@
         .btn-play { background: var(--success); color: black; }
         .btn-reveal { background: var(--accent); color: black; }
         .btn-restart { background: #ff9100; color: black; }
+        .btn-next { background: #00e5ff; color: black; font-size: 16px; }
         .btn-danger { background: var(--danger); width: auto; padding: 6px 12px; margin-top: 0; font-size: 12px; }
         .btn-api { background: var(--primary); color: white; font-size: 15px; box-shadow: 0 0 10px var(--primary-glow); }
 
         .playlist-card { background: #1a1d2d; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
         
-        select, input[type="text"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 12px; margin: 6px 0 15px 0; background: #1a1d2d; border: 1px solid #333852; color: white; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         label { font-size: 12px; color: var(--muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: center; background: #1a1d2d; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #2a2e45; }
     </style>
@@ -61,6 +62,7 @@
     <div id="tab-control" class="tab-content">
         <div class="panel">
             <h2>Master Game Controls</h2>
+            <button class="btn-next" onclick="sendAction('nextQuestion')">➡️ Next Question</button>
             <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
             <button onclick="sendAction('pause')">⏸ Pause Game</button>
             <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
@@ -83,9 +85,6 @@
                 <button class="btn-danger" style="width:100%;" onclick="hideAdvert('projector')">❌ Hide Projector Ad</button>
                 <button class="btn-danger" style="width:100%;" onclick="hideAdvert('mobile')">❌ Hide Mobile Ad</button>
             </div>
-            <hr style="border:0; border-top:1px solid #222538; margin:15px 0;">
-            <button class="btn-api" style="background:#ff9100; color:black;" onclick="toggleTipJar()">🎁 Toggle Tip Jar on Phones</button>
-            <button class="btn-api" style="background:#00e676; color:black; margin-top:10px;" onclick="togglePoll()">📊 Toggle Pre-Game Icebreaker Poll</button>
         </div>
 
         <div class="panel">
@@ -100,8 +99,8 @@
     <!-- TAB 2: PLAYLIST BUILDER -->
     <div id="tab-playlist" class="tab-content active">
         <div class="panel full-width" style="border: 2px solid var(--primary);">
-            <h2>🧠 Trivia Question Generator (OpenTriviaQA Dataset)</h2>
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 10px;">
+            <h2>🧠 Trivia Question Generator & Timers</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
                 <div>
                     <label>Question Count:</label>
                     <select id="triviaCountSelect">
@@ -135,6 +134,16 @@
                         <option value="video-games">Video Games</option>
                         <option value="world">World</option>
                     </select>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label>Question Timer (Seconds):</label>
+                    <input type="number" id="questionTimerInput" value="15" min="5" max="60">
+                </div>
+                <div>
+                    <label>Delay Between Questions (Seconds):</label>
+                    <input type="number" id="betweenDelayInput" value="5" min="2" max="30">
                 </div>
             </div>
             <button class="btn-api" onclick="addTriviaRound()">➕ Add Round to Playlist</button>
@@ -172,6 +181,7 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script><script src="/js/dashboard.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/dashboard.js"></script>
 </body>
 </html>
