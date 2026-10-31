@@ -99,9 +99,8 @@
 
     <!-- TAB 2: PLAYLIST BUILDER -->
     <div id="tab-playlist" class="tab-content active">
-        <!-- OPEN-TRIVIA-QA MASTER SECTION -->
         <div class="panel full-width" style="border: 2px solid var(--primary);">
-            <h2>🧠 Trivia Question Generator (OpenTriviaQA Dataset)[cite: 1]</h2>
+            <h2>🧠 Trivia Question Generator (OpenTriviaQA Dataset)</h2>
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 10px;">
                 <div>
                     <label>Question Count:</label>
@@ -116,32 +115,31 @@
                     <label>Category:</label>
                     <select id="triviaGenreSelect">
                         <option value="general">General Knowledge</option>
-                        <option value="animals">Animals[cite: 1]</option>
-                        <option value="brain-teasers">Brain Teasers[cite: 1]</option>
-                        <option value="celebrities">Celebrities[cite: 1]</option>
-                        <option value="entertainment">Entertainment[cite: 1]</option>
-                        <option value="for-kids">For Kids[cite: 1]</option>
-                        <option value="geography">Geography[cite: 1]</option>
-                        <option value="history">History[cite: 1]</option>
-                        <option value="hobbies">Hobbies[cite: 1]</option>
-                        <option value="humanities">Humanities[cite: 1]</option>
-                        <option value="literature">Literature[cite: 1]</option>
-                        <option value="movies">Movies[cite: 1]</option>
-                        <option value="music">Music[cite: 1]</option>
-                        <option value="people">People[cite: 1]</option>
-                        <option value="religion-faith">Religion & Faith[cite: 1]</option>
-                        <option value="science-technology">Science & Technology[cite: 1]</option>
-                        <option value="sports">Sports[cite: 1]</option>
-                        <option value="television">Television[cite: 1]</option>
-                        <option value="video-games">Video Games[cite: 1]</option>
-                        <option value="world">World[cite: 1]</option>
+                        <option value="animals">Animals</option>
+                        <option value="brain-teasers">Brain Teasers</option>
+                        <option value="celebrities">Celebrities</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="for-kids">For Kids</option>
+                        <option value="geography">Geography</option>
+                        <option value="history">History</option>
+                        <option value="hobbies">Hobbies</option>
+                        <option value="humanities">Humanities</option>
+                        <option value="literature">Literature</option>
+                        <option value="movies">Movies</option>
+                        <option value="music">Music</option>
+                        <option value="people">People</option>
+                        <option value="religion-faith">Religion & Faith</option>
+                        <option value="science-technology">Science & Technology</option>
+                        <option value="sports">Sports</option>
+                        <option value="television">Television</option>
+                        <option value="video-games">Video Games</option>
+                        <option value="world">World</option>
                     </select>
                 </div>
             </div>
             <button class="btn-api" onclick="addTriviaRound()">➕ Add Round to Playlist</button>
         </div>
 
-        <!-- PLAYLIST QUEUE DISPLAY -->
         <div class="panel full-width">
             <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
             <div id="playlistContainer" style="max-height: 250px; overflow-y: auto;">
@@ -174,7 +172,6 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/dashboard.js"></script>
+    <script src="/socket.io/socket.io.js"></script><script src="/js/dashboard.js"></script>
 </body>
 </html>
