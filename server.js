@@ -79,6 +79,9 @@ app.get('/api/questions/:category', (req, res) => {
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
+    // Send current state to newly connected clients (Projector/Player)
+    socket.emit('gameStateUpdate', gameState);
+
     socket.on('joinGame', (data) => {
         players[socket.id] = {
             name: data.name || 'Anonymous Team',
@@ -93,10 +96,12 @@ io.on('connection', (socket) => {
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
             gameState.status = 'question';
+            io.emit('gameStateUpdate', gameState);
             io.emit('gameResumed', gameState);
-            console.log('Round loaded:', data.payload.name);
+            console.log('Round loaded and broadcasted:', data.payload.name);
         } else if (data.action === 'resume') {
             gameState.status = 'question';
+            io.emit('gameStateUpdate', gameState);
             io.emit('gameResumed', gameState);
         } else if (data.action === 'pause') {
             gameState.status = 'paused';
