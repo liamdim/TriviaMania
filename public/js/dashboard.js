@@ -82,22 +82,43 @@ function saveNewAdvert() {
     const target = document.getElementById('advertTargetInput').value;
     const fileInput = document.getElementById('advertImageInput');
     
+    const pushToStorage = (imgData) => {
+        const ads = getSavedAds();
+        ads.push({ id: Date.now(), title, target, image: imgData });
+        try {
+            localStorage.setItem('trivia_saved_ads', JSON.stringify(ads));
+            renderSavedAds();
+            alert('Advert saved to library successfully!');
+        } catch(err) {
+            alert('Storage limit reached! Try a smaller image.');
+        }
+    };
+
     if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const ads = getSavedAds();
-            ads.push({ id: Date.now(), title, target, image: e.target.result });
-            localStorage.setItem('trivia_saved_ads', JSON.stringify(ads));
-            renderSavedAds();
-            alert('Advert saved to library!');
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const maxDim = 800;
+                let width = img.width;
+                let height = img.height;
+                if (width > height) {
+                    if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+                } else {
+                    if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                pushToStorage(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.src = e.target.result;
         };
         reader.readAsDataURL(fileInput.files[0]);
     } else {
-        const ads = getSavedAds();
-        ads.push({ id: Date.now(), title, target, image: '' });
-        localStorage.setItem('trivia_saved_ads', JSON.stringify(ads));
-        renderSavedAds();
-        alert('Advert saved to library!');
+        pushToStorage('');
     }
 }
 
@@ -129,8 +150,8 @@ function renderSavedAds() {
 
 function broadcastAd(id) {
     const ads = getSavedAds();
-    const ad = ads.find(a => a.id === id);
-    if (!ad) return;
+    const ad = ads.find(a => a.id == id);
+    if (!ad) return alert('Advert not found!');
     socket.emit('hostAction', { action: 'pushAdvert', payload: { title: ad.title, target: ad.target, image: ad.image } });
     alert('Broadcasting "' + ad.title + '"!');
 }
@@ -138,12 +159,12 @@ function broadcastAd(id) {
 function quickBroadcastAd() {
     const quickSelect = document.getElementById('quickAdSelect');
     if (!quickSelect || !quickSelect.value) return alert('Please select an ad from the dropdown first!');
-    broadcastAd(parseInt(quickSelect.value));
+    broadcastAd(quickSelect.value);
 }
 
 function deleteAd(id) {
     let ads = getSavedAds();
-    ads = ads.filter(a => a.id !== id);
+    ads = ads.filter(a => a.id != id);
     localStorage.setItem('trivia_saved_ads', JSON.stringify(ads));
     renderSavedAds();
 }
