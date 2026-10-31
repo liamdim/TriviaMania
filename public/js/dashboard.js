@@ -37,13 +37,13 @@ function markQuestionsAsUsed(questions) {
             usedQuestionHistory.push(item.q);
         }
     });
-    if (usedQuestionHistory.length > 500) {
-        usedQuestionHistory = usedQuestionHistory.slice(-500);
+    if (usedQuestionHistory.length > 800) {
+        usedQuestionHistory = usedQuestionHistory.slice(-800);
     }
     localStorage.setItem('triviamania_history', JSON.stringify(usedQuestionHistory));
 }
 
-// --- MASSIVE OPENTRIVIAQA MASTER DATASET ---
+// --- FULL MASTER TRIVIA BANKS MAPPED TO ALL OPENTRIVIAQA CATEGORIES ---
 const masterTriviaBanks = {
     "general": [
         { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
@@ -53,48 +53,86 @@ const masterTriviaBanks = {
         { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] },
         { q: "In what year did the American Apollo 11 mission land on the moon?", a: "1969", options: ["1967", "1969", "1971", "1965"] },
         { q: "What is the primary ingredient in traditional guacamole?", a: "Avocado", options: ["Tomato", "Avocado", "Lime", "Peas"] },
-        { q: "Which artist painted the ceiling of the Sistine Chapel?", a: "Michelangelo", options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"] },
-        { q: "What is the capital of Canada?", a: "Ottawa", options: ["Toronto", "Vancouver", "Ottawa", "Montreal"] },
-        { q: "Which gas makes up the majority of Earth's atmosphere?", a: "Nitrogen", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"] },
-        { q: "What is the speed of light in a vacuum approximately?", a: "300,000 km/s", options: ["150,000 km/s", "300,000 km/s", "1,000,000 km/s", "30,000 km/s"] },
-        { q: "Who wrote the novel 'Pride and Prejudice'?", a: "Jane Austen", options: ["Charlotte Brontë", "Jane Austen", "Charles Dickens", "Virginia Woolf"] },
-        { q: "What is the smallest country in the world by land area?", a: "Vatican City", options: ["Monaco", "San Marino", "Vatican City", "Liechtenstein"] },
-        { q: "Which ocean is the largest on Earth?", a: "Pacific Ocean", options: ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"] },
-        { q: "What is the currency of Japan?", a: "Yen", options: ["Yuan", "Won", "Yen", "Ringgit"] }
+        { q: "Which artist painted the ceiling of the Sistine Chapel?", a: "Michelangelo", options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"] }
+    ],
+    "animals": [
+        { q: "What is the fastest land animal in the world?", a: "Cheetah", options: ["Lion", "Pronghorn", "Cheetah", "Leopard"] },
+        { q: "What is a group of crows called?", a: "A murder", options: ["A flock", "A murder", "A pack", "A gaggle"] },
+        { q: "Which mammal is known to have the most powerful bite?", a: "Hippopotamus", options: ["Lion", "Crocodile", "Hippopotamus", "Grizzly Bear"] },
+        { q: "What is the only mammal capable of sustained flight?", a: "Bat", options: ["Flying Squirrel", "Bat", "Sugar Glider", "Fruit Bat"] }
+    ],
+    "brain-teasers": [
+        { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", a: "An echo", options: ["A shadow", "An echo", "A cloud", "A whisper"] },
+        { q: "What has to be broken before you can use it?", a: "An egg", options: ["A coconut", "A promise", "An egg", "A glass"] },
+        { q: "I have keys but no locks. I have space and no room. You can enter, but can't go outside. What am I?", a: "A keyboard", options: ["A piano", "A keyboard", "A map", "A house"] }
+    ],
+    "celebrities": [
+        { q: "Who is known as the 'King of Pop'?", a: "Michael Jackson", options: ["Prince", "Elvis Presley", "Michael Jackson", "Justin Timberlake"] },
+        { q: "Which famous Hollywood actor starred in Mission: Impossible and Top Gun?", a: "Tom Cruise", options: ["Brad Pitt", "Tom Cruise", "Matt Damon", "Will Smith"] }
     ],
     "entertainment": [
         { q: "Which film won the Academy Award for Best Picture in 1994?", a: "Forrest Gump", options: ["Pulp Fiction", "The Shawshank Redemption", "Forrest Gump", "Quiz Show"] },
-        { q: "Who directed the legendary sci-fi epic movie 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] },
-        { q: "What is the name of the fictional wizard school in the Harry Potter series?", a: "Hogwarts", options: ["Beauxbatons", "Durmstrang", "Hogwarts", "Ilvermorny"] },
-        { q: "Which actor played Jack Dawson in the 1997 blockbuster film 'Titanic'?", a: "Leonardo DiCaprio", options: ["Brad Pitt", "Matt Damon", "Leonardo DiCaprio", "Johnny Depp"] },
-        { q: "What is the name of the main fictional continent where Game of Thrones takes place?", a: "Westeros", options: ["Essos", "Westeros", "Middle-earth", "Narnia"] },
-        { q: "Which animated movie features a friendly ghost named Casper?", a: "Casper", options: ["Beetlejuice", "Ghostbusters", "Casper", "Coraline"] },
-        { q: "Who voiced the character of Woody in Pixar's Toy Story?", a: "Tom Hanks", options: ["Tim Allen", "Tom Hanks", "Billy Crystal", "Robin Williams"] },
-        { q: "Which television series features Walter White, a chemistry teacher turned drug kingpin?", a: "Breaking Bad", options: ["The Wire", "Breaking Bad", "Ozark", "Better Call Saul"] }
+        { q: "Who directed the legendary sci-fi epic movie 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] }
     ],
-    "science": [
-        { q: "What is the chemical formula for water?", a: "H2O", options: ["CO2", "H2O", "NaCl", "O2"] },
-        { q: "At what temperature do Celsius and Fahrenheit scales read the same?", a: "-40", options: ["0", "-32", "-40", "100"] },
-        { q: "What is the powerhouse of the cell?", a: "Mitochondria", options: ["Nucleus", "Ribosome", "Mitochondria", "Cytoplasm"] },
-        { q: "Which planet is known as the Red Planet?", a: "Mars", options: ["Venus", "Mars", "Jupiter", "Mercury"] },
-        { q: "What gas do plants absorb from the atmosphere for photosynthesis?", a: "Carbon Dioxide", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"] },
-        { q: "What is the study of weather called?", a: "Meteorology", options: ["Geology", "Meteorology", "Astronomy", "Ecology"] },
-        { q: "Which vitamin is synthesized in the skin when exposed to sunlight?", a: "Vitamin D", options: ["Vitamin A", "Vitamin C", "Vitamin D", "Vitamin B12"] }
+    "for-kids": [
+        { q: "What color is a polar bear's skin underneath its white fur?", a: "Black", options: ["Pink", "White", "Black", "Brown"] },
+        { q: "How many legs does a spider have?", a: "8", options: ["6", "8", "10", "12"] }
     ],
-    "sports": [
-        { q: "How many players are on the field for a single team in a standard soccer match?", a: "11", options: ["9", "10", "11", "12"] },
-        { q: "In which sport do competitors race for the yellow jersey?", a: "Cycling (Tour de France)", options: ["Formula 1", "Cycling (Tour de France)", "Marathon", "Sailing"] },
-        { q: "How many holes are played in a standard round of golf?", a: "18", options: ["9", "12", "18", "20"] },
-        { q: "Which country hosts the Australian Open tennis tournament?", a: "Australia", options: ["United States", "UK", "Australia", "France"] },
-        { q: "In American football, how many points is a touchdown worth without an extra point?", a: "6", options: ["3", "6", "7", "4"] },
-        { q: "What is the national sport of Canada?", a: "Lacrosse (Summer) / Ice Hockey (Winter)", options: ["Ice Hockey", "Baseball", "Lacrosse (Summer) / Ice Hockey (Winter)", "Curling"] }
+    "geography": [
+        { q: "What is the longest river in the world?", a: "Nile River", options: ["Amazon River", "Nile River", "Yangtze River", "Mississippi River"] },
+        { q: "Which country has the most natural lakes in the world?", a: "Canada", options: ["Russia", "USA", "Canada", "Finland"] }
     ],
     "history": [
         { q: "In what year did World War II end?", a: "1945", options: ["1944", "1945", "1946", "1939"] },
-        { q: "Who was the second President of the United States?", a: "John Adams", options: ["Thomas Jefferson", "John Adams", "James Madison", "Benjamin Franklin"] },
-        { q: "The ancient city of Carthage was located in which modern-day country?", a: "Tunisia", options: ["Egypt", "Greece", "Tunisia", "Italy"] },
-        { q: "Which empire built the ancient road system known as the Appian Way?", a: "Roman Empire", options: ["Greek Empire", "Roman Empire", "Persian Empire", "Ottoman Empire"] },
-        { q: "Who discovered America in 1492?", a: "Christopher Columbus", options: ["Amerigo Vespucci", "Ferdinand Magellan", "Christopher Columbus", "Vasco da Gama"] }
+        { q: "Who was the second President of the United States?", a: "John Adams", options: ["Thomas Jefferson", "John Adams", "James Madison", "Benjamin Franklin"] }
+    ],
+    "hobbies": [
+        { q: "What term is used in gardening for the practice of cutting back plant branches to encourage growth?", a: "Pruning", options: ["Weeding", "Pruning", "Mulching", "Grafting"] },
+        { q: "In photography, what does 'DSLR' stand for?", a: "Digital Single-Lens Reflex", options: ["Digital Standard Light Resolution", "Digital Single-Lens Reflex", "Dual Shutter Lens Recorder", "Direct Sensor Light Reader"] }
+    ],
+    "humanities": [
+        { q: "Who wrote the philosophical work 'Thus Spoke Zarathustra'?", a: "Friedrich Nietzsche", options: ["Karl Marx", "Immanuel Kant", "Friedrich Nietzsche", "Plato"] },
+        { q: "Which ancient Greek philosopher was the teacher of Alexander the Great?", a: "Aristotle", options: ["Socrates", "Plato", "Aristotle", "Pythagoras"] }
+    ],
+    "literature": [
+        { q: "Who wrote the novel 'Pride and Prejudice'?", a: "Jane Austen", options: ["Charlotte Brontë", "Jane Austen", "Charles Dickens", "Virginia Woolf"] },
+        { q: "What is the name of the hobbit protagonist in J.R.R. Tolkien's 'The Hobbit'?", a: "Bilbo Baggins", options: ["Frodo Baggins", "Bilbo Baggins", "Samwise Gamgee", "Pippin Took"] }
+    ],
+    "movies": [
+        { q: "What is the name of the fictional metal that Captain America's shield is made of?", a: "Vibranium", options: ["Adamantium", "Unobtainium", "Vibranium", "Mithril"] },
+        { q: "Who directed the 1994 cult classic crime film 'Pulp Fiction'?", a: "Quentin Tarantino", options: ["Martin Scorsese", "Quentin Tarantino", "Christopher Nolan", "David Fincher"] }
+    ],
+    "music": [
+        { q: "Which iconic British rock band released the 1977 album 'Rumours'?", a: "Fleetwood Mac", options: ["The Beatles", "Led Zeppelin", "Fleetwood Mac", "Pink Floyd"] },
+        { q: "Who sang the massive 1992 global hit 'I Will Always Love You'?", a: "Whitney Houston", options: ["Mariah Carey", "Celine Dion", "Whitney Houston", "Madonna"] }
+    ],
+    "people": [
+        { q: "Who invented the practical incandescent light bulb?", a: "Thomas Edison", options: ["Nikola Tesla", "Thomas Edison", "Alexander Graham Bell", "Benjamin Franklin"] },
+        { q: "Who was the first woman to fly solo across the Atlantic Ocean?", a: "Amelia Earhart", options: ["Bessie Coleman", "Amelia Earhart", "Valentina Tereshkova", "Harriet Quimby"] }
+    ],
+    "religion-faith": [
+        { q: "In what city was the Prophet Muhammad born?", a: "Mecca", options: ["Medina", "Jerusalem", "Mecca", "Cairo"] },
+        { q: "What is the holy book of Islam called?", a: "Quran", options: ["Bible", "Torah", "Quran", "Vedas"] }
+    ],
+    "science-technology": [
+        { q: "What does CPU stand for in computer hardware?", a: "Central Processing Unit", options: ["Computer Personal Unit", "Central Processing Unit", "Core Processing Utility", "Central Program Utility"] },
+        { q: "What is the chemical symbol for gold?", a: "Au", options: ["Ag", "Au", "Pb", "Fe"] }
+    ],
+    "sports": [
+        { q: "How many players are on the field for a single team in a standard soccer match?", a: "11", options: ["9", "10", "11", "12"] },
+        { q: "How many holes are played in a standard round of golf?", a: "18", options: ["9", "12", "18", "20"] }
+    ],
+    "television": [
+        { q: "What is the name of the coffee shop frequented by the characters in the sitcom 'Friends'?", a: "Central Perk", options: ["Monk's Café", "Central Perk", "Luke's Diner", "Pals Cafe"] },
+        { q: "Which animated TV family lives in the town of Springfield?", a: "The Simpsons", options: ["The Griffins", "The Simpsons", "The Belchers", "The Flintstones"] }
+    ],
+    "video-games": [
+        { q: "What is the name of the plumber protagonist in Nintendo's iconic video game series?", a: "Mario", options: ["Luigi", "Mario", "Toad", "Wario"] },
+        { q: "In the game Minecraft, what material is required to build a nether portal?", a: "Obsidian", options: ["Bedrock", "Obsidian", "Diamond", "Netherrack"] }
+    ],
+    "world": [
+        { q: "Which country spans across both Europe and Asia?", a: "Turkey", options: ["Egypt", "Turkey", "Brazil", "Australia"] },
+        { q: "What is the largest desert in the world by area?", a: "Antarctic Desert", options: ["Sahara Desert", "Gobi Desert", "Antarctic Desert", "Arabian Desert"] }
     ]
 };
 
@@ -108,7 +146,6 @@ function addTriviaRound() {
     
     const pool = masterTriviaBanks[categoryKey] || masterTriviaBanks["general"];
     
-    // Filter against anti-repeat history
     const availablePool = filterUnusedQuestions(pool);
     const shuffled = [...availablePool].sort(function() { return Math.random() - 0.5; });
     const selected = shuffled.slice(0, targetCount);
@@ -137,15 +174,14 @@ function addTriviaRound() {
     alert('Successfully loaded ' + questions.length + ' fresh questions for ' + genreName + '!');
 }
 
-// Bypassed/Placeholder sections to keep dashboard clean
-function addKidsRound() { alert('Use the main Trivia dropdown for all OpenTriviaQA rounds!'); }
-function addMusicRound() { alert('Use the main Trivia dropdown for all OpenTriviaQA rounds!'); }
+function addKidsRound() { alert('Use the main Trivia dropdown for all categories!'); }
+function addMusicRound() { alert('Use the main Trivia dropdown for all categories!'); }
 function addPictureRound() { alert('Picture rounds are streamlined.'); }
 
 // Control & Action Handlers
 function sendAction(action) { socket.emit('hostAction', { action: action }); }
 function pushAdvert(target) { socket.emit('hostAction', { action: 'pushAdvert', payload: { target: target } }); alert('Advert action triggered.'); }
-function hideAdvert(target) { socket.emit('hostAction', { action: 'hideAdvert', payload: { target: target } }); alert('Advert hidden.'); }
+function hideAdvert(target) { socket.emit('hostAction', { action: 'hideAdvert', payload: { target: target } }); alert('Advert hidden.' ); }
 function toggleTipJar() { socket.emit('hostAction', { action: 'toggleTipJar' }); }
 function togglePoll() { socket.emit('hostAction', { action: 'togglePoll' }); }
 
