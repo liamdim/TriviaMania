@@ -3,236 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TriviaMania - Mobile Player</title>
+    <title>TriviaMania - Player Mobile</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { 
-            --bg: #0d0e15; --card: #161824; --primary: #7c3aed; 
-            --accent: #06b6d4; --text: #f3f4f6; --muted: #9ca3af;
-            --border: #272a3b; --success: #10b981; --danger: #ef4444;
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; box-sizing: border-box; }
-        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        input { width: 100%; padding: 12px; margin: 10px 0 20px 0; background: #10121a; border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
-        button { width: 100%; padding: 14px; font-weight: bold; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; cursor: pointer; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; }
         
-        .question-box { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--accent); }
-        .option-btn { background: #1e2130; border: 1px solid var(--border); color: white; padding: 14px; margin: 8px 0; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; text-align: left; }
-        .option-btn:hover { background: var(--primary); border-color: var(--accent); }
-        .option-btn.locked { background: var(--success); color: #000; font-weight: bold; cursor: not-allowed; border-color: #fff; }
+        .container { max-width: 500px; width: 100%; margin: auto; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.3); text-align: center; }
+        
+        input { width: 100%; padding: 1rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; font-size: 1.1rem; margin-bottom: 1rem; text-align: center; }
+        button { width: 100%; padding: 1rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--accent-hover); }
 
-        #mobileAdvertOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 14, 21, 0.95); z-index: 999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        #mobileAdvertOverlay h2 { color: var(--accent); font-size: 28px; margin-bottom: 15px; }
-        #mobileAdvertOverlay img { max-width: 100%; max-height: 300px; border-radius: 10px; border: 2px solid var(--accent); object-fit: contain; }
+        .option-btn { width: 100%; padding: 1.2rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 8px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.75rem; cursor: pointer; transition: 0.2s; }
+        .option-btn:hover { border-color: var(--accent); background: #1e293b; }
+        .option-btn.selected { background: var(--accent); border-color: white; }
 
-        #pollModal { display: none; background: #1e2130; border: 2px solid var(--accent); padding: 15px; border-radius: 10px; margin-top: 20px; }
-        .poll-btn { background: #272a3b; border: 1px solid var(--accent); color: white; padding: 12px; margin: 6px 0; border-radius: 6px; width: 100%; cursor: pointer; font-size: 15px; }
-        .poll-btn:hover { background: var(--accent); color: #000; }
+        .timer { font-size: 1.5rem; font-weight: bold; color: var(--accent); margin-bottom: 1rem; }
+        
+        /* Advert Overlay */
+        #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; text-align: center; }
+        #advertOverlay img { max-height: 300px; max-width: 90%; border-radius: 8px; margin-top: 1rem; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
 
-    <h1>📱 TriviaMania Player</h1>
-
-    <div class="panel" id="loginPanel">
-        <h2>Join the Game</h2>
-        <label>Enter Your Team Name:</label>
-        <input type="text" id="teamNameInput" placeholder="e.g. The Quizly Bears">
-        <button onclick="joinGame()">🚀 Join Game</button>
-    </div>
-
-    <div class="panel" id="gamePanel" style="display:none;">
-        <h2 id="welcomeTeam" style="margin-top:0; font-size:18px; color:var(--accent);">Welcome!</h2>
-        
-        <!-- Live Question Area -->
-        <div id="liveQuestionContainer">
-            <p id="gameStatusMsg" style="color: var(--muted);">Waiting for round to start...</p>
-        </div>
-        
-        <div id="pollModal">
-            <h3 id="pollQuestionText" style="color: var(--accent); margin-top:0;">Icebreaker Poll</h3>
-            <div id="pollOptionsContainer"></div>
-        </div>
-
-        <div id="leaderboardSection" style="display:none; margin-top:20px;">
-            <h3 style="color: var(--accent);">🏆 Final Leaderboard</h3>
-            <div id="mobileLeaderboardList"></div>
+    <div class="container">
+        <div id="app" class="card">
+            <h2>Join TriviaMania</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Enter your team or player name to join the live game:</p>
+            <input type="text" id="playerNameInput" placeholder="Your Name or Team">
+            <button onclick="joinGame()">Join Game 🚀</button>
         </div>
     </div>
 
-    <div id="mobileAdvertOverlay">
-        <h2 id="mobAdTitle">Sponsor Advert</h2>
-        <img id="mobAdImage" src="" alt="Sponsor" style="display:none;">
+    <!-- Advert Overlay -->
+    <div id="advertOverlay">
+        <h2 id="adTitleText" style="color: var(--accent); font-size: 2rem; margin-bottom: 1rem;"></h2>
+        <img id="adImageTag" src="" alt="Sponsor Advert" style="display: none;">
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let currentGameData = null;
-        let hasAnsweredCurrentQuestion = false;
+        let myName = '';
+        let hasAnswered = false;
 
         function joinGame() {
-            const nameInput = document.getElementById('teamNameInput');
-            const name = nameInput ? nameInput.value.trim() : '';
-            if (!name) {
-                alert('Please enter a team name!');
-                return;
-            }
+            const input = document.getElementById('playerNameInput');
+            myName = input.value.trim();
+            if (!myName) { alert('Please enter a name!'); return; }
             
-            socket.emit('joinGame', { name: name, avatar: '🎯' });
-            
-            const loginPanel = document.getElementById('loginPanel');
-            const gamePanel = document.getElementById('gamePanel');
-            const welcomeTeam = document.getElementById('welcomeTeam');
-
-            if (loginPanel) loginPanel.style.display = 'none';
-            if (gamePanel) gamePanel.style.display = 'block';
-            if (welcomeTeam) welcomeTeam.textContent = 'Team: ' + name;
+            socket.emit('player-join', myName);
+            renderWaitingScreen('Waiting for host to start the next question...');
         }
 
-        socket.on('gameStateUpdate', function(state) {
-            if (!currentGameData || currentGameData.currentQuestionIndex !== state.currentQuestionIndex) {
-                hasAnsweredCurrentQuestion = false;
-            }
-            currentGameData = state;
-            renderMobileGame(state);
-        });
-
-        socket.on('timerUpdate', function(timeLeft) {
-            const timerEl = document.getElementById('mobileTimer');
-            if (timerEl) timerEl.textContent = '⏱️ Time Left: ' + timeLeft + 's';
-        });
-
-        socket.on('answerResult', function(res) {
-            const statusNotice = document.getElementById('answerStatusNotice');
-            if (statusNotice) {
-                if (res.correct) {
-                    statusNotice.innerHTML = `<span style="color:var(--success); font-weight:bold;">✅ Locked In! (+${res.points} pts)</span>`;
-                } else {
-                    statusNotice.innerHTML = `<span style="color:var(--danger); font-weight:bold;">❌ Locked In! (Incorrect)</span>`;
-                }
-            }
-        });
-
-        function renderMobileGame(state) {
-            const container = document.getElementById('liveQuestionContainer');
-            const lbSection = document.getElementById('leaderboardSection');
-
-            if (state.status === 'finished') {
-                container.innerHTML = '<p style="color:var(--success); font-size:18px; font-weight:bold;">🎉 Round Complete!</p>';
-                if (lbSection) lbSection.style.display = 'block';
-                return;
-            }
-
-            if (!state.currentRound || !state.currentRound.questions) {
-                container.innerHTML = '<p style="color: var(--muted);">Waiting for host to start next round...</p>';
-                if (lbSection) lbSection.style.display = 'none';
-                return;
-            }
-
-            const qIndex = state.currentQuestionIndex || 0;
-            const currentQ = state.currentRound.questions[qIndex];
-
-            if (!currentQ) {
-                container.innerHTML = '<p style="color: var(--muted);">Round finished!</p>';
-                return;
-            }
-
-            let optionsHtml = '';
-            currentQ.options.forEach(opt => {
-                const escapedOpt = opt.replace(/'/g, "\\'");
-                if (hasAnsweredCurrentQuestion) {
-                    optionsHtml += `<button class="option-btn locked" disabled>${opt}</button>`;
-                } else {
-                    optionsHtml += `<button class="option-btn" onclick="submitAnswer('${escapedOpt}')">${opt}</button>`;
-                }
-            });
-
-            container.innerHTML = `
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:10px;">
-                    <span>Q ${qIndex + 1} / ${state.currentRound.questions.length}</span>
-                    <span id="mobileTimer" style="color:var(--accent);">⏱️ ${state.timer || 15}s</span>
-                </div>
-                <div class="question-box">${currentQ.q}</div>
-                <div id="answerStatusNotice" style="margin-bottom:12px; font-size:14px;">${hasAnsweredCurrentQuestion ? '<span style="color:var(--success); font-weight:bold;">✅ Answer Locked In!</span>' : '<span style="color:var(--muted);">Tap an option to lock in your answer</span>'}</div>
-                <div>${optionsHtml}</div>
+        function renderWaitingScreen(message) {
+            document.getElementById('app').innerHTML = `
+                <h2>Welcome, ${myName}!</h2>
+                <p style="color: var(--text-muted); margin-top: 1rem; font-size: 1.1rem;">${message}</p>
             `;
-            if (lbSection) lbSection.style.display = 'none';
         }
 
-        function submitAnswer(selectedOpt) {
-            if (hasAnsweredCurrentQuestion) return;
-            hasAnsweredCurrentQuestion = true;
-            
-            socket.emit('submitAnswer', { answer: selectedOpt });
-            
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.classList.add('locked');
-                btn.disabled = true;
-                if (btn.textContent.trim() === selectedOpt.trim()) {
-                    btn.style.background = 'var(--accent)';
-                    btn.style.color = '#000';
-                }
-            });
+        socket.on('state-update', (state) => {
+            const app = document.getElementById('app');
+            const adOverlay = document.getElementById('advertOverlay');
 
-            const statusNotice = document.getElementById('answerStatusNotice');
-            if (statusNotice) {
-                statusNotice.innerHTML = `<span style="color:var(--accent); font-weight:bold;">🔒 Answer Locked In! Waiting for results...</span>`;
-            }
-        }
-
-        socket.on('updatePlayers', function(players) {
-            const listEl = document.getElementById('mobileLeaderboardList');
-            if (!listEl) return;
-            const sorted = Object.values(players).sort((a, b) => b.score - a.score);
-            let html = '';
-            sorted.forEach((p, idx) => {
-                html += `<div style="display:flex; justify-content:space-between; background:#10121a; padding:8px; margin-bottom:5px; border-radius:6px;"><span>${idx + 1}. ${p.name}</span><span style="color:var(--accent);">${p.score} pts</span></div>`;
-            });
-            listEl.innerHTML = html;
-        });
-
-        socket.on('advertUpdate', function(advert) {
-            const overlay = document.getElementById('mobileAdvertOverlay');
-            const titleEl = document.getElementById('mobAdTitle');
-            const imgEl = document.getElementById('mobAdImage');
-
-            if (advert.active && (advert.target === 'both' || advert.target === 'mobile')) {
-                titleEl.textContent = advert.title;
-                if (advert.image) {
-                    imgEl.src = advert.image;
-                    imgEl.style.display = 'block';
+            // Handle Adverts targeted to mobile or both
+            if (state.activeAdvert && (state.activeAdvert.target === 'both' || state.activeAdvert.target === 'mobile')) {
+                document.getElementById('adTitleText').innerText = state.activeAdvert.title;
+                const imgTag = document.getElementById('adImageTag');
+                if (state.activeAdvert.image) {
+                    imgTag.src = state.activeAdvert.image;
+                    imgTag.style.display = 'block';
                 } else {
-                    imgEl.style.display = 'none';
+                    imgTag.style.display = 'none';
                 }
-                overlay.style.display = 'flex';
+                adOverlay.style.display = 'flex';
+                return;
             } else {
-                overlay.style.display = 'none';
+                adOverlay.style.display = 'none';
+            }
+
+            if (!myName) return; // If player hasn't joined yet, keep join screen
+
+            if (state.status === 'IDLE' || state.status === 'LOBBY' || state.status === 'PAUSED') {
+                renderWaitingScreen('Game is paused or in lobby. Get ready!');
+            } else if (state.status === 'QUESTION') {
+                const round = state.playlist[state.currentRoundIndex];
+                if (!round) return;
+                const q = round.questions[state.currentQuestionIndex];
+                if (!q) return;
+
+                hasAnswered = false;
+                app.innerHTML = `
+                    <div class="timer" id="timerDisplay">${state.timer}s</div>
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;">${q.question}</h3>
+                    <div id="optionsContainer">
+                        ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}</button>`).join('')}
+                    </div>
+                `;
+            } else if (state.status === 'LEADERBOARD') {
+                renderWaitingScreen('Round finished! Check the big screen for the leaderboard.');
             }
         });
 
-        socket.on('pollUpdate', function(poll) {
-            const modal = document.getElementById('pollModal');
-            const qText = document.getElementById('pollQuestionText');
-            const optsContainer = document.getElementById('pollOptionsContainer');
+        socket.on('timer-tick', (timeLeft) => {
+            const timerEl = document.getElementById('timerDisplay');
+            if (timerEl) timerEl.innerText = timeLeft + 's';
+        });
 
-            if (poll.active) {
-                qText.textContent = poll.question;
-                optsContainer.innerHTML = '';
-                poll.options.forEach(opt => {
-                    const btn = document.createElement('button');
-                    btn.className = 'poll-btn';
-                    btn.textContent = opt;
-                    btn.onclick = function() {
-                        socket.emit('submitVote', { vote: opt });
-                        alert('Vote submitted: ' + opt);
-                        modal.style.display = 'none';
-                    };
-                    optsContainer.appendChild(btn);
-                });
-                modal.style.display = 'block';
+        function submitAnswer(answerText, timeRemaining) {
+            if (hasAnswered) return;
+            hasAnswered = true;
+
+            socket.emit('submit-answer', { answer: answerText, timeRemaining });
+
+            // Highlight selected option
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                if (btn.innerText === answerText) {
+                    btn.classList.add('selected');
+                }
+                btn.disabled = true;
+            });
+
+            document.getElementById('app').innerHTML += `
+                <p style="margin-top: 1.5rem; color: var(--success); font-weight: bold;">Answer locked in: ${answerText} ✓</p>
+            `;
+        }
+
+        socket.on('answer-result', ({ correct, points }) => {
+            if (correct) {
+                console.log(`Correct! Earned ${points} points.`);
             } else {
-                modal.style.display = 'none';
+                console.log('Incorrect answer.');
             }
         });
     </script>
