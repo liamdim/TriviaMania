@@ -59,6 +59,7 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
         .player-badge { display: inline-block; background: #0f172a; border: 1px solid #334155; padding: 0.5rem 1rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
+        .ad-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid #334155; }
     </style>
 </head>
 <body>
@@ -67,7 +68,7 @@
         <h1>TriviaMania Master Dashboard</h1>
         <div class="header-links">
             <span id="connectionStatus" style="color: var(--success);">● Connected</span>
-            <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Join Link</a>
+            <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
             <a href="/display.html" target="_blank"> projector Display ↗</a>
         </div>
     </header>
@@ -86,16 +87,29 @@
             <div class="card">
                 <h3>Live Game Master Controls</h3>
                 <div class="flex-row" style="margin-bottom: 1rem;">
-                    <button class="success" onclick="socket.emit('start-round')">▶ Start / Resume Game</button>
+                    <button class="success" onclick="socket.emit('start-round')">▶ Start Game / First Question</button>
                     <button onclick="socket.emit('next-question')">Next Question ⏭</button>
                     <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
                     <button class="danger" onclick="socket.emit('stop-reset')">🔄 Restart / Full Reset</button>
                 </div>
-                <p>Current Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
+                    <div>
+                        <label>Question Timer Setting:</label>
+                        <select id="questionTimerSelect" onchange="updateTimerSetting()" style="width: 150px;">
+                            <option value="10">10 Seconds</option>
+                            <option value="15" selected>15 Seconds</option>
+                            <option value="20">20 Seconds</option>
+                            <option value="30">30 Seconds</option>
+                        </select>
+                    </div>
+                    <div>
+                        <p>Current Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
+                    </div>
+                </div>
             </div>
 
             <div class="grid-2">
-                <!-- Loaded Playlist Queue -->
+                <!-- Playlist Queue -->
                 <div class="card">
                     <h3>Loaded Playlist Queue</h3>
                     <table id="playlistTable">
@@ -108,7 +122,7 @@
                     </table>
                 </div>
 
-                <!-- Live Leaderboard Preview -->
+                <!-- Live Leaderboard -->
                 <div class="card">
                     <h3>Live Leaderboard</h3>
                     <table id="hostLeaderboardTable">
@@ -122,7 +136,7 @@
                 </div>
             </div>
 
-            <!-- Joined Players List -->
+            <!-- Connected Players -->
             <div class="card">
                 <h3>Connected Players (<span id="playerCount">0</span>)</h3>
                 <div id="joinedPlayersList" style="min-height: 50px;">
@@ -164,27 +178,32 @@
         <!-- TAB 3: ADVERTS & SPONSORS -->
         <div id="adverts" class="tab-content">
             <div class="card">
-                <h3>Broadcast Advert / Sponsor Slide</h3>
+                <h3>Advert & Sponsor Library (Saved Locally)</h3>
                 <div class="form-group">
                     <label>Advert Title / Message:</label>
                     <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
                 </div>
                 <div class="form-group">
-                    <label>Show On:</label>
+                    <label>Show On Display:</label>
                     <select id="adTargetSelect">
-                        <option value="both">Projector Screen & Mobile Players</option>
                         <option value="projector">Projector Screen Only</option>
                         <option value="mobile">Mobile Players Only</option>
+                        <option value="both">Both Projector & Mobile</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Upload Image / Logo (Optional):</label>
+                    <label>Upload Image / Logo:</label>
                     <input type="file" id="adImageInput" accept="image/*">
                 </div>
-                <div class="flex-row">
-                    <button onclick="broadcastAdvert()">📢 Broadcast Advert Now</button>
-                    <button class="danger" onclick="socket.emit('hide-advert')">Hide Advert</button>
+                <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
+            </div>
+
+            <div class="card">
+                <h3>Saved Adverts Library</h3>
+                <div id="savedAdsList">
+                    <p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>
                 </div>
+                <button class="danger" onclick="socket.emit('hide-advert')" style="margin-top: 1rem;">❌ Hide Active Advert</button>
             </div>
         </div>
 
@@ -220,7 +239,7 @@
 
         function copyPlayerLink() {
             navigator.clipboard.writeText(playerUrl);
-            alert('Player mobile link copied to clipboard!');
+            alert('Player mobile link copied!');
         }
 
         async function loadCategories() {
@@ -232,14 +251,15 @@
                     select.innerHTML = categories.map(cat => 
                         `<option value="${cat}">${cat.replace(/-/g, ' ').toUpperCase()}</option>`
                     ).join('');
-                } else {
-                    select.innerHTML = `<option value="">No categories found</option>`;
                 }
-            } catch (err) {
-                console.error('Failed to load categories', err);
-            }
+            } catch (err) {}
         }
         loadCategories();
+
+        function updateTimerSetting() {
+            const time = document.getElementById('questionTimerSelect').value;
+            socket.emit('update-settings', { questionTime: time });
+        }
 
         function addRoundToPlaylist() {
             const genre = document.getElementById('triviaGenreSelect').value;
@@ -250,26 +270,70 @@
             alert('Round added to playlist!');
         }
 
-        function broadcastAdvert() {
+        // Persistent Adverts Library using localStorage
+        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads') || '[]');
+
+        function saveNewAdvert() {
             const title = document.getElementById('adTitleInput').value;
             const target = document.getElementById('adTargetSelect').value;
             const fileInput = document.getElementById('adImageInput');
-            
+
+            if (!title) { alert('Please enter an advert title!'); return; }
+
             if (fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    socket.emit('broadcast-advert', { title, target, image: e.target.result });
+                    savedAds.push({ title, target, image: e.target.result });
+                    localStorage.setItem('triviamania_ads', JSON.stringify(savedAds));
+                    renderAdsLibrary();
+                    alert('Advert saved to library successfully!');
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
-                socket.emit('broadcast-advert', { title, target, image: null });
+                savedAds.push({ title, target, image: null });
+                localStorage.setItem('triviamania_ads', JSON.stringify(savedAds));
+                renderAdsLibrary();
+                alert('Advert saved to library successfully!');
             }
         }
+
+        function renderAdsLibrary() {
+            const listDiv = document.getElementById('savedAdsList');
+            if (savedAds.length === 0) {
+                listDiv.innerHTML = `<p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>`;
+                return;
+            }
+            listDiv.innerHTML = savedAds.map((ad, idx) => `
+                <div class="ad-item">
+                    <div>
+                        <strong>${ad.title}</strong> <span style="font-size: 0.8rem; color: var(--text-muted);">(${ad.target})</span>
+                    </div>
+                    <div>
+                        <button class="small success" onclick="broadcastSavedAd(${idx})">📢 Broadcast</button>
+                        <button class="small danger" onclick="deleteSavedAd(${idx})">🗑 Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function broadcastSavedAd(index) {
+            const ad = savedAds[index];
+            if (ad) {
+                socket.emit('broadcast-advert', ad);
+            }
+        }
+
+        function deleteSavedAd(index) {
+            savedAds.splice(index, 1);
+            localStorage.setItem('triviamania_ads', JSON.stringify(savedAds));
+            renderAdsLibrary();
+        }
+
+        renderAdsLibrary();
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
-            // Playlist table with delete & move buttons
             const tbody = document.querySelector('#playlistTable tbody');
             if (state.playlist.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
@@ -288,7 +352,6 @@
                 `).join('');
             }
 
-            // Players list & count
             const players = Object.values(state.scores || {});
             document.getElementById('playerCount').innerText = players.length;
             const playersListDiv = document.getElementById('joinedPlayersList');
@@ -298,7 +361,6 @@
                 playersListDiv.innerHTML = players.map(p => `<span class="player-badge">👤 ${p.name} (${p.score} pts)</span>`).join('');
             }
 
-            // Host Leaderboard Table
             const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
             const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
             if (sortedPlayers.length === 0) {
