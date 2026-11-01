@@ -27,7 +27,7 @@
         .header-links a { color: var(--accent); text-decoration: none; font-size: 0.9rem; background: #0f172a; padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #334155; }
         .header-links a:hover { background: #334155; }
         
-        .nav-tabs { display: flex; gap: 0.5rem; background: var(--panel-bg); padding: 0.5rem 2rem; border-bottom: 1px solid #334155; }
+        .nav-tabs { display: flex; gap: 0.5rem; background: var(--panel-bg); padding: 0.5rem 2rem; border-bottom: 1px solid #334155; flex-wrap: wrap; }
         .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 0.5rem 1rem; cursor: pointer; font-weight: 600; border-radius: 4px; transition: 0.2s; }
         .tab-btn.active, .tab-btn:hover { background: var(--accent); color: white; }
 
@@ -77,6 +77,7 @@
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('controls', this)">Live Controls & Game</button>
         <button class="tab-btn" onclick="switchTab('playlist', this)">Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('beatiq', this)" style="color: #34d399;">🎵 BeatIQ Music Studio</button>
         <button class="tab-btn" onclick="switchTab('adverts', this)">Adverts & Sponsors</button>
         <button class="tab-btn" onclick="switchTab('lobby', this)">Lobby & QR</button>
     </div>
@@ -195,7 +196,7 @@
                             <tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder or BeatIQ Studio.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -261,7 +262,59 @@
             </div>
         </div>
 
-        <!-- TAB 3: ADVERTS & SPONSORS -->
+        <!-- TAB 3: BEATIQ MUSIC STUDIO -->
+        <div id="beatiq" class="tab-content">
+            <div class="card" style="border: 2px solid #34d399; background: #064e3b22;">
+                <h3 style="color: #34d399;">🎵 BeatIQ Music Quiz Studio</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                    Select from curated music genres and 100+ master tracks powered by BeatIQ, and inject them straight into your main event playlist queue!
+                </p>
+                
+                <div class="form-group">
+                    <label>Select Music Genre:</label>
+                    <select id="beatiqGenreSelect">
+                        <option value="pop">Pop & Modern Hits</option>
+                        <option value="classic-rock">Classic Rock (60s–70s)</option>
+                        <option value="grunge-90s">90s Grunge & Rock</option>
+                        <option value="synthpop-80s">80s Synthpop & Retro</option>
+                        <option value="hip-hop">Hip-Hop & Rap</option>
+                        <option value="electronic-edm">Electronic & EDM</option>
+                        <option value="alt-indie">Alternative & Indie</option>
+                        <option value="r-and-b">R&B & Neo-Soul</option>
+                        <option value="heavy-metal">Heavy Metal & Hard Rock</option>
+                        <option value="jazz-blues">Jazz & Blues Classics</option>
+                        <option value="classical">Classical & Orchestral</option>
+                        <option value="latin-reggaeton">Latin & Reggaeton</option>
+                        <option value="country">Country & Americana</option>
+                        <option value="k-pop">K-Pop & Asian Pop</option>
+                        <option value="pop-punk">Pop-Punk & 2000s Alt</option>
+                        <option value="y2k-2000s">2000s Pop Nostalgia</option>
+                        <option value="tv-themes">TV Show Themes</option>
+                        <option value="movie-themes">Movie Themes & Soundtracks</option>
+                        <option value="disney-pixar">Disney & Pixar Themes</option>
+                        <option value="cartoon-themes">Cartoon & Anime Themes</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Round Name:</label>
+                    <input type="text" id="beatiqRoundName" value="80s Synthpop Music Round">
+                </div>
+
+                <div class="form-group">
+                    <label>Number of Tracks to Include:</label>
+                    <select id="beatiqTrackCount">
+                        <option value="5">5 Tracks</option>
+                        <option value="10" selected>10 Tracks</option>
+                        <option value="15">15 Tracks</option>
+                    </select>
+                </div>
+
+                <button class="success" onclick="addBeatIQRoundToMainPlaylist()">➕ Add BeatIQ Round to Main Playlist</button>
+            </div>
+        </div>
+
+        <!-- TAB 4: ADVERTS & SPONSORS -->
         <div id="adverts" class="tab-content">
             <div class="card" style="border: 2px solid var(--accent);">
                 <h3>Live Adverts Master Controls</h3>
@@ -317,7 +370,7 @@
             </div>
         </div>
 
-        <!-- TAB 4: LOBBY & QR -->
+        <!-- TAB 5: LOBBY & QR -->
         <div id="lobby" class="tab-content">
             <div class="card" style="text-align: center;">
                 <h3>Lobby Screen & Venue Details</h3>
@@ -509,6 +562,29 @@
             if (!genre) { alert('Please select a category!'); return; }
             socket.emit('add-round', { genre, name, count, timer: timer ? parseInt(timer) : null });
             alert('Round added to playlist!');
+        }
+
+        async function addBeatIQRoundToMainPlaylist() {
+            const genre = document.getElementById('beatiqGenreSelect').value;
+            const name = document.getElementById('beatiqRoundName').value;
+            const count = parseInt(document.getElementById('beatiqTrackCount').value);
+
+            try {
+                const res = await fetch('/api/beatiq/tracks');
+                const allTracks = await res.json();
+                const genreTracks = allTracks.filter(t => t.genre === genre).sort(() => 0.5 - Math.random()).slice(0, count);
+
+                if (genreTracks.length === 0) {
+                    alert('No tracks found for this genre. Make sure curatedTracks.json is in your server data folder!');
+                    return;
+                }
+
+                socket.emit('add-beatiq-round', { genre, name, tracks: genreTracks });
+                alert(`Successfully added "${name}" to your main playlist queue!`);
+                switchTab('controls');
+            } catch (err) {
+                alert('Failed to load BeatIQ tracks.');
+            }
         }
 
         let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
