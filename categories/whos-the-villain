@@ -68,352 +68,282 @@ B John Doe
 C Jigsaw
 D Norman Bates
 
-#Q Who am I? I am a fictional detective created by Arthur Conan Doyle, famous for living at 221B Baker Street and playing the violin.
-^ Sherlock Holmes
-A Sherlock Holmes
-B Hercule Poirot
-C Inspector Gadget
-D Philip Marlowe
+#Q Who is the dark lord of the Sith in Star Wars who manipulates the Galactic Senate from the shadows and shoots force lightning?
+^ Emperor Palpatine (Darth Sidious)
+A Emperor Palpatine (Darth Sidious)
+B Darth Vader
+C Count Dooku
+D Darth Maul
 
-#Q Who am I? I am a wizard with a lightning-scar on my forehead who attends Hogwarts School of Witchcraft and Wizardry.
-^ Harry Potter
-A Harry Potter
-B Ron Weasley
-C Neville Longbottom
-D Cedric Diggory
+#Q Which Batman villain is a former prosecutor whose face is horribly scarred on one side, leading him to flip a double-headed coin for life and death choices?
+^ Two-Face (Harvey Dent)
+A Two-Face (Harvey Dent)
+B The Joker
+C The Riddler
+D Scarecrow
 
-#Q Who am I? I am a billionaire playboy who was stranded in a cave and built a high-tech iron suit to escape.
-^ Tony Stark
-A Tony Stark
-B Bruce Wayne
-C Clark Kent
-D Oliver Queen
+#Q Who is the cunning royal vizier in Disney's Aladdin who tries to steal the magical lamp using a snake staff?
+^ Jafar
+A Jafar
+B Iago
+C Sultan
+D Razoul
 
-#Q Who am I? I am a clumsy but lovable sponge who lives in a pineapple under the sea and works as a fry cook at the Krusty Krab.
-^ SpongeBob SquarePants
-A SpongeBob SquarePants
-B Patrick Star
-C Squidward Tentacles
-D Mr. Krabs
+#Q Which horror icon wears a striped sweater, a fedora hat, and a bladed leather glove to stalk teenagers inside their dreams?
+^ Freddy Krueger
+A Freddy Krueger
+B Jason Voorhees
+C Michael Myers
+D Leatherface
 
-#Q Who am I? I am an archaeologist and adventurer known for my fedora, leather jacket, and absolute hatred of snakes.
-^ Indiana Jones
-A Indiana Jones
-B Rick O'Connell
-C Nathan Drake
-D Lara Croft
+#Q Who is the ruthless corporate billionaire and arch-nemesis of Peter Parker who transforms into the Green Goblin?
+^ Norman Osborn
+A Norman Osborn
+B Otto Octavius
+C Wilson Fisk
+D Dr. Connors
 
-#Q Who am I? I am a British secret agent holding the license to kill, and my favorite drink is a martini, shaken, not stirred.
-^ James Bond
-A James Bond
-B Ethan Hunt
-C Jason Bourne
-D Austin Powers
+#Q Which Harry Potter dark wizard with a snake-like appearance and no nose seeks to conquer the wizarding world and destroy Harry?
+^ Lord Voldemort
+A Lord Voldemort
+B Gellert Grindelwald
+C Lucius Malfoy
+D Bellatrix Lestrange
 
-#Q Who am I? I am a time-traveling alien from the planet Gallifrey who travels across space and time inside a blue police box called the TARDIS.
-^ The Doctor
-A The Doctor
-B Master
-C Captain Jack
-D River Song
+#Q Who is the terrifying shape-shifting cosmic clown who terrorizes children in the town of Derry, Maine in Stephen King's IT?
+^ Pennywise
+A Pennywise
+B Jigsaw
+C Leatherface
+D Michael Myers
 
-#Q Who am I? I am a cynical cartoon dad working at a nuclear power plant who loves donuts and shouting "D'oh!".
-^ Homer Simpson
-A Homer Simpson
-B Peter Griffin
-C Bob Belcher
-D Rick Sanchez
-
-#Q Who am I? I am a young hobbit tasked with carrying the One Ring to the fires of Mount Doom to destroy it.
-^ Frodo Baggins
-A Frodo Baggins
-B Samwise Gamgee
-C Bilbo Baggins
-D Peregrin Took
-
-#Q Who am I? I am a fierce warrior princess of Themyscira who fights for justice wielding the Lasso of Truth.
-^ Wonder Woman
-A Wonder Woman
-B Supergirl
-C Black Widow
-D Captain Marvel
-
-#Q Who am I? I am a galaxy-traveling outlaw and self-proclaimed leader of the Guardians of the Galaxy who loves 70s classic rock.
-^ Star-Lord (Peter Quill)
-A Star-Lord (Peter Quill)
-B Thor
-C Tony Stark
-D Rocket Raccoon
-
-#Q Who am I? I am a brilliant paleontologist who gets trapped on an island full of cloned dinosaurs in Jurassic Park.
-^ Dr. Alan Grant
-A Dr. Alan Grant
-B Dr. Ian Malcolm
-C Dr. Henry Wu
-D John Hammond
-
-#Q Who am I? I am a young wizard student who loves cats, wears spectacles, and is famously sorted into Gryffindor house with my best friends Harry and Ron.
-^ Hermione Granger
-A Hermione Granger
-B Ginny Weasley
-C Luna Lovegood
-D Cho Chang
-
-#Q Who am I? I am a sarcastic web-slinging superhero from Queens who was bitten by a radioactive spider.
-^ Spider-Man
-A Spider-Man
-B Deadpool
-C Daredevil
-D Human Torch
-
-#Q Who am I? I am an ogre who just wants to be left alone in my swamp until a talking donkey and a bunch of fairytale creatures show up.
-^ Shrek
-A Shrek
-B Fiona
-C Lord Farquaad
-D Puss in Boots
-
-#Q Who am I? I am a legendary pirate captain with a dreadlocks beard and a shaky compass who is constantly searching for the Black Pearl.
-^ Captain Jack Sparrow
-A Captain Jack Sparrow
-B Captain Hook
-C Blackbeard
-D Davy Jones
-
-#Q Who am I? I am a mobster psychologist patient in New Jersey trying to balance running a crime family with severe panic attacks.
-^ Tony Soprano
-A Tony Soprano
-B Michael Corleone
-C Walter White
-D Jimmy McGill
-
-#Q Who am I? I am a high school chemistry teacher diagnosed with terminal cancer who transforms into a ruthless drug kingpin named Heisenberg.
-^ Walter White
-A Walter White
-B Jesse Pinkman
-C Saul Goodman
-D Gus Fring
-
-#Q Who am I? I am a cyborg assassin sent back through time in 1984 to terminate Sarah Connor.
-^ The Terminator
-A The Terminator
-B RoboCop
-C T-1000
-D Agent Smith
-
-#Q Who am I? I am a young farm boy from Tatooine who discovers he is the son of Darth Vader and trains to become a Jedi Knight.
-^ Luke Skywalker
-A Luke Skywalker
-B Han Solo
-C Anakin Skywalker
-D Ben Solo
-
-#Q Who am I? I am a brilliant martial artist and billionaire vigilante who patrols the criminal underworld of Gotham City from the Batcave.
-^ Batman (Bruce Wayne)
-A Batman (Bruce Wayne)
-B Superman
-C Green Arrow
-D The Flash
-
-#Q Who am I? I am an immortal vampire who falls in love with a mortal teenage girl named Bella Swan in the rainy town of Forks.
-^ Edward Cullen
-A Edward Cullen
-B Jacob Black
-C Count Dracula
-D Stefan Salvatore
-
-#Q Who am I? I am a cheerful wooden puppet brought to life by the Blue Fairy, whose nose grows longer every time I tell a lie.
-^ Pinocchio
-A Pinocchio
-B Peter Pan
-C Mickey Mouse
-D Dumbo
-
-#Q Who am I? I am a clever young girl who falls down a rabbit hole into a bizarre fantasy realm filled with a Cheshire Cat and a Mad Hatter.
-^ Alice
-A Alice
-B Dorothy Gale
-C Wendy Darling
-D Matilda
-
-#Q Who am I? I am a Kansas farm boy who absorbs Earth's yellow sunlight to gain godlike superpowers, flying ability, and heat vision.
-^ Superman (Clark Kent)
-A Superman (Clark Kent)
-B Shazam
-C Flash
-D Martian Manhunter
-
-#Q Who am I? I am a wise, ancient green Jedi Master who speaks in object-subject-verb sentence structures and trains young Luke on Dagobah.
-^ Yoda
-A Yoda
-B Obi-Wan Kenobi
-C Mace Windu
-D Qui-Gon Jinn
-
-#Q Who am I? I am a fearless Scottish warrior who leads an uprising against English tyranny in the 13th century shouting "Freedom!".
-^ William Wallace
-A William Wallace
-B Robert the Bruce
-C King Arthur
-D Leonidas
-
-#Q Who am I? I am a cheerful, yellow sea sponge's starfish best friend who lives under a rock and loves eating Krabby Patties.
-^ Patrick Star
-A Patrick Star
-B Squidward Tentacles
-C Sandy Cheeks
-D Mr. Krabs
-
-#Q Who am I? I am an eccentric, chocolate-factory-owning candy maker who gives golden tickets to five lucky children.
-^ Willy Wonka
-A Willy Wonka
-B Phineas Smith
-C George Bailey
-D The Candyman
-
-#Q Who am I? I am a witty medieval mercenary whose face was scarred by experimental treatments, giving me superhuman healing and breaking the fourth wall.
-^ Deadpool
-A Deadpool
-B Wolverine
-C Spider-Man
-D Deathstroke
-
-#Q Who am I? I am a clumsy, lovable martial arts master panda who is chosen as the Legendary Dragon Warrior in Kung Fu Panda.
-^ Po
-A Po
-B Shifu
-C Tigress
-D Tai Lung
-
-#Q Who am I? I am a Norse God of Thunder wielding a powerful hammer, fighting alongside the Avengers to protect Earth and Asgard.
-^ Thor
-A Thor
-B Loki
-C Heimdall
-D Odin
-
-#Q Who am I? I am a brilliant, blue-skinned extraterrestrial avatar pilot scientist exploring Pandora in James Cameron's sci-fi epic.
-^ Jake Sully
-A Jake Sully
-B Neytiri
-C Dr. Grace Augustine
-D Colonel Quaritch
-
-#Q Who am I? I am a young girl in a red hooded cloak who wanders through the dark forest to visit my grandmother, only to find a wolf in disguise.
-^ Little Red Riding Hood
-A Little Red Riding Hood
-B Goldilocks
-C Snow White
-D Cinderella
-
-#Q Who am I? I am a magical British nanny who flies in using an umbrella and cures family troubles with a spoonful of sugar.
-^ Mary Poppins
-A Mary Poppins
-B Nanny McPhee
+#Q Which Disney villain is a wicked sea witch who steals Ariel's voice in exchange for human legs?
+^ Ursula
+A Ursula
+B Maleficent
 C Cruella de Vil
-D Professor McGonagall
+D Mother Gothel
 
-#Q Who am I? I am an escaped convict turned elite detective who operates out of a yellow cab in Manhattan solving complex crimes.
-^ Adrian Monk
-A Adrian Monk
-B Columbo
-C Sherlock Holmes
-D Hercule Poirot
+#Q What is the name of the brutal killer in the Scream franchise who wears a ghost mask and black robes while terrorizing teens?
+^ Ghostface
+A Ghostface
+B Jigsaw
+C Michael Myers
+D Chucky
 
-#Q Who am I? I am an exceptionally polite Peruvian bear wearing a duffel coat and a red hat who loves marmalade sandwiches in London.
-^ Paddington Bear
-A Paddington Bear
-B Winnie the Pooh
-C Yogi Bear
-D Baloo
+#Q Who is the egocentric hunter in Disney's Beauty and the Beast who tries to rally the villagers to kill the Beast?
+^ Gaston
+A Gaston
+B LeFou
+C Maurice
+D Monsieur D'Arque
 
-#Q Who am I? I am a fearless teenage girl who volunteers to take her younger sister's place in a televised death match in Panem.
-^ Katniss Everdeen
-A Katniss Everdeen
-B Tris Prior
-C Hermione Granger
-D Bella Swan
+#Q Which iconic villain in The Silence of the Lambs carves skins and abducts women using the nickname "Buffalo Bill"?
+^ Jame Gumb (Buffalo Bill)
+A Jame Gumb (Buffalo Bill)
+B Hannibal Lecter
+C John Doe
+D Norman Bates
 
-#Q Who am I? I am an android created by Tony Stark and Bruce Banner who possesses the Mind Stone embedded in my forehead.
-^ Vision
-A Vision
-B Ultron
-C JARVIS
-D FRIDAY
+#Q Who is the sinister leader of the Demogorgon-controlling Mind Flayer hive mind in Stranger Things Season 4?
+^ Vecna (Henry Creel)
+A Vecna (Henry Creel)
+B Dr. Brenner
+C Billy Hargrove
+D The Demogorgon
 
-#Q Who am I? I am a brilliant teenage physics prodigy who builds a giant inflatable healthcare robot named Baymax in San Fransokyo.
-^ Hiro Hamada
-A Hiro Hamada
-B Tadashi Hamada
-C Peter Parker
-D Miles Morales
+#Q Which James Bond villain with a golden eye and a penchant for lasers plans to destroy the US gold reserve at Fort Knox?
+^ Auric Goldfinger
+A Auric Goldfinger
+B Ernst Stavro Blofeld
+C Le Chiffre
+D Jaws
 
-#Q Who am I? I am a tiny, fast blue hedgehog who can run at supersonic speeds and constantly foils Dr. Eggman's evil plans.
-^ Sonic the Hedgehog
-A Sonic the Hedgehog
-B Mario
-C Crash Bandicoot
-D Donkey Kong
+#Q Who is the maniacal artificial intelligence created by Tony Stark that decides humanity is Earth's greatest threat in Avengers: Age of Ultron?
+^ Ultron
+A Ultron
+B Thanos
+C Loki
+D Kang the Conqueror
 
-#Q Who am I? I am an Italian plumber wearing red overalls who jumps across obstacles and stomps Goombas to rescue Princess Peach.
-^ Mario
-A Mario
-B Luigi
-C Wario
-D Yoshi
+#Q Which iconic slasher villain wears a white William Shatner mask and terrorizes Haddonfield on Halloween night?
+^ Michael Myers
+A Michael Myers
+B Jason Voorhees
+C Freddy Krueger
+D Ghostface
 
-#Q Who am I? I am a fierce wizarding headmaster of Hogwarts with a long silver beard and half-moon spectacles who mentors Harry Potter.
-^ Albus Dumbledore
-A Albus Dumbledore
-B Severus Snape
-C Rubeus Hagrid
-D Sirius Black
+#Q Who is the cruel stepmother in Disney's Cinderella who forces Cinderella to do endless chores?
+^ Lady Tremaine
+A Lady Tremaine
+B Mother Gothel
+C Queen Grimhilde
+D Madame Medusa
 
-#Q Who am I? I am a blind martial arts attorney by day who patrols Hell's Kitchen as a vigilante demon at night.
-^ Daredevil (Matt Murdock)
-A Daredevil (Matt Murdock)
-B Batman
-C Punisher
-D Iron Fist
+#Q Which Spider-Man scientist villain fuses four mechanical metal tentacles to his spine during a disastrous fusion experiment?
+^ Doctor Octopus (Otto Octavius)
+A Doctor Octopus (Otto Octavius)
+B Green Goblin
+C The Vulture
+D Electro
 
-#Q Who am I? I am a legendary Scottish hobbit who accompanies Frodo to Mordor and carries extra potatoes for campfire cooking.
-^ Samwise Gamgee
-A Samwise Gamgee
-B Merry Brandybuck
-C Pippin Took
-D Bilbo Baggins
+#Q Who is the malevolent wizard and former head of the White Council in The Lord of the Rings who betrays Middle-earth to join Sauron?
+^ Saruman the White
+A Saruman the White
+B Sauron
+C Witch-king
+D Gríma Wormtongue
 
-#Q Who am I? I am an android detective in a dystopian Los Angeles assigned to hunt down renegade replicants in Blade Runner.
-^ Rick Deckard
-A Rick Deckard
-B Roy Batty
-C K
-D Wallace
+#Q Which cybernetic antagonist sent by Skynet in Terminator 2 can mimic physical shapes and liquefy into liquid metal?
+^ T-1000
+A T-1000
+B T-800
+C TX-900
+D Cyberdyne Unit
 
-#Q Who am I? I am a wise, wise-cracking blue genie trapped inside a magical oil lamp in Agrabah.
-^ Genie
-A Genie
+#Q Who is the wicked witch in The Wizard of Oz who sends flying monkeys to hunt down Dorothy and her ruby slippers?
+^ The Wicked Witch of the West
+A The Wicked Witch of the West
+B Glinda
+C Queen of Hearts
+D Maleficent
+
+#Q Which puzzle-loving serial killer in the Saw franchise puts victims into torturous traps to test their appreciation for life?
+^ Jigsaw (John Kramer)
+A Jigsaw (John Kramer)
+B Hannibal Lecter
+C Norman Bates
+D John Doe
+
+#Q Who is the ruthless crime lord and Kingpin of crime in New York City who frequently clashes with Daredevil and Spider-Man?
+^ Wilson Fisk (Kingpin)
+A Wilson Fisk (Kingpin)
+B Green Goblin
+C Lex Luthor
+D Carmine Falcone
+
+#Q Which arrogant prince in Disney's Aladdin tries to win Jasmine's hand before being exposed as an absolute fraud?
+^ Prince Ali (Jafar disguise) / Prince Achmed
+A Prince Achmed
 B Jafar
-C Abu
-D Iago
+C Razoul
+D Sultan
 
-#Q Who am I? I am a teenage boy living in California who accidentally travels back to 1955 inside a plutonium-fueled DeLorean time machine.
-^ Marty McFly
-A Marty McFly
-B Doc Brown
-C Biff Tannen
-D George McFly
+#Q Who is the sadistic warden of Shawshank State Penitentiary who uses inmates for money laundering and corruption?
+^ Warden Samuel Norton
+A Warden Samuel Norton
+B Captain Byron Hadley
+C Tommy Williams
+D Bogs Diamond
 
-#Q Who am I? I am an elite hitman whose peaceful retirement is shattered when ruthless gangsters steal my car and kill my puppy.
-^ John Wick
-A John Wick
-B Jason Bourne
-C Bryan Mills
-D Ethan Hunt
+#Q Which tyrannical computer program takes over the digital grid in TRON and rules with absolute authoritarian control?
+^ Master Control Program (MCP)
+A Master Control Program (MCP)
+B Sark
+C Clu
+D Flynn
 
-#Q Who am I? I am a sarcastic vampire living in Staten Island who has spent centuries bickering with my undead roommates in New York.
-^ Nandor the Relentless
-A Nandor the Relentless
-B Laszlo Cravensworth
-C Colin Robinson
-D Guillermo
+#Q Who is the power-hungry uncle in The Lion King who murders Mufasa and chases Simba out of the Pride Lands?
+^ Scar
+A Scar
+B Banzai
+C Zazu
+D Rafiki
+
+#Q Which eccentric Riddler-obsessed puzzle villain in Batman leaves behind cryptic clues and death traps for the Dark Knight?
+^ The Riddler (Edward Nygma)
+A The Riddler (Edward Nygma)
+B The Joker
+C The Penguin
+D Two-Face
+
+#Q Who is the terrifying alien creature in Ridley Scott's 1979 sci-fi masterpiece Alien that hunts the crew of the Nostromo?
+^ Xenomorph
+A Xenomorph
+B Predator
+C T-800
+D Thing
+
+#Q Which evil queen in Snow White becomes obsessed with being the "fairest of them all" and uses a poisoned apple?
+^ Queen Grimhilde (Evil Queen)
+A Queen Grimhilde (Evil Queen)
+B Maleficent
+C Ursula
+D Lady Tremaine
+
+#Q Who is the corrupt corporate executive in Jurassic Park who tries to smuggle dinosaur embryos out of the island?
+^ Dennis Nedry
+A Dennis Nedry
+B John Hammond
+C Dr. Henry Wu
+D Lewis Dodgson
+
+#Q Which horrifying spirit in The Conjuring universe is a demonic nun who terrorizes paranormal investigators?
+^ Valak (The Nun)
+A Valak (The Nun)
+B Annabelle
+C Bathsheba
+D Crooked Man
+
+#Q Who is the sinister mastermind in The Matrix who works for the Machines as an agent trying to stop Neo?
+^ Agent Smith
+A Agent Smith
+B The Merovingian
+C The Architect
+D Cipher
+
+#Q Which ruthless pirate captain in Peter Pan leads his crew aboard the Jolly Roger and fears a ticking crocodile?
+^ Captain Hook
+A Captain Hook
+B Smee
+C Blackbeard
+D Long John Silver
+
+#Q Who is the power-hungry mutant leader in X-Men who believes mutants should rule over normal humans by force?
+^ Magneto (Erik Lehnsherr)
+A Magneto (Erik Lehnsherr)
+B Apocalypse
+C Mystique
+D Sabretooth
+
+#Q Which wicked stepmother in Disney's Snow White locks her away and demands a hunter bring back her heart?
+^ Queen Grimhilde
+A Queen Grimhilde
+B Lady Tremaine
+C Mother Gothel
+D Ursula
+
+#Q Who is the terrifying killer doll possessed by the soul of a serial killer in the Child's Play franchise?
+^ Chucky
+A Chucky
+B Annabelle
+C Billy
+D Slappy
+
+#Q Which cunning and bloodthirsty warlord in Game of Thrones serves as Ramsay Bolton's brutal father before orchestrating the Red Wedding?
+^ Roose Bolton
+A Roose Bolton
+B Tywin Lannister
+C Walder Frey
+D Joffrey Baratheon
+
+#Q Who is the eccentric and psychotic prince in Game of Thrones who delights in torturing Sansa and executing prisoners?
+^ Joffrey Baratheon
+A Joffrey Baratheon
+B Ramsay Bolton
+C Aerys Targaryen
+D Euron Greyjoy
+
+#Q Which multi-personality motel manager in Alfred Hitchcock's Psycho dresses as his mother to murder motel guests?
+^ Norman Bates
+A Norman Bates
+B Hannibal Lecter
+C Jack Torrance
+D John Doe
+
+#Q Who is the insane anarchist supervillain in Gotham City whose sole goal is to prove that anyone can snap after one bad day?
+^ The Joker
+A The Joker
+B The Riddler
+C Two-Face
+D Scarecrow
