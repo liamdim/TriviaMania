@@ -86,6 +86,17 @@
         <!-- TAB 1: CONTROLS & LIVE GAME -->
         <div id="controls" class="tab-content active">
             
+            <!-- HOST SOUNDBOARD WIDGET -->
+            <div class="card" style="border: 2px solid var(--accent); background: #172033;">
+                <h3>🎛️ Live Host Soundboard</h3>
+                <div class="flex-row" style="gap: 0.75rem;">
+                    <button class="small warning" onclick="playHostSound('applause')">👏 Applause</button>
+                    <button class="small danger" onclick="playHostSound('buzzer')">🚨 Wrong / Buzzer</button>
+                    <button class="small warning" onclick="playHostSound('drumroll')">🥁 Drumroll</button>
+                    <button class="small success" onclick="playHostSound('fanfare')">🎺 Victory Fanfare</button>
+                </div>
+            </div>
+
             <!-- HOST ANNOUNCEMENT & SETTINGS BAR -->
             <div class="card" style="border: 2px solid var(--accent); background: #172033;">
                 <h3>📢 Live Mobile Ticker & Audio Controls</h3>
@@ -99,7 +110,7 @@
                 </div>
                 <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
-                        <input type="checkbox" id="countdownSoundToggle" checked onchange="updateSettings()" style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime (Projector & Mobile)
+                        <input type="checkbox" id="countdownSoundToggle" checked onchange="updateSettings()" style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime
                     </label>
                 </div>
             </div>
@@ -193,10 +204,10 @@
                     <h3>Live Leaderboard</h3>
                     <table id="hostLeaderboardTable">
                         <thead>
-                            <tr><th>Rank</th><th>Player Name</th><th>Score</th></tr>
+                            <tr><th>Rank</th><th>Player Name</th><th>Streak</th><th>Score</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="3" style="color: var(--text-muted);">No scores recorded yet.</td></tr>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -350,6 +361,73 @@
                     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
                     osc.start();
                     osc.stop(ctx.currentTime + 0.4);
+                }
+            } catch (e) {}
+        }
+
+        function playHostSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                if (type === 'buzzer') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(110, ctx.currentTime);
+                    osc.frequency.setValueAtTime(90, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + (i * 0.12));
+                        gain.gain.setValueAtTime(0.15, ctx.currentTime + (i * 0.12));
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (i * 0.12) + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + (i * 0.12));
+                        osc.stop(ctx.currentTime + (i * 0.12) + 0.3);
+                    });
+                } else if (type === 'drumroll') {
+                    for (let i = 0; i < 8; i++) {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(120 + Math.random() * 30, ctx.currentTime + (i * 0.05));
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime + (i * 0.05));
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (i * 0.05) + 0.04);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + (i * 0.05));
+                        osc.stop(ctx.currentTime + (i * 0.05) + 0.04);
+                    }
+                } else if (type === 'applause') {
+                    const bufferSize = ctx.sampleRate * 0.5;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 1000;
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    noise.start();
                 }
             } catch (e) {}
         }
@@ -536,7 +614,7 @@
         }
 
         function launchQuickMobileAd() {
-            const idx = document.getElementById('quickQuickMobileAdSelect')?.value ?? document.getElementById('quickMobileAdSelect').value;
+            const idx = document.getElementById('quickMobileAdSelect').value;
             if (idx === "") { alert('Please select an advert!'); return; }
             socket.emit('broadcast-advert-mobile', savedAds[idx]);
         }
@@ -597,7 +675,22 @@
             if (players.length === 0) {
                 playersListDiv.innerHTML = `<span style="color: var(--text-muted);">Waiting for players to join...</span>`;
             } else {
-                playersListDiv.innerHTML = players.map(p => `<span class="player-badge">👤 ${p.name} (${p.score} pts)</span>`).join('');
+                playersListDiv.innerHTML = players.map(p => `<span class="player-badge">👤 ${p.name} (${p.score} pts • 🔥x${p.streak || 0})</span>`).join('');
+            }
+
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
+            if (sortedPlayers.length === 0) {
+                lbTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>`;
+            } else {
+                lbTbody.innerHTML = sortedPlayers.map((p, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${p.name}</td>
+                        <td>🔥 x${p.streak || 0}</td>
+                        <td><strong>${p.score}</strong></td>
+                    </tr>
+                `).join('');
             }
         });
     </script>
