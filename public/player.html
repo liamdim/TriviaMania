@@ -13,11 +13,12 @@
             --accent-hover: #2563eb;
             --success: #22c55e;
             --danger: #ef4444;
+            --warning: #f59e0b;
             --text: #f8fafc;
             --text-muted: #94a3b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.2rem; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.2rem; padding-bottom: 70px; }
         
         .container { max-width: 500px; width: 100%; margin: auto; }
         .card { background: var(--panel-bg); border-radius: 16px; padding: 2rem; border: 1px solid #334155; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: center; }
@@ -36,7 +37,15 @@
 
         .meta-info { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 600; text-transform: uppercase; }
         
-        #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; text-align: center; }
+        /* Emoji Soundboard */
+        .emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1.5rem; }
+        .emoji-btn { background: #0f172a; border: 1px solid #475569; border-radius: 8px; font-size: 1.6rem; padding: 0.5rem; cursor: pointer; transition: 0.2s; text-align: center; }
+        .emoji-btn:active { transform: scale(0.9); background: var(--accent); }
+
+        /* Host Announcement Banner at Bottom */
+        #announcementBanner { position: fixed; bottom: 0; left: 0; right: 0; background: var(--warning); color: #000; padding: 0.75rem 1rem; font-weight: bold; text-align: center; display: none; z-index: 200; box-shadow: 0 -4px 15px rgba(0,0,0,0.5); font-size: 1rem; }
+
+        #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; padding: 2rem; text-align: center; }
         #advertOverlay img { max-height: 300px; max-width: 90%; border-radius: 10px; margin-top: 1.5rem; border: 2px solid var(--accent); }
     </style>
 </head>
@@ -50,6 +59,9 @@
             <button onclick="joinGame()">Join Game 🚀</button>
         </div>
     </div>
+
+    <!-- Host Announcement Sticky Banner -->
+    <div id="announcementBanner">📢 <span id="announcementText"></span></div>
 
     <div id="advertOverlay">
         <h2 id="adTitleText" style="color: var(--accent); font-size: 2rem; margin-bottom: 1rem;"></h2>
@@ -67,20 +79,16 @@
         let earnedPoints = 0;
         let currentCorrectAnswer = '';
 
-        // Mobile Web Audio Synthesizer
         function playMobileSound(type) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
-                }
+                if (ctx.state === 'suspended') ctx.resume();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.connect(gain);
                 gain.connect(ctx.destination);
 
                 if (type === 'lock') {
-                    // Quick confirmation blip when locking in
                     osc.frequency.setValueAtTime(440, ctx.currentTime);
                     osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
                     gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -88,7 +96,6 @@
                     osc.start();
                     osc.stop(ctx.currentTime + 0.2);
                 } else if (type === 'correct') {
-                    // Triumphant chord for correct answers
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, ctx.currentTime);
                     osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
@@ -98,7 +105,6 @@
                     osc.start();
                     osc.stop(ctx.currentTime + 0.35);
                 } else if (type === 'incorrect') {
-                    // Low buzzer tone for incorrect answers
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(150, ctx.currentTime);
                     osc.frequency.setValueAtTime(110, ctx.currentTime + 0.15);
@@ -108,6 +114,23 @@
                     osc.stop(ctx.currentTime + 0.3);
                 }
             } catch (e) {}
+        }
+
+        // Listen for Host Announcements
+        socket.on('announcement-update', (announcement) => {
+            const banner = document.getElementById('announcementBanner');
+            const textEl = document.getElementById('announcementText');
+            if (announcement.active && announcement.text) {
+                textEl.innerText = announcement.text;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+
+        function sendEmoji(emoji) {
+            playMobileSound('lock');
+            socket.emit('send-emoji', emoji);
         }
 
         function joinGame() {
@@ -124,6 +147,21 @@
             document.getElementById('app').innerHTML = `
                 <h2>${myName}</h2>
                 <p style="color: var(--text-muted); margin-top: 1rem; font-size: 1.1rem;">${message}</p>
+                <div style="margin-top: 1.5rem; border-top: 1px solid #334155; padding-top: 1rem;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Send reaction to big screen:</p>
+                    <div class="emoji-grid">
+                        <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
+                        <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
+                        <button class="emoji-btn" onclick="sendEmoji('🍺')">🍺</button>
+                        <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
+                        <button class="emoji-btn" onclick="sendEmoji('🧠')">🧠</button>
+                        <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
+                        <button class="emoji-btn" onclick="sendEmoji('❤️')">❤️</button>
+                        <button class="emoji-btn" onclick="sendEmoji('🚀')">🚀</button>
+                        <button class="emoji-btn" onclick="sendEmoji('👑')">👑</button>
+                        <button class="emoji-btn" onclick="sendEmoji('67')"><strong style="font-size: 1.1rem;">67</strong></button>
+                    </div>
+                </div>
             `;
         }
 
@@ -243,11 +281,8 @@
             answerResultState = correct ? 'correct' : 'incorrect';
             earnedPoints = points;
 
-            if (correct) {
-                playMobileSound('correct');
-            } else {
-                playMobileSound('incorrect');
-            }
+            if (correct) playMobileSound('correct');
+            else playMobileSound('incorrect');
 
             document.querySelectorAll('.option-btn').forEach(btn => {
                 const rawText = btn.innerText.replace(/^[A-D]\.\s*/, '').split('\n')[0].trim();
