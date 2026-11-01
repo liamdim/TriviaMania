@@ -304,7 +304,7 @@
             height: 200
         });
 
-        // Venue details persistence
+        // Venue details sync
         const venueInput = document.getElementById('venueDetailsInput');
         venueInput.value = localStorage.getItem('triviamania_venue_details') || '';
 
@@ -312,6 +312,13 @@
             localStorage.setItem('triviamania_venue_details', venueInput.value);
             socket.emit('update-venue-details', venueInput.value);
         }
+
+        // Send initial saved venue details once connected
+        socket.on('connect', () => {
+            if (venueInput.value) {
+                socket.emit('update-venue-details', venueInput.value);
+            }
+        });
 
         function copyPlayerLink() {
             navigator.clipboard.writeText(playerUrl);
