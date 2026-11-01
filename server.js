@@ -42,10 +42,19 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
+// Robust Category Parser supporting both extensionless and .txt files
 function parseCategoryFile(filename) {
-    const cleanName = filename.replace('.txt', '');
-    const filePath = path.join(__dirname, 'categories', cleanName);
-    if (!fs.existsSync(filePath)) return [];
+    const categoriesDir = path.join(__dirname, 'categories');
+    
+    // Try exact filename first, then check with .txt if not found
+    let filePath = path.join(categoriesDir, filename);
+    if (!fs.existsSync(filePath)) {
+        filePath = path.join(categoriesDir, filename + '.txt');
+    }
+    if (!fs.existsSync(filePath)) {
+        console.warn(`Category file not found: ${filename}`);
+        return [];
+    }
 
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split(/\r?\n/);
@@ -164,10 +173,10 @@ io.on('connection', (socket) => {
         startQuestionTimer();
     });
 
-    // Launch Next Question (Corrected indexing to play through all questions)
+    // Launch Next Question (Rock-solid progression through all questions)
     socket.on('next-question', () => {
         const round = gameState.playlist[gameState.currentRoundIndex];
-        if (!round) return;
+        if (!round || !round.questions) return;
 
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
 
