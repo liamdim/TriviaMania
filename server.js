@@ -50,6 +50,20 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
+// Endpoint to load BeatIQ music tracks & genres
+app.get('/api/beatiq/tracks', (req, res) => {
+    try {
+        const curatedTracksPath = path.join(__dirname, 'data', 'curatedTracks.json');
+        if (fs.existsSync(curatedTracksPath)) {
+            const data = JSON.parse(fs.readFileSync(curatedTracksPath, 'utf8'));
+            return res.json(data);
+        }
+        res.json([]);
+    } catch (err) {
+        res.json([]);
+    }
+});
+
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
@@ -135,7 +149,7 @@ io.on('connection', (socket) => {
             pointsEarned = Math.round((50 + Math.max(0, timeBonus) + speedBonus) * streakMultiplier);
             player.score += pointsEarned;
         } else {
-            player.streak = 0; // Reset streak on incorrect answer
+            player.streak = 0;
         }
 
         player.hasAnsweredCurrent = true;
@@ -153,6 +167,37 @@ io.on('connection', (socket) => {
             genre: roundConfig.genre,
             timer: roundConfig.timer ? parseInt(roundConfig.timer) : null,
             questions: selectedQuestions
+        });
+        io.emit('state-update', gameState);
+    });
+
+    // Add BeatIQ Music round into main playlist
+    socket.on('add-beatiq-round', (roundConfig) => {
+        const selectedTracks = roundConfig.tracks || [];
+        const allArtists = selectedTracks.map(t => t.artist);
+
+        const questions = selectedTracks.map((t) => {
+            const wrongArtists = allArtists.filter(a => a !== t.artist).sort(() => 0.5 - Math.random()).slice(0, 3);
+            while (wrongArtists.length < 3) {
+                wrongArtists.push('Alternative Artist ' + (wrongArtists.length + 1));
+            }
+            const options = [t.artist, ...wrongArtists].sort(() => 0.5 - Math.random());
+
+            return {
+                question: `🎧 Listen to the snippet: Which artist or band performed "${t.title}"?`,
+                options: options,
+                answer: t.artist,
+                fastestPlayerId: null,
+                audioPreviewUrl: t.previewUrl || null,
+                spotifyUrl: t.spotifyUrl || null
+            };
+        });
+
+        gameState.playlist.push({
+            name: `🎵 Music: ${roundConfig.name}`,
+            genre: 'BeatIQ Music',
+            timer: 20,
+            questions: questions
         });
         io.emit('state-update', gameState);
     });
