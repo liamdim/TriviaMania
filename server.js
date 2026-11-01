@@ -1,308 +1,215 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e7 });
+const io = new Server(server);
 
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 
+// Game State
 let gameState = {
-    status: 'lobby',
-    currentRound: null,
+    status: 'IDLE', // IDLE, LOBBY, QUESTION, LEADERBOARD, PAUSED
+    currentRoundIndex: 0,
+    playlist: [],
     currentQuestionIndex: 0,
-    timer: 15,
-    scores: {},
-    settings: {
-        eventTitle: 'TriviaMania Live Event'
-    },
-    advert: { active: false, title: '', image: '', target: 'none' },
-    poll: { active: false, question: 'What is your favorite pub drink?', options: ['Beer / Cider', 'Wine / Prosecco', 'Cocktails', 'Soft Drinks'], votes: {} }
+    timer: 0,
+    timerMax: 15,
+    scores: {}, // socketId -> { name, score }
+    activeAdvert: null,
+    settings: { questionTime: 15 }
 };
 
-let players = {};
-let questionInterval = null;
-let delayTimeout = null;
-let answeredThisQuestion = new Set();
+let timerInterval = null;
 
-const backupQuestionBanks = {
-    "for-kids": [
-        { q: "What color is a banana when it is ripe and ready to eat?", a: "Yellow", options: ["Yellow", "Blue", "Pink", "Black"] },
-        { q: "How many legs does a spider have?", a: "8", options: ["6", "8", "10", "4"] },
-        { q: "What sound does a cow make?", a: "Moo", options: ["Baa", "Moo", "Quack", "Woof"] },
-        { q: "What is the name of Mickey Mouse's pet dog?", a: "Pluto", options: ["Goofy", "Pluto", "Bolt", "Snoopy"] },
-        { q: "Which Disney movie features a snowman named Olaf who likes warm hugs?", a: "Frozen", options: ["Cars", "Toy Story", "Frozen", "Moana"] }
-    ],
-    "general": [
-        { q: "What is the capital city of Australia?", a: "Canberra", options: ["Sydney", "Melbourne", "Canberra", "Brisbane"] },
-        { q: "Which chemical element has the symbol 'Au'?", a: "Gold", options: ["Silver", "Gold", "Copper", "Argon"] },
-        { q: "How many bones are in the adult human body?", a: "206", options: ["200", "206", "214", "198"] },
-        { q: "What is the hardest natural substance on Earth?", a: "Diamond", options: ["Gold", "Iron", "Diamond", "Quartz"] },
-        { q: "Which planet in our solar system is the largest?", a: "Jupiter", options: ["Saturn", "Jupiter", "Neptune", "Earth"] }
-    ],
-    "movies": [
-        { q: "Which film won Best Picture in 1994?", a: "Forrest Gump", options: ["Pulp Fiction", "The Shawshank Redemption", "Forrest Gump", "Quiz Show"] },
-        { q: "Who directed 'Jurassic Park' (1993)?", a: "Steven Spielberg", options: ["James Cameron", "George Lucas", "Steven Spielberg", "Ridley Scott"] }
-    ]
-};
-
-app.get('/api/questions/:category', (req, res) => {
-    let category = req.params.category.toLowerCase().trim();
-    const count = parseInt(req.query.count) || 10;
-    
-    let filePath = null;
-    const possibleNames = [`${category}.txt`, `${category}`, `${category.replace(/-/g, '_')}.txt`, `${category.replace(/-/g, '_')}`];
-    
-    for (let name of possibleNames) {
-        let testPath = path.join(__dirname, 'categories', name);
-        if (fs.existsSync(testPath) && fs.lstatSync(testPath).isFile()) {
-            filePath = testPath;
-            break;
-        }
+// Custom Parser for #Q and ^ text category files
+function parseCategoryFile(filename) {
+    const filePath = path.join(__dirname, 'categories', filename);
+    if (!fs.existsSync(filePath)) {
+        console.warn(`Category file not found: ${filePath}`);
+        return [];
     }
 
-    if (!filePath) {
-        const pool = backupQuestionBanks[category] || backupQuestionBanks["general"];
-        const shuffled = [...pool].sort(() => Math.random() - 0.5);
-        return res.json(shuffled.slice(0, count));
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const lines = fileContent.split(/\r?\n/);
+    const questions = [];
+    let currentQ = null;
+
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+
+        if (line.startsWith('#Q')) {
+            if (currentQ) questions.push(currentQ);
+            currentQ = {
+                question: line.replace('#Q', '').trim(),
+                options: [],
+                answer: ''
+            };
+        } else if (line.startsWith('^')) {
+            if (currentQ) {
+                currentQ.answer = line.replace('^', '').trim();
+            }
+        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
+            if (currentQ) {
+                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
+                currentQ.options.push(optText);
+            }
+        }
     }
+    if (currentQ) questions.push(currentQ);
+    return questions;
+}
 
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) {
-            const pool = backupQuestionBanks[category] || backupQuestionBanks["general"];
-            const shuffled = [...pool].sort(() => Math.random() - 0.5);
-            return res.json(shuffled.slice(0, count));
+// Socket.io Connection Handling
+io.on('connection', (socket) => {
+    console.log(`User connected: ${socket.id}`);
+
+    // Send current state on connection
+    socket.emit('state-update', gameState);
+
+    // Player Joins Game
+    socket.on('player-join', (playerName) => {
+        const cleanName = playerName ? playerName.trim() : 'Anonymous';
+        gameState.scores[socket.id] = { name: cleanName, score: 0 };
+        io.emit('state-update', gameState);
+    });
+
+    // Player Locks In Answer
+    socket.on('submit-answer', ({ answer, timeRemaining }) => {
+        if (gameState.status !== 'QUESTION') return;
+        const player = gameState.scores[socket.id];
+        if (!player) return;
+
+        const currentRound = gameState.playlist[gameState.currentRoundIndex];
+        if (!currentRound || !currentRound.questions) return;
+
+        const currentQ = currentRound.questions[gameState.currentQuestionIndex];
+        if (!currentQ) return;
+
+        // Check if correct (case-insensitive trim match)
+        const isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
+        
+        if (isCorrect && !player.hasAnsweredCurrent) {
+            // Speed points calculation (50 base + up to 50 scaling with remaining timer)
+            const bonus = Math.floor((timeRemaining / gameState.timerMax) * 50);
+            const pointsEarned = 50 + Math.max(0, bonus);
+            player.score += pointsEarned;
+            player.hasAnsweredCurrent = true;
+            socket.emit('answer-result', { correct: true, points: pointsEarned });
+        } else {
+            socket.emit('answer-result', { correct: false, points: 0 });
+        }
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Add Round to Playlist
+    socket.on('add-round', (roundConfig) => {
+        // roundConfig expects { genre: 'disney-pixar', name: 'Disney Round', count: 10 }
+        const questions = parseCategoryFile(`${roundConfig.genre}.txt`);
+        // Shuffle or slice requested count
+        const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
+        
+        gameState.playlist.push({
+            name: roundConfig.name || roundConfig.genre,
+            genre: roundConfig.genre,
+            questions: selectedQuestions
+        });
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Clear Playlist
+    socket.on('clear-playlist', () => {
+        gameState.playlist = [];
+        gameState.currentRoundIndex = 0;
+        gameState.currentQuestionIndex = 0;
+        gameState.status = 'IDLE';
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Start / Resume Round (Enters paused Lobby state first)
+    socket.on('start-round', () => {
+        if (gameState.playlist.length === 0) return;
+        gameState.status = 'LOBBY';
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Launch Question from Lobby / Next Question
+    socket.on('next-question', () => {
+        const round = gameState.playlist[gameState.currentRoundIndex];
+        if (!round) return;
+
+        // Reset player answer status for new question
+        Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
+
+        if (gameState.currentQuestionIndex >= round.questions.length) {
+            // Round finished, go to leaderboard or next round
+            gameState.status = 'LEADERBOARD';
+            io.emit('state-update', gameState);
+            return;
         }
 
-        const lines = data.split('\n').map(l => l.trim());
-        let questions = [];
-        let currentQ = null;
-        let currentAns = null;
-        let currentOpts = [];
+        gameState.status = 'QUESTION';
+        gameState.timerMax = gameState.settings.questionTime || 15;
+        gameState.timer = gameState.timerMax;
+        
+        io.emit('state-update', gameState);
+        startQuestionTimer();
+    });
 
-        for (let line of lines) {
-            if (line.startsWith('#Q ')) {
-                if (currentQ && currentAns && currentOpts.length >= 2) {
-                    questions.push({ q: currentQ, a: currentAns, options: [...currentOpts] });
-                }
-                currentQ = line.replace('#Q ', '').trim();
-                currentAns = null;
-                currentOpts = [];
-            } else if (line.startsWith('^ ')) {
-                currentAns = line.replace('^ ', '').trim();
-                if (!currentOpts.includes(currentAns)) currentOpts.push(currentAns);
-            } else if (/^[A-D]\s/.test(line)) {
-                let optVal = line.replace(/^[A-D]\s/, '').trim();
-                if (!currentOpts.includes(optVal)) currentOpts.push(optVal);
-            }
-        }
-        if (currentQ && currentAns && currentOpts.length >= 2) {
-            questions.push({ q: currentQ, a: currentAns, options: [...currentOpts] });
-        }
+    // Host Controls: Stop / Reset Game
+    socket.on('stop-reset', () => {
+        if (timerInterval) clearInterval(timerInterval);
+        gameState.status = 'IDLE';
+        gameState.currentRoundIndex = 0;
+        gameState.currentQuestionIndex = 0;
+        gameState.activeAdvert = null;
+        io.emit('state-update', gameState);
+    });
 
-        if (questions.length === 0) {
-            for (let i = 0; i < lines.length; i++) {
-                if (i + 4 < lines.length) {
-                    let possibleQ = {
-                        q: lines[i],
-                        options: [lines[i+1], lines[i+2], lines[i+3], lines[i+4]],
-                        a: lines[i+1]
-                    };
-                    if (possibleQ.q && possibleQ.options.length === 4) {
-                        questions.push(possibleQ);
-                        i += 4;
-                    }
-                }
-            }
-        }
+    // Host Controls: Broadcast Advert
+    socket.on('broadcast-advert', (adData) => {
+        gameState.activeAdvert = adData;
+        io.emit('state-update', gameState);
+    });
 
-        if (questions.length === 0) {
-            questions = backupQuestionBanks[category] || backupQuestionBanks["general"];
-        }
+    // Host Controls: Hide Advert
+    socket.on('hide-advert', () => {
+        gameState.activeAdvert = null;
+        io.emit('state-update', gameState);
+    });
 
-        const shuffled = questions.sort(() => Math.random() - 0.5);
-        res.json(shuffled.slice(0, count));
+    socket.on('disconnect', () => {
+        delete gameState.scores[socket.id];
+        io.emit('state-update', gameState);
     });
 });
 
 function startQuestionTimer() {
-    if (questionInterval) clearInterval(questionInterval);
-    if (delayTimeout) clearTimeout(delayTimeout);
-    
-    if (!gameState.currentRound || !gameState.currentRound.questions) return;
-    
-    let roundTimer = gameState.currentRound.timer || 15;
-    gameState.timer = roundTimer;
-    gameState.status = 'question';
-    answeredThisQuestion.clear();
-    
-    io.emit('gameStateUpdate', gameState);
+    if (timerInterval) clearInterval(timerInterval);
 
-    questionInterval = setInterval(() => {
-        roundTimer--;
-        gameState.timer = roundTimer;
-        io.emit('timerUpdate', gameState.timer);
+    timerInterval = setInterval(() => {
+        if (gameState.status === 'QUESTION') {
+            gameState.timer--;
+            io.emit('timer-tick', gameState.timer);
 
-        if (roundTimer <= 0) {
-            clearInterval(questionInterval);
-            io.emit('revealAnswer');
-
-            const betweenDelay = (gameState.currentRound.betweenDelay || 5) * 1000;
-            delayTimeout = setTimeout(() => {
-                advanceToNextQuestion();
-            }, betweenDelay);
+            if (gameState.timer <= 0) {
+                clearInterval(timerInterval);
+                gameState.status = 'LEADERBOARD';
+                // Advance question index for next time
+                gameState.currentQuestionIndex++;
+                io.emit('state-update', gameState);
+            }
         }
     }, 1000);
 }
 
-function advanceToNextQuestion() {
-    if (gameState.currentRound && gameState.currentRound.questions) {
-        if (gameState.currentQuestionIndex < gameState.currentRound.questions.length - 1) {
-            gameState.currentQuestionIndex++;
-            startQuestionTimer();
-        } else {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            gameState.status = 'finished';
-            io.emit('gameStateUpdate', gameState);
-        }
-    }
-}
-
-io.on('connection', (socket) => {
-    socket.emit('gameStateUpdate', gameState);
-    socket.emit('pollUpdate', gameState.poll);
-    socket.emit('updatePlayers', players);
-    
-    if (gameState.advert.active) {
-        socket.emit('advertUpdate', gameState.advert);
-    }
-
-    socket.on('joinGame', (data) => {
-        players[socket.id] = {
-            name: data.name || 'Anonymous Team',
-            avatar: data.avatar || '🎯',
-            score: 0
-        };
-        io.emit('updatePlayers', players);
-    });
-
-    socket.on('submitAnswer', (data) => {
-        if (!players[socket.id] || answeredThisQuestion.has(socket.id)) return;
-        
-        const qIndex = gameState.currentQuestionIndex || 0;
-        const currentRound = gameState.currentRound;
-        if (!currentRound || !currentRound.questions || !currentRound.questions[qIndex]) return;
-
-        const currentQ = currentRound.questions[qIndex];
-        const isCorrect = data.answer.trim() === currentQ.a.trim();
-
-        if (isCorrect) {
-            answeredThisQuestion.add(socket.id);
-            const maxTimer = currentRound.timer || 15;
-            const timeLeft = gameState.timer || 0;
-            const earnedPoints = Math.round(50 + (50 * (timeLeft / maxTimer)));
-            
-            players[socket.id].score += earnedPoints;
-            io.emit('updatePlayers', players);
-            socket.emit('answerResult', { correct: true, points: earnedPoints });
-        } else {
-            answeredThisQuestion.add(socket.id);
-            socket.emit('answerResult', { correct: false, points: 0 });
-        }
-    });
-
-    socket.on('submitVote', (data) => {
-        if (socket.id && players[socket.id]) {
-            gameState.poll.votes[socket.id] = { name: players[socket.id].name, vote: data.vote };
-            io.emit('pollUpdate', gameState.poll);
-        }
-    });
-
-    socket.on('hostAction', (data) => {
-        if (data.action === 'loadRound') {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            // Load round into memory but keep status in lobby/paused until host clicks Start
-            gameState.currentRound = data.payload;
-            gameState.currentQuestionIndex = 0;
-            gameState.status = 'paused'; 
-            io.emit('gameStateUpdate', gameState);
-        } else if (data.action === 'stopGame') {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            gameState.status = 'lobby';
-            gameState.currentRound = null;
-            gameState.currentQuestionIndex = 0;
-            io.emit('gameStateUpdate', gameState);
-        } else if (data.action === 'restart') {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            gameState.currentQuestionIndex = 0;
-            startQuestionTimer();
-        } else if (data.action === 'nextQuestion') {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            advanceToNextQuestion();
-        } else if (data.action === 'resume') {
-            startQuestionTimer();
-        } else if (data.action === 'pause') {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            gameState.status = 'paused';
-            io.emit('gamePaused');
-        } else if (data.action === 'reveal') {
-            if (questionInterval) clearInterval(questionInterval);
-            if (delayTimeout) clearTimeout(delayTimeout);
-            io.emit('revealAnswer');
-        } else if (data.action === 'pushAdvert') {
-            gameState.advert = { 
-                active: true, 
-                title: data.payload.title || 'Sponsor Ad', 
-                image: data.payload.image || '', 
-                target: data.payload.target || 'both' 
-            };
-            io.emit('advertUpdate', gameState.advert);
-        } else if (data.action === 'hideAdvert') {
-            gameState.advert.active = false;
-            io.emit('advertUpdate', gameState.advert);
-        } else if (data.action === 'updatePoll') {
-            if (data.payload && data.payload.question) {
-                const optList = typeof data.payload.options === 'string' 
-                    ? data.payload.options.split(',').map(s => s.trim()).filter(Boolean) 
-                    : (data.payload.options || ['Yes', 'No']);
-                
-                if (!data.payload.active) {
-                    gameState.poll.active = false;
-                } else {
-                    gameState.poll = { 
-                        active: true, 
-                        question: data.payload.question, 
-                        options: optList,
-                        votes: {} 
-                    };
-                }
-                io.emit('pollUpdate', gameState.poll);
-            }
-        } else if (data.action === 'updateSettings') {
-            if (data.payload && data.payload.eventTitle) {
-                gameState.settings.eventTitle = data.payload.eventTitle;
-                io.emit('updateSettings', gameState.settings);
-            }
-        }
-    });
-
-    socket.on('disconnect', () => {
-        delete players[socket.id];
-        io.emit('updatePlayers', players);
-    });
-});
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`TriviaMania running on port ${PORT}`);
+    console.log(`TriviaMania server running on http://localhost:${PORT}`);
 });
