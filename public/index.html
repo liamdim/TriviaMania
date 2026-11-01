@@ -75,10 +75,10 @@
     </header>
 
     <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('controls')">Live Controls & Game</button>
-        <button class="tab-btn" onclick="switchTab('playlist')">Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('adverts')">Adverts & Sponsors</button>
-        <button class="tab-btn" onclick="switchTab('lobby')">Lobby & QR</button>
+        <button class="tab-btn active" onclick="switchTab('controls', this)">Live Controls & Game</button>
+        <button class="tab-btn" onclick="switchTab('playlist', this)">Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('adverts', this)">Adverts & Sponsors</button>
+        <button class="tab-btn" onclick="switchTab('lobby', this)">Lobby & QR</button>
     </div>
 
     <div class="container">
@@ -99,7 +99,7 @@
                 </div>
                 <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
-                        <input type="checkbox" id="countdownSoundToggle" checked style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime on Projector
+                        <input type="checkbox" id="countdownSoundToggle" checked onchange="updateSettings()" style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime (Projector & Mobile)
                     </label>
                 </div>
             </div>
@@ -365,11 +365,16 @@
             socket.emit('update-announcement', { active: false, text: '' });
         }
 
-        function switchTab(tabId) {
+        function switchTab(tabId, element) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            } else {
+                const btn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+                if (btn) btn.classList.add('active');
+            }
         }
 
         const playerUrl = window.location.origin + '/player.html';
@@ -428,7 +433,7 @@
             alert('Round added to playlist!');
         }
 
-        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
+        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2'] || '[]');
 
         function saveNewAdvert() {
             const title = document.getElementById('adTitleInput').value;
@@ -546,6 +551,11 @@
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
+            
+            // Sync toggle UI state from server settings if needed
+            if (state.settings && state.settings.countdownSound !== undefined) {
+                document.getElementById('countdownSoundToggle').checked = state.settings.countdownSound;
+            }
             
             const previewBox = document.getElementById('hostPreviewBox');
             const currentRound = state.playlist[state.currentRoundIndex];
