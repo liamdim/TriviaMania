@@ -48,7 +48,6 @@
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
         #advertOverlay img { max-height: 480px; max-width: 85%; border-radius: 16px; margin-top: 1rem; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.4); }
         
-        /* Corner QR Badge on Adverts */
         .corner-qr { position: absolute; bottom: 2rem; right: 2rem; background: white; padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .corner-qr span { font-size: 0.85rem; font-weight: bold; color: #0f172a; margin-top: 0.4rem; }
     </style>
@@ -76,7 +75,6 @@
         const socket = io();
         const letters = ['A', 'B', 'C', 'D'];
         let currentQuestionData = null;
-        let venueDetailsText = '';
 
         const playerUrl = window.location.origin + '/player.html';
         
@@ -85,10 +83,6 @@
             text: playerUrl,
             width: 100,
             height: 100
-        });
-
-        socket.on('venue-update', (text) => {
-            venueDetailsText = text;
         });
 
         socket.on('state-update', (state) => {
@@ -112,11 +106,12 @@
 
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 displayArea.innerHTML = `
-                    ${venueDetailsText ? `<p style="color: var(--warning); font-size: 1.4rem; font-weight: 600; margin-bottom: 1.5rem; white-space: pre-line;">${venueDetailsText}</p>` : ''}
+                    ${state.venueDetails ? `<p style="color: var(--warning); font-size: 1.4rem; font-weight: 600; margin-bottom: 1.5rem; white-space: pre-line;">${state.venueDetails}</p>` : ''}
                     <h2>Game Lobby Open!</h2>
                     <p style="color: var(--text-muted); font-size: 1.4rem; margin-top: 1rem; margin-bottom: 1.5rem;">Scan the QR code with your phone camera to join and play!</p>
                     <div id="lobbyQrContainer" style="display: flex; justify-content: center; background: white; padding: 1rem; border-radius: 12px; width: fit-content; margin: 0 auto;"></div>
                 `;
+                document.getElementById('lobbyQrContainer.innerHTML = ""'; // reset container
                 new QRCode(document.getElementById("lobbyQrContainer"), {
                     text: playerUrl,
                     width: 220,
@@ -141,7 +136,7 @@
                     </div>
                     <h2>${q.question}</h2>
                     <div class="options-grid">
-                        ${q.options.link ? '' : q.options.map((opt, idx) => `<div class="option-box" id="opt-${idx}"><strong>${letters[idx]}.</strong> ${opt}</div>`).join('')}
+                        ${q.options.map((opt, idx) => `<div class="option-box" id="opt-${idx}"><strong>${letters[idx]}.</strong> ${opt}</div>`).join('')}
                     </div>
                 `;
             } else if (state.status === 'LEADERBOARD') {
