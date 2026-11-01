@@ -18,9 +18,9 @@
             --text-muted: #94a3b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; overflow: hidden; position: relative; }
         
-        .container { max-width: 1000px; width: 100%; }
+        .container { max-width: 1000px; width: 100%; z-index: 10; }
         .card { background: var(--panel-bg); border-radius: 20px; padding: 3rem; border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.7); animation: fadeIn 0.4s ease-out; }
         
         @keyframes fadeIn {
@@ -48,8 +48,16 @@
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
         #advertOverlay img { max-height: 480px; max-width: 85%; border-radius: 16px; margin-top: 1rem; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.4); }
         
-        .corner-qr { position: absolute; bottom: 2rem; right: 2rem; background: white; padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .corner-qr { position: absolute; bottom: 2rem; right: 2rem; background: white; padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 20; }
         .corner-qr span { font-size: 0.85rem; font-weight: bold; color: #0f172a; margin-top: 0.4rem; }
+
+        /* Floating Emojis Animation */
+        .floating-emoji { position: absolute; bottom: 0; font-size: 3.5rem; animation: floatUp 3.5s linear forwards; pointer-events: none; z-index: 50; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.6); opacity: 0; }
+            20% { opacity: 1; transform: translateY(-100px) scale(1.2); }
+            100% { transform: translateY(-85vh) scale(1); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -61,7 +69,6 @@
         </div>
     </div>
 
-    <!-- Advert Overlay with Corner QR Code -->
     <div id="advertOverlay">
         <h1 id="adTitleText" style="font-size: 3rem; color: var(--accent); margin-bottom: 0.5rem;"></h1>
         <img id="adImageTag" src="" alt="Advert" style="display: none;">
@@ -77,12 +84,33 @@
         let currentQuestionData = null;
 
         const playerUrl = window.location.origin + '/player.html';
-        
-        // Generate Corner QR Code for Adverts
-        new QRCode(document.getElementById("cornerQrContainer"), {
-            text: playerUrl,
-            width: 100,
-            height: 100
+        new QRCode(document.getElementById("cornerQrContainer"), { text: playerUrl, width: 100, height: 100 });
+
+        // Countdown Chime Sound
+        function playCountdownChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch (e) {}
+        }
+
+        // Floating Emoji listener
+        socket.on('player-emoji', ({ emoji }) => {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = emoji;
+            el.style.left = Math.random() * 85 + 10 + 'vw';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3500);
         });
 
         socket.on('state-update', (state) => {
@@ -112,11 +140,7 @@
                     <div id="lobbyQrContainer" style="display: flex; justify-content: center; background: white; padding: 1rem; border-radius: 12px; width: fit-content; margin: 0 auto;"></div>
                 `;
                 document.getElementById('lobbyQrContainer').innerHTML = "";
-                new QRCode(document.getElementById("lobbyQrContainer"), {
-                    text: playerUrl,
-                    width: 220,
-                    height: 220
-                });
+                new QRCode(document.getElementById("lobbyQrContainer"), { text: playerUrl, width: 220, height: 220 });
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 if (!round) return;
@@ -180,8 +204,14 @@
             if (timerEl) {
                 timerEl.innerText = timeLeft + 's';
                 timerEl.className = 'timer-badge';
-                if (timeLeft <= 5) timerEl.classList.add('danger');
-                else if (timeLeft <= 8) timerEl.classList.add('warning');
+                if (timeLeft <= 5) {
+                    timerEl.classList.add('danger');
+                    // Check if host enabled chime
+                    // We can also trigger chime when <= 5
+                    playCountdownChime();
+                } else if (timeLeft <= 8) {
+                    timerEl.classList.add('warning');
+                }
             }
         });
     </script>
