@@ -69,6 +69,7 @@
         </div>
     </div>
 
+    <!-- Advert Overlay with Corner QR Code -->
     <div id="advertOverlay">
         <h1 id="adTitleText" style="font-size: 3rem; color: var(--accent); margin-bottom: 0.5rem;"></h1>
         <img id="adImageTag" src="" alt="Advert" style="display: none;">
@@ -84,7 +85,13 @@
         let currentQuestionData = null;
 
         const playerUrl = window.location.origin + '/player.html';
-        new QRCode(document.getElementById("cornerQrContainer"), { text: playerUrl, width: 100, height: 100 });
+        
+        // Generate Corner QR Code for Adverts
+        new QRCode(document.getElementById("cornerQrContainer"), {
+            text: playerUrl,
+            width: 100,
+            height: 100
+        });
 
         // Countdown Chime Sound
         function playCountdownChime() {
@@ -103,7 +110,7 @@
             } catch (e) {}
         }
 
-        // Floating Emoji listener
+        // Floating Emoji listener from mobile players
         socket.on('player-emoji', ({ emoji }) => {
             const el = document.createElement('div');
             el.className = 'floating-emoji';
@@ -140,7 +147,11 @@
                     <div id="lobbyQrContainer" style="display: flex; justify-content: center; background: white; padding: 1rem; border-radius: 12px; width: fit-content; margin: 0 auto;"></div>
                 `;
                 document.getElementById('lobbyQrContainer').innerHTML = "";
-                new QRCode(document.getElementById("lobbyQrContainer"), { text: playerUrl, width: 220, height: 220 });
+                new QRCode(document.getElementById("lobbyQrContainer"), {
+                    text: playerUrl,
+                    width: 220,
+                    height: 220
+                });
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 if (!round) return;
@@ -206,8 +217,6 @@
                 timerEl.className = 'timer-badge';
                 if (timeLeft <= 5) {
                     timerEl.classList.add('danger');
-                    // Check if host enabled chime
-                    // We can also trigger chime when <= 5
                     playCountdownChime();
                 } else if (timeLeft <= 8) {
                     timerEl.classList.add('warning');
