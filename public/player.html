@@ -87,11 +87,11 @@
             const app = document.getElementById('app');
             const adOverlay = document.getElementById('advertOverlay');
 
-            if (state.activeAdvert && (state.activeAdvert.target === 'both' || state.activeAdvert.target === 'mobile')) {
-                document.getElementById('adTitleText').innerText = state.activeAdvert.title;
+            if (state.activeMobileAdvert) {
+                document.getElementById('adTitleText').innerText = state.activeMobileAdvert.title;
                 const imgTag = document.getElementById('adImageTag');
-                if (state.activeAdvert.image) {
-                    imgTag.src = state.activeAdvert.image;
+                if (state.activeMobileAdvert.image) {
+                    imgTag.src = state.activeMobileAdvert.image;
                     imgTag.style.display = 'block';
                 } else {
                     imgTag.style.display = 'none';
@@ -199,8 +199,6 @@
             earnedPoints = points;
 
             document.querySelectorAll('.option-btn').forEach(btn => {
-                // Extract clean text after the 'A. ' prefix
-                const btnHtmlText = btn.innerHTML;
                 const rawText = btn.innerText.replace(/^[A-D]\.\s*/, '').split('\n')[0].trim();
                 const prefixMatch = btn.innerHTML.match(/<strong>([A-D]\.)<\/strong>/);
                 const prefix = prefixMatch ? prefixMatch[0] : '';
