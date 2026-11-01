@@ -1,0 +1,69 @@
+#Q Which Disney animated movie features a snowman named Olaf who loves warm hugs?
+^ Frozen
+A Frozen
+B Cars
+C Toy Story
+D Moana
+
+#Q What is the name of the cowboy doll who leads the toys in Toy Story?
+^ Woody
+A Woody
+B Buzz Lightyear
+C Andy
+D Rex
+
+#Q In Finding Nemo, what is the name of the forgetful blue fish who helps Marlin?
+^ Dory
+A Dory
+B Peach
+C Bubbles
+D Deb
+
+#Q Which Pixar film is set inside the mind and core emotions of a young girl named Riley?
+^ Inside Out
+A Inside Out
+B Soul
+C Up
+D Coco
+
+#Q What is the name of the lion cub prince who sings "I Just Can't Wait to Be King"?
+^ Simba
+A Simba
+B Scar
+C Mufasa
+D Timon
+
+#Q In The Lion King, what are the names of Simba's wisecracking meerkat and warthog best friends?
+^ Timon and Pumbaa
+A Timon and Pumbaa
+B Banzai and Shenzi
+C Zazu and Rafiki
+D Kovu and Kiara
+
+#Q Which Disney princess loses her glass slipper while fleeing the royal ball at midnight?
+^ Cinderella
+A Cinderella
+B Snow White
+C Sleeping Beauty
+D Belle
+
+#Q What kind of animal is Remy, the main character who dreams of becoming a chef in Ratatouille?
+^ Rat
+A Rat
+B Mouse
+C Hamster
+D Ferret
+
+#Q In the movie Up, what colorful object does Carl Fredricksen use to float his house into the sky?
+^ Balloons
+A Balloons
+B Kites
+C A Helicopter
+D Parachutes
+
+#Q Which Disney movie features a Hawaiian girl named Lilo and her alien experiment friend, Stitch?
+^ Lilo & Stitch
+A Lilo & Stitch
+B Moana
+C Treasure Planet
+D Atlantis
