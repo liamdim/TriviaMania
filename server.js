@@ -227,10 +227,18 @@ io.on('connection', (socket) => {
         if (data.action === 'loadRound') {
             if (questionInterval) clearInterval(questionInterval);
             if (delayTimeout) clearTimeout(delayTimeout);
+            // Load round into memory but keep status in lobby/paused until host clicks Start
             gameState.currentRound = data.payload;
             gameState.currentQuestionIndex = 0;
-            gameState.status = 'question';
-            startQuestionTimer();
+            gameState.status = 'paused'; 
+            io.emit('gameStateUpdate', gameState);
+        } else if (data.action === 'stopGame') {
+            if (questionInterval) clearInterval(questionInterval);
+            if (delayTimeout) clearTimeout(delayTimeout);
+            gameState.status = 'lobby';
+            gameState.currentRound = null;
+            gameState.currentQuestionIndex = 0;
+            io.emit('gameStateUpdate', gameState);
         } else if (data.action === 'restart') {
             if (questionInterval) clearInterval(questionInterval);
             if (delayTimeout) clearTimeout(delayTimeout);
