@@ -33,7 +33,7 @@
         .option-btn.selected-lock { background: var(--accent) !important; border-color: white !important; color: white !important; box-shadow: 0 0 15px rgba(59,130,246,0.6); }
         .option-btn.correct { background: rgba(34, 197, 94, 0.4) !important; border-color: var(--success) !important; color: #4ade80 !important; }
         .option-btn.incorrect { background: rgba(239, 68, 68, 0.4) !important; border-color: var(--danger) !important; color: #f87171 !important; }
-        .option-btn.reveal-correct { background: rgba(34, 197, 94, 0.15) !important; border-color: #16a34a !important; color: #86efac !important; }
+        .option-btn.reveal-correct { background: rgba(34, 197, 94, 0.2) !important; border-color: #16a34a !important; color: #86efac !important; }
 
         .meta-info { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 600; text-transform: uppercase; }
         
@@ -64,6 +64,8 @@
         let hasAnswered = false;
         let selectedAnswerText = '';
         let lastQuestionIndex = -1;
+        let answerResultState = null; // null, 'correct', or 'incorrect'
+        let earnedPoints = 0;
         let currentCorrectAnswer = '';
 
         function joinGame() {
@@ -113,9 +115,12 @@
 
                 currentCorrectAnswer = q.answer;
 
+                // Reset state if moving to a new question
                 if (lastQuestionIndex !== state.currentQuestionIndex) {
                     hasAnswered = false;
                     selectedAnswerText = '';
+                    answerResultState = null;
+                    earnedPoints = 0;
                     lastQuestionIndex = state.currentQuestionIndex;
                 }
 
@@ -128,11 +133,32 @@
                     <div id="optionsContainer">
                         ${q.options.map(opt => {
                             const isSelected = selectedAnswerText === opt;
-                            const lockClass = hasAnswered ? (isSelected ? 'selected-lock' : '') : '';
-                            return `<button class="option-btn ${lockClass}" ${hasAnswered ? 'disabled' : ''} onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}</button>`;
+                            const isCorrectAnswer = currentCorrectAnswer && opt.trim().toLowerCase() === currentCorrectAnswer.trim().toLowerCase();
+                            
+                            let btnClass = '';
+                            let badgeText = '';
+
+                            if (hasAnswered) {
+                                if (isSelected) {
+                                    if (answerResultState === 'correct') {
+                                        btnClass = 'correct';
+                                        badgeText = `<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${earnedPoints} pts)</span>`;
+                                    } else if (answerResultState === 'incorrect') {
+                                        btnClass = 'incorrect';
+                                        badgeText = `<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
+                                    } else {
+                                        btnClass = 'selected-lock';
+                                    }
+                                } else if (answerResultState && isCorrectAnswer) {
+                                    btnClass = 'reveal-correct';
+                                    badgeText = `<br><span style="font-size: 0.9rem; color: #86efac;">✓ Correct Answer</span>`;
+                                }
+                            }
+
+                            return `<button class="option-btn ${btnClass}" ${hasAnswered ? 'disabled' : ''} onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}${badgeText}</button>`;
                         }).join('')}
                     </div>
-                    ${hasAnswered ? `<p style="margin-top: 1rem; font-size: 0.95rem; color: var(--accent);">Answer locked in! ✓</p>` : ''}
+                    ${hasAnswered && !answerResultState ? `<p style="margin-top: 1rem; font-size: 0.95rem; color: var(--accent);">Answer locked in! ✓</p>` : ''}
                 `;
             } else if (state.status === 'LEADERBOARD') {
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
@@ -166,25 +192,24 @@
 
             socket.emit('submit-answer', { answer: answerText, timeRemaining });
 
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.disabled = true;
-                if (btn.innerText.trim() === answerText.trim()) {
-                    btn.classList.add('selected-lock');
-                }
-            });
+            // Immediately mark as locked in locally while awaiting server response
+            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+            btnElement.classList.add('selected-lock');
         }
 
-        // Global answer-result listener attached once at top-level scope
         socket.on('answer-result', ({ correct, points }) => {
+            answerResultState = correct ? 'correct' : 'incorrect';
+            earnedPoints = points;
+
+            // Instantly update button UI states based on result response
             document.querySelectorAll('.option-btn').forEach(btn => {
-                // Extract clean button text without any prior HTML badges
                 const rawText = btn.innerText.split('\n')[0].trim();
-                const isMySelection = selectedAnswerText && rawText.toLowerCase() === selectedAnswerText.toLowerCase();
-                const isTheCorrectAnswer = currentCorrectAnswer && rawText.toLowerCase() === currentCorrectAnswer.toLowerCase();
+                const isSelected = selectedAnswerText && rawText.toLowerCase() === selectedAnswerText.toLowerCase();
+                const isCorrectAnswer = currentCorrectAnswer && rawText.toLowerCase() === currentCorrectAnswer.toLowerCase();
 
                 btn.classList.remove('selected-lock');
 
-                if (isMySelection) {
+                if (isSelected) {
                     if (correct) {
                         btn.classList.add('correct');
                         btn.innerHTML = `${rawText}<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
@@ -192,7 +217,7 @@
                         btn.classList.add('incorrect');
                         btn.innerHTML = `${rawText}<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
                     }
-                } else if (isTheCorrectAnswer) {
+                } else if (isCorrectAnswer) {
                     btn.classList.add('reveal-correct');
                     btn.innerHTML = `${rawText}<br><span style="font-size: 0.9rem; color: #86efac;">✓ Correct Answer</span>`;
                 }
