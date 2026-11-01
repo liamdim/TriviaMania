@@ -12,6 +12,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Game State
 let gameState = {
     status: 'IDLE', // IDLE, LOBBY, QUESTION, LEADERBOARD, PAUSED
     currentRoundIndex: 0,
@@ -19,7 +20,7 @@ let gameState = {
     currentQuestionIndex: 0,
     timer: 0,
     timerMax: 15,
-    scores: {}, 
+    scores: {}, // socketId -> { name, score }
     activeAdvert: null,
     settings: { 
         questionTime: 15,
@@ -30,6 +31,7 @@ let gameState = {
 let timerInterval = null;
 let leaderboardTimeout = null;
 
+// Endpoint to fetch categories dynamically
 app.get('/api/categories', (req, res) => {
     const categoriesDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(categoriesDir)) return res.json([]);
@@ -44,13 +46,17 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
+// Robust Category Parser supporting both extensionless and .txt files
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
     if (!fs.existsSync(filePath)) {
         filePath = path.join(categoriesDir, filename + '.txt');
     }
-    if (!fs.existsSync(filePath)) return [];
+    if (!fs.existsSync(filePath)) {
+        console.warn(`Category file not found: ${filename}`);
+        return [];
+    }
 
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split(/\r?\n/);
@@ -85,6 +91,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Guaranteed Answer Evaluation & Result Emission
     socket.on('submit-answer', ({ answer, timeRemaining }) => {
         if (gameState.status !== 'QUESTION') return;
         const player = gameState.scores[socket.id];
@@ -96,17 +103,20 @@ io.on('connection', (socket) => {
         const currentQ = currentRound.questions[gameState.currentQuestionIndex];
         if (!currentQ) return;
 
+        if (player.hasAnsweredCurrent) return;
+
         const isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
-        
-        if (isCorrect && !player.hasAnsweredCurrent) {
+        let pointsEarned = 0;
+
+        if (isCorrect) {
             const bonus = Math.floor((timeRemaining / gameState.timerMax) * 50);
-            const pointsEarned = 50 + Math.max(0, bonus);
+            pointsEarned = 50 + Math.max(0, bonus);
             player.score += pointsEarned;
-            player.hasAnsweredCurrent = true;
-            socket.emit('answer-result', { correct: true, points: pointsEarned });
-        } else {
-            socket.emit('answer-result', { correct: false, points: 0 });
         }
+
+        player.hasAnsweredCurrent = true;
+
+        socket.emit('answer-result', { correct: isCorrect, points: pointsEarned });
         io.emit('state-update', gameState);
     });
 
