@@ -23,7 +23,7 @@ let gameState = {
     scores: {}, // socketId -> { name, score }
     activeScreenAdvert: null,
     activeMobileAdvert: null,
-    venueDetails: '',
+    venueDetails: 'Welcome to Trivia Night!',
     settings: { 
         questionTime: 15,
         intermissionTime: 5 
@@ -92,7 +92,6 @@ function parseCategoryFile(filename) {
 
 io.on('connection', (socket) => {
     socket.emit('state-update', gameState);
-    socket.emit('venue-update', gameState.venueDetails);
 
     socket.on('player-join', (playerName) => {
         const cleanName = playerName ? playerName.trim() : 'Anonymous';
@@ -174,7 +173,7 @@ io.on('connection', (socket) => {
 
     socket.on('update-venue-details', (details) => {
         gameState.venueDetails = details;
-        io.emit('venue-update', details);
+        io.emit('state-update', gameState);
     });
 
     socket.on('start-round', () => {
