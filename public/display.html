@@ -77,6 +77,9 @@
         </div>
     </div>
 
+    <!-- Hidden audio element for BeatIQ preview streams -->
+    <audio id="projectorAudioPlayer" preload="auto"></audio>
+
     <script>
         const socket = io();
         const letters = ['A', 'B', 'C', 'D'];
@@ -152,6 +155,15 @@
 
                 currentQuestionData = q;
 
+                // Play audio preview automatically if available from BeatIQ music rounds
+                if (q.audioPreviewUrl) {
+                    const audio = document.getElementById('projectorAudioPlayer');
+                    if (audio.src !== q.audioPreviewUrl) {
+                        audio.src = q.audioPreviewUrl;
+                        audio.play().catch(err => console.log("Projector audio autoplay restricted:", err));
+                    }
+                }
+
                 let timerClass = 'timer-badge';
                 if (state.timer <= 5) timerClass += ' danger';
                 else if (state.timer <= 8) timerClass += ' warning';
@@ -167,6 +179,10 @@
                     </div>
                 `;
             } else if (state.status === 'LEADERBOARD') {
+                // Pause audio when leaderboard hits
+                const audio = document.getElementById('projectorAudioPlayer');
+                if (audio) audio.pause();
+
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
