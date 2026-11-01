@@ -21,7 +21,8 @@ let gameState = {
     timer: 0,
     timerMax: 15,
     scores: {}, // socketId -> { name, score }
-    activeAdvert: null,
+    activeScreenAdvert: null,
+    activeMobileAdvert: null,
     settings: { 
         questionTime: 15,
         intermissionTime: 5 
@@ -202,18 +203,30 @@ io.on('connection', (socket) => {
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
-        gameState.activeAdvert = null;
+        gameState.activeScreenAdvert = null;
+        gameState.activeMobileAdvert = null;
         gameState.scores = {};
         io.emit('state-update', gameState);
     });
 
-    socket.on('broadcast-advert', (adData) => {
-        gameState.activeAdvert = adData;
+    // Independent Advert Controls
+    socket.on('broadcast-advert-screen', (adData) => {
+        gameState.activeScreenAdvert = adData;
         io.emit('state-update', gameState);
     });
 
-    socket.on('hide-advert', () => {
-        gameState.activeAdvert = null;
+    socket.on('hide-advert-screen', () => {
+        gameState.activeScreenAdvert = null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('broadcast-advert-mobile', (adData) => {
+        gameState.activeMobileAdvert = adData;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('hide-advert-mobile', () => {
+        gameState.activeMobileAdvert = null;
         io.emit('state-update', gameState);
     });
 
