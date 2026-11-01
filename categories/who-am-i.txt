@@ -1,0 +1,69 @@
+#Q Who am I? I am a fictional detective created by Arthur Conan Doyle, famous for living at 221B Baker Street and playing the violin.
+^ Sherlock Holmes
+A Sherlock Holmes
+B Hercule Poirot
+C Inspector Gadget
+D Philip Marlowe
+
+#Q Who am I? I am a wizard with a lightning-scar on my forehead who attends Hogwarts School of Witchcraft and Wizardry.
+^ Harry Potter
+A Harry Potter
+B Ron Weasley
+C Neville Longbottom
+D Cedric Diggory
+
+#Q Who am I? I am a billionaire playboy who was stranded in a cave and built a high-tech iron suit to escape.
+^ Tony Stark
+A Tony Stark
+B Bruce Wayne
+C Clark Kent
+D Oliver Queen
+
+#Q Who am I? I am a clumsy but lovable sponge who lives in a pineapple under the sea and works as a fry cook at the Krusty Krab.
+^ SpongeBob SquarePants
+A SpongeBob SquarePants
+B Patrick Star
+C Squidward Tentacles
+D Mr. Krabs
+
+#Q Who am I? I am an archaeologist and adventurer known for my fedora, leather jacket, and absolute hatred of snakes.
+^ Indiana Jones
+A Indiana Jones
+B Rick O'Connell
+C Nathan Drake
+D Lara Croft
+
+#Q Who am I? I am a British secret agent holding the license to kill, and my favorite drink is a martini, shaken, not stirred.
+^ James Bond
+A James Bond
+B Ethan Hunt
+C Jason Bourne
+D Austin Powers
+
+#Q Who am I? I am a time-traveling alien from the planet Gallipolis who travels across space and time inside a blue police box called the TARDIS.
+^ The Doctor
+A The Doctor
+B Master
+C Captain Jack
+D River Song
+
+#Q Who am I? I am a cynical cartoon dad working at a nuclear power plant who loves donuts and shouting "D'oh!".
+^ Homer Simpson
+A Homer Simpson
+B Peter Griffin
+C Bob Belcher
+D Rick Sanchez
+
+#Q Who am I? I am a young hobbit tasked with carrying the One Ring to the fires of Mount Doom to destroy it.
+^ Frodo Baggins
+A Frodo Baggins
+B Samwise Gamgee
+C Bilbo Baggins
+D Peregrin Took
+
+#Q Who am I? I am a fierce warrior princess of Themyscira who fights for justice wielding the Lasso of Truth.
+^ Wonder Woman
+A Wonder Woman
+B Supergirl
+C Black Widow
+D Captain Marvel
