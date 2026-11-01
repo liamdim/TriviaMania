@@ -63,9 +63,10 @@
     <div id="tab-control" class="tab-content active">
         <div class="panel">
             <h2>Master Game Controls</h2>
-            <button class="btn-next" onclick="sendAction('nextQuestion')">➡️ Next Question</button>
             <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
+            <button class="btn-next" onclick="sendAction('nextQuestion')">➡️ Next Question</button>
             <button onclick="sendAction('pause')">⏸ Pause Game</button>
+            <button style="background: var(--danger); color: white;" onclick="sendAction('stopGame')">⏹ Stop / Reset Game</button>
             <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
             <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
         </div>
@@ -120,12 +121,12 @@
                 <div>
                     <label>Category:</label>
                     <select id="triviaGenreSelect">
+                        <option value="for-kids">For Kids</option>
                         <option value="general">General Knowledge</option>
                         <option value="animals">Animals</option>
                         <option value="brain-teasers">Brain Teasers</option>
                         <option value="celebrities">Celebrities</option>
                         <option value="entertainment">Entertainment</option>
-                        <option value="for-kids">For Kids</option>
                         <option value="geography">Geography</option>
                         <option value="history">History</option>
                         <option value="hobbies">Hobbies</option>
