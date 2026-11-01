@@ -74,6 +74,7 @@
         let earnedPoints = 0;
         let currentCorrectAnswer = '';
         let countdownSoundEnabled = true;
+        let myStreak = 0;
 
         function playMobileSound(type) {
             try {
@@ -148,6 +149,7 @@
         function renderWaitingScreen(message) {
             document.getElementById('app').innerHTML = `
                 <h2>${myName}</h2>
+                ${myStreak > 1 ? `<p style="color: var(--warning); font-weight: bold; margin-top: 0.4rem;">🔥 Streak: x${myStreak}</p>` : ''}
                 <p style="color: var(--text-muted); margin-top: 1rem; font-size: 1.1rem;">${message}</p>
                 <div style="margin-top: 1.5rem; border-top: 1px solid #334155; padding-top: 1rem;">
                     <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Send reaction to big screen:</p>
@@ -215,6 +217,7 @@
                         <span>Q ${state.currentQuestionIndex + 1} of ${round.questions.length}</span>
                         <span id="timerDisplay" style="color: var(--accent);">${state.timer}s</span>
                     </div>
+                    ${myStreak > 1 ? `<div style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); color: var(--warning); padding: 0.3rem; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.75rem;">🔥 Streak Active: x${myStreak} Multiplier!</div>` : ''}
                     <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; line-height: 1.4;">${q.question}</h3>
                     <div id="optionsContainer">
                         ${q.options.map((opt, idx) => {
@@ -249,7 +252,8 @@
             } else if (state.status === 'LEADERBOARD') {
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
                 const myRank = players.findIndex(p => p.name === myName) + 1;
-                const myScoreObj = state.scores[socket.id] || { score: 0 };
+                const myScoreObj = state.scores[socket.id] || { score: 0, streak: 0 };
+                myStreak = myScoreObj.streak || 0;
                 
                 const round = state.playlist[state.currentRoundIndex];
                 const isRoundEnd = round && (state.currentQuestionIndex + 1 >= round.questions.length);
@@ -260,7 +264,8 @@
                     <div style="background: #0f172a; padding: 1.5rem; border-radius: 12px; border: 1px solid #475569;">
                         <p style="font-size: 1rem; color: var(--text-muted);">Your Score</p>
                         <h1 style="font-size: 2.5rem; color: var(--accent); margin: 0.5rem 0;">${myScoreObj.score}</h1>
-                        <p style="font-size: 1.1rem;">Your Rank: <strong style="color: var(--success);">#${myRank > 0 ? myRank : '-'}</strong></p>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Your Rank: <strong style="color: var(--success);">#${myRank > 0 ? myRank : '-'}</strong></p>
+                        <p style="font-size: 0.95rem; color: var(--warning);">Streak: <strong>🔥 x${myStreak}</strong></p>
                     </div>
                 `;
             }
@@ -288,9 +293,10 @@
             btnElement.classList.add('selected-lock');
         }
 
-        socket.on('answer-result', ({ correct, points }) => {
+        socket.on('answer-result', ({ correct, points, streak, isFastest }) => {
             answerResultState = correct ? 'correct' : 'incorrect';
             earnedPoints = points;
+            myStreak = streak;
 
             if (correct) playMobileSound('correct');
             else playMobileSound('incorrect');
@@ -308,7 +314,8 @@
                 if (isSelected) {
                     if (correct) {
                         btn.classList.add('correct');
-                        btn.innerHTML = `${prefix} ${rawText}<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
+                        let badgeExtra = isFastest ? '⚡ Fastest Finger! ' : '';
+                        btn.innerHTML = `${prefix} ${rawText}<br><span style="font-size: 0.9rem; color: #4ade80;">✓ ${badgeExtra}+${points} pts (🔥x${streak})</span>`;
                     } else {
                         btn.classList.add('incorrect');
                         btn.innerHTML = `${prefix} ${rawText}<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
