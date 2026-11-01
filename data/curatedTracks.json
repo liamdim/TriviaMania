@@ -2126,5 +2126,3 @@ export const GENRE_DISTRACTORS: Record<string, { artists: string[]; titles: stri
       "Cartoon Network Classics",
       "Gravity Falls OST"
     ]
-  }
-};
