@@ -29,7 +29,6 @@
         .option-btn { width: 100%; padding: 1.25rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 10px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.85rem; cursor: pointer; transition: 0.2s; text-align: left; padding-left: 1.5rem; }
         .option-btn:hover:not(:disabled) { border-color: var(--accent); background: #1e293b; }
         
-        /* Feedback States */
         .option-btn.selected-lock { background: var(--accent) !important; border-color: white !important; color: white !important; box-shadow: 0 0 15px rgba(59,130,246,0.6); }
         .option-btn.correct { background: rgba(34, 197, 94, 0.4) !important; border-color: var(--success) !important; color: #4ade80 !important; }
         .option-btn.incorrect { background: rgba(239, 68, 68, 0.4) !important; border-color: var(--danger) !important; color: #f87171 !important; }
@@ -52,7 +51,6 @@
         </div>
     </div>
 
-    <!-- Advert Overlay -->
     <div id="advertOverlay">
         <h2 id="adTitleText" style="color: var(--accent); font-size: 2rem; margin-bottom: 1rem;"></h2>
         <img id="adImageTag" src="" alt="Sponsor Advert" style="display: none;">
@@ -60,11 +58,12 @@
 
     <script>
         const socket = io();
+        const letters = ['A', 'B', 'C', 'D'];
         let myName = '';
         let hasAnswered = false;
         let selectedAnswerText = '';
         let lastQuestionIndex = -1;
-        let answerResultState = null; // null, 'correct', or 'incorrect'
+        let answerResultState = null;
         let earnedPoints = 0;
         let currentCorrectAnswer = '';
 
@@ -115,7 +114,6 @@
 
                 currentCorrectAnswer = q.answer;
 
-                // Reset state if moving to a new question
                 if (lastQuestionIndex !== state.currentQuestionIndex) {
                     hasAnswered = false;
                     selectedAnswerText = '';
@@ -131,7 +129,7 @@
                     </div>
                     <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; line-height: 1.4;">${q.question}</h3>
                     <div id="optionsContainer">
-                        ${q.options.map(opt => {
+                        ${q.options.map((opt, idx) => {
                             const isSelected = selectedAnswerText === opt;
                             const isCorrectAnswer = currentCorrectAnswer && opt.trim().toLowerCase() === currentCorrectAnswer.trim().toLowerCase();
                             
@@ -155,7 +153,7 @@
                                 }
                             }
 
-                            return `<button class="option-btn ${btnClass}" ${hasAnswered ? 'disabled' : ''} onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}${badgeText}</button>`;
+                            return `<button class="option-btn ${btnClass}" ${hasAnswered ? 'disabled' : ''} onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})"><strong>${letters[idx]}.</strong> ${opt}${badgeText}</button>`;
                         }).join('')}
                     </div>
                     ${hasAnswered && !answerResultState ? `<p style="margin-top: 1rem; font-size: 0.95rem; color: var(--accent);">Answer locked in! ✓</p>` : ''}
@@ -192,7 +190,6 @@
 
             socket.emit('submit-answer', { answer: answerText, timeRemaining });
 
-            // Immediately mark as locked in locally while awaiting server response
             document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
             btnElement.classList.add('selected-lock');
         }
@@ -201,9 +198,13 @@
             answerResultState = correct ? 'correct' : 'incorrect';
             earnedPoints = points;
 
-            // Instantly update button UI states based on result response
             document.querySelectorAll('.option-btn').forEach(btn => {
-                const rawText = btn.innerText.split('\n')[0].trim();
+                // Extract clean text after the 'A. ' prefix
+                const btnHtmlText = btn.innerHTML;
+                const rawText = btn.innerText.replace(/^[A-D]\.\s*/, '').split('\n')[0].trim();
+                const prefixMatch = btn.innerHTML.match(/<strong>([A-D]\.)<\/strong>/);
+                const prefix = prefixMatch ? prefixMatch[0] : '';
+
                 const isSelected = selectedAnswerText && rawText.toLowerCase() === selectedAnswerText.toLowerCase();
                 const isCorrectAnswer = currentCorrectAnswer && rawText.toLowerCase() === currentCorrectAnswer.toLowerCase();
 
@@ -212,14 +213,14 @@
                 if (isSelected) {
                     if (correct) {
                         btn.classList.add('correct');
-                        btn.innerHTML = `${rawText}<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
+                        btn.innerHTML = `${prefix} ${rawText}<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
                     } else {
                         btn.classList.add('incorrect');
-                        btn.innerHTML = `${rawText}<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
+                        btn.innerHTML = `${prefix} ${rawText}<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
                     }
                 } else if (isCorrectAnswer) {
                     btn.classList.add('reveal-correct');
-                    btn.innerHTML = `${rawText}<br><span style="font-size: 0.9rem; color: #86efac;">✓ Correct Answer</span>`;
+                    btn.innerHTML = `${prefix} ${rawText}<br><span style="font-size: 0.9rem; color: #86efac;">✓ Correct Answer</span>`;
                 }
             });
         });
