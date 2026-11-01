@@ -90,6 +90,12 @@ function parseCategoryFile(filename) {
     return questions;
 }
 
+function getCurrentRoundTimer() {
+    const round = gameState.playlist[gameState.currentRoundIndex];
+    if (round && round.timer) return round.timer;
+    return gameState.settings.questionTime || 15;
+}
+
 io.on('connection', (socket) => {
     socket.emit('state-update', gameState);
 
@@ -134,6 +140,7 @@ io.on('connection', (socket) => {
         gameState.playlist.push({
             name: roundConfig.name || roundConfig.genre,
             genre: roundConfig.genre,
+            timer: roundConfig.timer ? parseInt(roundConfig.timer) : null,
             questions: selectedQuestions
         });
         io.emit('state-update', gameState);
@@ -184,7 +191,7 @@ io.on('connection', (socket) => {
         gameState.status = 'QUESTION';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
-        gameState.timerMax = gameState.settings.questionTime || 15;
+        gameState.timerMax = getCurrentRoundTimer();
         gameState.timer = gameState.timerMax;
         
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
@@ -300,7 +307,7 @@ function advanceToNextQuestion() {
     }
 
     gameState.status = 'QUESTION';
-    gameState.timerMax = gameState.settings.questionTime || 15;
+    gameState.timerMax = getCurrentRoundTimer();
     gameState.timer = gameState.timerMax;
     
     io.emit('state-update', gameState);
