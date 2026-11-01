@@ -69,7 +69,7 @@
         <div class="header-links">
             <span id="connectionStatus" style="color: var(--success);">● Connected</span>
             <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
-            <a href="/display.html" target="_blank"> projector Display ↗</a>
+            <a href="/display.html" target="_blank">projector Display ↗</a>
         </div>
     </header>
 
@@ -94,8 +94,8 @@
                 </div>
                 <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
                     <div>
-                        <label>Question Timer Setting:</label>
-                        <select id="questionTimerSelect" onchange="updateTimerSetting()" style="width: 150px;">
+                        <label>Question Timer:</label>
+                        <select id="questionTimerSelect" onchange="updateSettings()" style="width: 140px;">
                             <option value="10">10 Seconds</option>
                             <option value="15" selected>15 Seconds</option>
                             <option value="20">20 Seconds</option>
@@ -103,7 +103,16 @@
                         </select>
                     </div>
                     <div>
-                        <p>Current Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
+                        <label>Intermission / Break:</label>
+                        <select id="intermissionTimerSelect" onchange="updateSettings()" style="width: 140px;">
+                            <option value="5" selected>5 Seconds</option>
+                            <option value="10">10 Seconds</option>
+                            <option value="20">20 Seconds</option>
+                            <option value="30">30 Seconds</option>
+                        </select>
+                    </div>
+                    <div>
+                        <p>Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
                     </div>
                 </div>
             </div>
@@ -256,9 +265,10 @@
         }
         loadCategories();
 
-        function updateTimerSetting() {
-            const time = document.getElementById('questionTimerSelect').value;
-            socket.emit('update-settings', { questionTime: time });
+        function updateSettings() {
+            const questionTime = document.getElementById('questionTimerSelect').value;
+            const intermissionTime = document.getElementById('intermissionTimerSelect').value;
+            socket.emit('update-settings', { questionTime, intermissionTime });
         }
 
         function addRoundToPlaylist() {
