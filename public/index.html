@@ -60,7 +60,6 @@
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
         .player-badge { display: inline-block; background: #0f172a; border: 1px solid #334155; padding: 0.5rem 1rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
         .ad-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid #334155; }
-        
         .quick-ad-box { background: #0f172a; border: 1px solid #334155; padding: 0.8rem; border-radius: 6px; flex: 1; min-width: 260px; }
     </style>
 </head>
@@ -87,8 +86,26 @@
         <!-- TAB 1: CONTROLS & LIVE GAME -->
         <div id="controls" class="tab-content active">
             
+            <!-- HOST ANNOUNCEMENT & SETTINGS BAR -->
+            <div class="card" style="border: 2px solid var(--accent); background: #172033;">
+                <h3>📢 Live Mobile Ticker & Audio Controls</h3>
+                <div class="form-group">
+                    <label>Broadcast Message to All Mobile Screens:</label>
+                    <div class="flex-row" style="gap: 0.5rem;">
+                        <input type="text" id="announcementInput" placeholder="e.g., Round 2 starting in 2 minutes! Get your drinks!" style="margin-bottom: 0; flex: 1;">
+                        <button class="success small" onclick="sendAnnouncement()">Broadcast</button>
+                        <button class="danger small" onclick="clearAnnouncement()">Clear</button>
+                    </div>
+                </div>
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
+                        <input type="checkbox" id="countdownSoundToggle" checked style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime
+                    </label>
+                </div>
+            </div>
+
             <!-- HOST QUESTION PREVIEW CARD -->
-            <div class="card" style="border: 2px dashed var(--accent); background: #172033;">
+            <div class="card" style="border: 2px dashed var(--accent);">
                 <h3>👀 Host Question Preview (Next Up)</h3>
                 <div id="hostPreviewBox">
                     <p style="color: var(--text-muted);">Game not started or round queue empty.</p>
@@ -308,13 +325,10 @@
     <script>
         const socket = io();
 
-        // Web Audio API Synthesizer for Game Show Effects
         function playSound(type) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                if (ctx.state === 'suspended') {
-                    ctx.resume();
-                }
+                if (ctx.state === 'suspended') ctx.resume();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.connect(gain);
@@ -337,9 +351,18 @@
                     osc.start();
                     osc.stop(ctx.currentTime + 0.4);
                 }
-            } catch (e) {
-                console.log("Audio not supported or blocked by browser policy.");
-            }
+            } catch (e) {}
+        }
+
+        function sendAnnouncement() {
+            const text = document.getElementById('announcementInput').value.trim();
+            socket.emit('update-announcement', { active: true, text });
+            alert('Announcement broadcasted to all mobile screens!');
+        }
+
+        function clearAnnouncement() {
+            document.getElementById('announcementInput').value = '';
+            socket.emit('update-announcement', { active: false, text: '' });
         }
 
         function switchTab(tabId) {
@@ -357,9 +380,8 @@
             height: 200
         });
 
-        // Venue details sync
         const venueInput = document.getElementById('venueDetailsInput');
-        venueInput.value = localStorage.getItem('triviamania_venue_details') || '';
+        venueInput.value = localStorage.getItem('triviamania_venue_details'] || '';
 
         function saveVenueDetails() {
             localStorage.setItem('triviamania_venue_details', venueInput.value);
@@ -367,9 +389,7 @@
         }
 
         socket.on('connect', () => {
-            if (venueInput.value) {
-                socket.emit('update-venue-details', venueInput.value);
-            }
+            if (venueInput.value) socket.emit('update-venue-details', venueInput.value);
         });
 
         function copyPlayerLink() {
@@ -424,28 +444,20 @@
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-
                         const MAX_WIDTH = 800;
                         const MAX_HEIGHT = 800;
                         let width = img.width;
                         let height = img.height;
 
                         if (width > height) {
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
-                            }
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                         } else {
-                            if (height > MAX_HEIGHT) {
-                                width *= MAX_HEIGHT / height;
-                                height = MAX_HEIGHT;
-                            }
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
                         }
 
                         canvas.width = width;
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
-
                         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
 
                         try {
@@ -455,9 +467,7 @@
                             document.getElementById('adTitleInput').value = '';
                             document.getElementById('adImageInput').value = '';
                             alert('Advert saved successfully!');
-                        } catch (err) {
-                            alert('Storage quota exceeded! Try deleting old adverts.');
-                        }
+                        } catch (err) { alert('Storage quota exceeded!'); }
                     };
                     img.src = e.target.result;
                 };
@@ -469,9 +479,7 @@
                     renderAdsLibrary();
                     document.getElementById('adTitleInput').value = '';
                     alert('Advert saved successfully!');
-                } catch (err) {
-                    alert('Storage quota exceeded!');
-                }
+                } catch (err) { alert('Storage quota exceeded!'); }
             }
         }
 
@@ -497,37 +505,33 @@
 
             listDiv.innerHTML = savedAds.map((ad, idx) => `
                 <div class="ad-item">
-                    <div>
-                        <strong>${ad.title}</strong> ${ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : ''}
-                    </div>
-                    <div>
-                        <button class="small danger" onclick="deleteSavedAd(${idx})">🗑 Delete</button>
-                    </div>
+                    <div><strong>${ad.title}</strong> ${ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : ''}</div>
+                    <div><button class="small danger" onclick="deleteSavedAd(${idx})">🗑 Delete</button></div>
                 </div>
             `).join('');
         }
 
         function launchScreenAd() {
             const idx = document.getElementById('screenAdSelect').value;
-            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            if (idx === "") { alert('Please select an advert!'); return; }
             socket.emit('broadcast-advert-screen', savedAds[idx]);
         }
 
         function launchMobileAd() {
             const idx = document.getElementById('mobileAdSelect').value;
-            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            if (idx === "") { alert('Please select an advert!'); return; }
             socket.emit('broadcast-advert-mobile', savedAds[idx]);
         }
 
         function launchQuickScreenAd() {
             const idx = document.getElementById('quickScreenAdSelect').value;
-            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            if (idx === "") { alert('Please select an advert!'); return; }
             socket.emit('broadcast-advert-screen', savedAds[idx]);
         }
 
         function launchQuickMobileAd() {
             const idx = document.getElementById('quickMobileAdSelect').value;
-            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            if (idx === "") { alert('Please select an advert!'); return; }
             socket.emit('broadcast-advert-mobile', savedAds[idx]);
         }
 
@@ -542,7 +546,6 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
-            // Host Preview Box Update
             const previewBox = document.getElementById('hostPreviewBox');
             const currentRound = state.playlist[state.currentRoundIndex];
             if (currentRound && currentRound.questions) {
@@ -552,10 +555,9 @@
                     previewBox.innerHTML = `
                         <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text);">Q${nextQIndex + 1} (${currentRound.name}): ${nextQ.question}</p>
                         <p style="color: var(--success); font-size: 0.95rem;">Correct Answer: <strong>${nextQ.answer}</strong></p>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.3rem;">Choices: ${nextQ.options.join(' | ')}</p>
                     `;
                 } else {
-                    previewBox.innerHTML = `<p style="color: var(--warning);">End of current round / playlist queue reached!</p>`;
+                    previewBox.innerHTML = `<p style="color: var(--warning);">End of current round reached!</p>`;
                 }
             } else {
                 previewBox.innerHTML = `<p style="color: var(--text-muted);">No active rounds in playlist.</p>`;
@@ -563,7 +565,7 @@
 
             const tbody = document.querySelector('#playlistTable tbody');
             if (state.playlist.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>`;
             } else {
                 tbody.innerHTML = state.playlist.map((r, idx) => `
                     <tr>
@@ -586,20 +588,6 @@
                 playersListDiv.innerHTML = `<span style="color: var(--text-muted);">Waiting for players to join...</span>`;
             } else {
                 playersListDiv.innerHTML = players.map(p => `<span class="player-badge">👤 ${p.name} (${p.score} pts)</span>`).join('');
-            }
-
-            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-            const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
-            if (sortedPlayers.length === 0) {
-                lbTbody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted);">No scores recorded yet.</td></tr>`;
-            } else {
-                lbTbody.innerHTML = sortedPlayers.map((p, idx) => `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td>${p.name}</td>
-                        <td><strong>${p.score}</strong></td>
-                    </tr>
-                `).join('');
             }
         });
     </script>
