@@ -26,7 +26,7 @@
         h2 { font-size: 2.5rem; margin-bottom: 2rem; color: var(--text); line-height: 1.3; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 2rem; }
         .option-box { background: #0f172a; border: 2px solid #475569; padding: 1.5rem; border-radius: 10px; font-size: 1.4rem; font-weight: 600; color: var(--text); transition: 0.3s; }
-        .option-box.correct { background: rgba(34, 197, 94, 0.2); border-color: var(--success); color: #4ade80; box-shadow: 0 0 20px rgba(34,197,94,0.4); }
+        .option-box.correct { background: rgba(34, 197, 94, 0.25); border-color: var(--success); color: #4ade80; box-shadow: 0 0 20px rgba(34,197,94,0.4); }
 
         /* Advert Overlay */
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
@@ -95,20 +95,21 @@
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+                const isRoundEnd = round && (state.currentQuestionIndex + 1 >= round.questions.length);
 
                 displayArea.innerHTML = `
-                    <h2 style="color: var(--success); margin-bottom: 1rem;">Scoreboard & Standings</h2>
-                    ${q ? `<p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1.5rem;">Correct Answer was: <strong style="color: var(--success);">${q.answer}</strong></p>` : ''}
+                    <h2 style="color: var(--success); margin-bottom: 0.5rem;">${isRoundEnd ? '🏁 Round Finished - Full Leaderboard' : 'Standings & Correct Answer'}</h2>
+                    ${q && !isRoundEnd ? `<p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1.5rem;">Correct Answer: <strong style="color: var(--success);">${q.answer}</strong></p>` : ''}
                     <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.1rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player</th><th style="padding: 1rem;">Score</th></tr>
+                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.1rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player / Team</th><th style="padding: 1rem;">Total Score</th></tr>
                         </thead>
                         <tbody>
-                            ${players.slice(0, 5).map((p, idx) => `
-                                <tr style="border-bottom: 1px solid #334155; font-size: 1.4rem;">
-                                    <td style="padding: 1rem;">#${idx + 1}</td>
-                                    <td style="padding: 1rem;">${p.name}</td>
-                                    <td style="padding: 1rem; color: var(--accent); font-weight: bold;">${p.score}</td>
+                            ${players.map((p, idx) => `
+                                <tr style="border-bottom: 1px solid #334155; font-size: 1.3rem;">
+                                    <td style="padding: 0.8rem;">#${idx + 1}</td>
+                                    <td style="padding: 0.8rem;">${p.name}</td>
+                                    <td style="padding: 0.8rem; color: var(--accent); font-weight: bold;">${p.score}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
