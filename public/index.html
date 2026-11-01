@@ -433,7 +433,7 @@
             alert('Round added to playlist!');
         }
 
-        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2'] || '[]');
+        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
 
         function saveNewAdvert() {
             const title = document.getElementById('adTitleInput').value;
@@ -536,7 +536,7 @@
         }
 
         function launchQuickMobileAd() {
-            const idx = document.getElementById('quickMobileAdSelect').value;
+            const idx = document.getElementById('quickQuickMobileAdSelect')?.value ?? document.getElementById('quickMobileAdSelect').value;
             if (idx === "") { alert('Please select an advert!'); return; }
             socket.emit('broadcast-advert-mobile', savedAds[idx]);
         }
@@ -552,7 +552,6 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
-            // Sync toggle UI state from server settings if needed
             if (state.settings && state.settings.countdownSound !== undefined) {
                 document.getElementById('countdownSoundToggle').checked = state.settings.countdownSound;
             }
