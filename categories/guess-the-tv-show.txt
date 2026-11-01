@@ -1,0 +1,69 @@
+#Q Which hit 90s sitcom follows a group of six friends living in New York City?
+^ Friends
+A Friends
+B Seinfeld
+C How I Met Your Mother
+D The Big Bang Theory
+
+#Q In which fictional town is the Netflix sci-fi series Stranger Things set?
+^ Hawkins
+A Hawkins
+B Riverdale
+C Greendale
+D Sunnydale
+
+#Q What is the name of the high school chemistry teacher who turns to cooking methamphetamine in Breaking Bad?
+^ Walter White
+A Walter White
+B Jesse Pinkman
+C Saul Goodman
+D Gus Fring
+
+#Q Which animated TV series features the eccentric scientist Rick Sanchez and his grandson Morty Smith?
+^ Rick and Morty
+A Rick and Morty
+B Futurama
+C BoJack Horseman
+D Family Guy
+
+#Q What is the name of the grand fantasy television series based on George R.R. Martin's books that features the Iron Throne?
+^ Game of Thrones
+A Game of Thrones
+B The Witcher
+C The Lord of the Rings: The Rings of Power
+D Wheel of Time
+
+#Q Which animated comedy series follows the daily lives of the Simpson family in the town of Springfield?
+^ The Simpsons
+A The Simpsons
+B Family Guy
+C Bob's Burgers
+D South Park
+
+#Q What is the name of the fictional paper company where most of the characters work in the US version of The Office?
+^ Dunder Mifflin
+A Dunder Mifflin
+B Wernhog Hogg
+C Initech
+D Pied Piper
+
+#Q Which prestige HBO drama series follows the Roy family fighting for control of a global media empire?
+^ Succession
+A Succession
+B Billions
+C Mad Men
+D Industry
+
+#Q What is the name of the sleepy town where detectives investigate the murder of Laura Palmer in Twin Peaks?
+^ Twin Peaks
+A Twin Peaks
+B Rosewood
+C Mystic Falls
+D Hawkins
+
+#Q Which sci-fi anthology television series features a different self-contained story exploring creepy techno-paranoia and dystopian futures?
+^ Black Mirror
+A Black Mirror
+B The Twilight Zone
+C Electric Dreams
+D Outer Limits
