@@ -27,9 +27,12 @@ let gameState = {
 
 let timerInterval = null;
 
-// Custom Parser for #Q and ^ text category files
+// Custom Parser for #Q and ^ text category files (supports extensionless filenames)
 function parseCategoryFile(filename) {
-    const filePath = path.join(__dirname, 'categories', filename);
+    // Strip .txt if it was passed so it matches your extensionless files on GitHub
+    const cleanName = filename.replace('.txt', '');
+    const filePath = path.join(__dirname, 'categories', cleanName);
+    
     if (!fs.existsSync(filePath)) {
         console.warn(`Category file not found: ${filePath}`);
         return [];
@@ -110,9 +113,8 @@ io.on('connection', (socket) => {
 
     // Host Controls: Add Round to Playlist
     socket.on('add-round', (roundConfig) => {
-        // roundConfig expects { genre: 'disney-pixar', name: 'Disney Round', count: 10 }
-        const questions = parseCategoryFile(`${roundConfig.genre}.txt`);
-        // Shuffle or slice requested count
+        // roundConfig expects { genre: 'guess-the-movie', name: 'Movie Round', count: 10 }
+        const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
         
         gameState.playlist.push({
@@ -132,7 +134,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Start / Resume Round (Enters paused Lobby state first)
+    // Host Controls: Start / Resume Round
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
         gameState.status = 'LOBBY';
@@ -144,11 +146,9 @@ io.on('connection', (socket) => {
         const round = gameState.playlist[gameState.currentRoundIndex];
         if (!round) return;
 
-        // Reset player answer status for new question
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
 
         if (gameState.currentQuestionIndex >= round.questions.length) {
-            // Round finished, go to leaderboard or next round
             gameState.status = 'LEADERBOARD';
             io.emit('state-update', gameState);
             return;
@@ -201,7 +201,6 @@ function startQuestionTimer() {
             if (gameState.timer <= 0) {
                 clearInterval(timerInterval);
                 gameState.status = 'LEADERBOARD';
-                // Advance question index for next time
                 gameState.currentQuestionIndex++;
                 io.emit('state-update', gameState);
             }
