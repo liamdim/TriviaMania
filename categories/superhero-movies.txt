@@ -67,3 +67,73 @@ A Infinity Stones
 B Cosmic Cubes
 C Chaos Emeralds
 D Mother Boxes
+
+#Q Which superhero is known as the "Man of Steel"?
+^ Superman
+A Superman
+B Batman
+C Iron Man
+D Thor
+
+#Q What is the real name of the Black Widow in the Marvel Cinematic Universe?
+^ Natasha Romanoff
+A Natasha Romanoff
+B Wanda Maximoff
+C Carol Danvers
+D Pepper Potts
+
+#Q Which actor famously played Wolverine in the X-Men film series for over two decades?
+^ Hugh Jackman
+A Hugh Jackman
+B Ryan Reynolds
+C Chris Hemsworth
+D Christian Bale
+
+#Q What is the name of Peter Quill's space crew in Guardians of the Galaxy?
+^ Guardians of the Galaxy
+A The Avengers
+B The Justice League
+C Guardians of the Galaxy
+D The X-Men
+
+#Q Which DC superhero is the princess of the Amazons?
+^ Wonder Woman
+A Wonder Woman
+B Supergirl
+C Batgirl
+D Catwoman
+
+#Q In Spider-Man: Into the Spider-Verse, what is the name of the main teenage protagonist who takes on the mantle?
+^ Miles Morales
+A Miles Morales
+B Peter Parker
+C Miguel O'Hara
+D Hobie Brown
+
+#Q What metal is bonded to Wolverine's skeleton?
+^ Adamantium
+A Adamantium
+B Vibranium
+C Titanium
+D Carbonadium
+
+#Q Which Marvel movie kicked off the entire Marvel Cinematic Universe (MCU) back in 2008?
+^ Iron Man
+A Iron Man
+B The Incredible Hulk
+C Thor
+D Captain America: The First Avenger
+
+#Q What is the name of Doctor Strange's mystical floating red cloak?
+^ Cloak of Levitation
+A Cloak of Levitation
+B Mantle of Magic
+C Cape of Shadows
+D Veil of Sorcery
+
+#Q Which villain snaps half of all life out of existence in Avengers: Infinity War?
+^ Thanos
+A Thanos
+B Ultron
+C Loki
+D Kang
