@@ -2,212 +2,226 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TriviaMania - Host Control Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TriviaMania - Host Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { 
-            --bg: #0d0e15; --card: #161824; --primary: #7c3aed; 
-            --accent: #06b6d4; --text: #f3f4f6; --muted: #9ca3af;
-            --danger: #ef4444; --success: #10b981; --border: #272a3b;
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
         
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px; }
-        h1 { margin: 0; font-size: 20px; color: var(--accent); }
-        .nav-links a { color: var(--accent); text-decoration: none; margin-left: 12px; font-size: 13px; font-weight: 600; background: #1e2130; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); }
+        header { background: var(--panel-bg); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+        header h1 { font-size: 1.5rem; color: var(--accent); }
         
-        .tabs { display: flex; gap: 6px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .tab-btn { background: #161824; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        
+        .nav-tabs { display: flex; gap: 0.5rem; background: var(--panel-bg); padding: 0.5rem 2rem; border-bottom: 1px solid #334155; }
+        .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 0.5rem 1rem; cursor: pointer; font-weight: 600; border-radius: 4px; transition: 0.2s; }
+        .tab-btn.active, .tab-btn:hover { background: var(--accent); color: white; }
+
+        .container { flex: 1; padding: 2rem; max-width: 1200px; width: 100%; margin: 0 auto; }
         .tab-content { display: none; }
-        .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .full-width { grid-column: span 2; }
+        .tab-content.active { display: block; }
 
-        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-        h2 { font-size: 15px; margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--accent); }
-        
-        button { padding: 10px 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: #222638; color: white; width: 100%; margin-top: 8px; font-size: 13px; }
-        button:hover { opacity: 0.85; }
-        .btn-play { background: var(--success); color: #000; }
-        .btn-reveal { background: var(--accent); color: #000; }
-        .btn-restart { background: #f59e0b; color: #000; }
-        .btn-next { background: #38bdf8; color: #000; font-weight: 700; }
-        .btn-danger { background: var(--danger); width: auto; padding: 6px 10px; margin-top: 0; font-size: 11px; }
-        .btn-api { background: var(--primary); color: white; }
+        .card { background: var(--panel-bg); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
+        .card h3 { margin-bottom: 1rem; color: var(--accent); }
 
-        .playlist-card, .ad-item { background: #1e2130; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--accent); display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        select, input { width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 4px; margin-bottom: 0.5rem; }
         
-        select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 10px; margin: 5px 0 12px 0; background: #10121a; border: 1px solid var(--border); color: white; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
-        label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
-        .score-row { display: flex; justify-content: space-between; align-items: center; background: #10121a; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border); font-size: 13px; }
+        button { background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        button:hover { background: var(--accent-hover); }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: #dc2626; }
+        button.success { background: var(--success); }
+
+        .flex-row { display: flex; gap: 1rem; align-items: center; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: var(--text-muted); }
+
+        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>⚡ TriviaMania Host Dashboard</h1>
-        <div class="nav-links">
-            <a href="/display.html" target="_blank">📺 Projector Display</a>
-            <a href="/player.html" target="_blank">📱 Player Link</a>
+        <h1>TriviaMania Master Dashboard</h1>
+        <div class="flex-row">
+            <span id="connectionStatus" style="color: var(--success);">● Live Connected</span>
+            <a href="/display.html" target="_blank"><button>Open Projector Display ↗</button></a>
         </div>
     </header>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('control', this)">🕹️ Controls & Queue</button>
-        <button class="tab-btn" onclick="switchTab('playlist', this)">🎵 Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('media', this)">🖼️ Adverts & Polls</button>
-        <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings</button>
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('controls')">Controls & Queue</button>
+        <button class="tab-btn" onclick="switchTab('playlist')">Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('adverts')">Adverts & Sponsor</button>
+        <button class="tab-btn" onclick="switchTab('lobby')">Lobby & QR</button>
     </div>
 
-    <!-- TAB 1: CONTROL CENTER -->
-    <div id="tab-control" class="tab-content active">
-        <div class="panel">
-            <h2>Master Game Controls</h2>
-            <button class="btn-play" onclick="sendAction('resume')">▶ Start / Resume Round</button>
-            <button class="btn-next" onclick="sendAction('nextQuestion')">➡️ Next Question</button>
-            <button onclick="sendAction('pause')">⏸ Pause Game</button>
-            <button style="background: var(--danger); color: white;" onclick="sendAction('stopGame')">⏹ Stop / Reset Game</button>
-            <button class="btn-restart" onclick="sendAction('restart')">🔄 Restart Round</button>
-            <button class="btn-reveal" onclick="sendAction('reveal')">💡 Reveal Answer Now</button>
-        </div>
+    <div class="container">
 
-        <div class="panel">
-            <h2>📺 Quick Advert Control</h2>
-            <label>Select Stored Ad to Broadcast:</label>
-            <select id="quickAdSelect">
-                <option value="">-- Choose Ad --</option>
-            </select>
-            <button class="btn-api" style="background:#06b6d4; color:#000;" onclick="quickBroadcastAd()">📢 Broadcast Active Ad</button>
-            <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
-        </div>
+        <!-- TAB 1: CONTROLS & QUEUE -->
+        <div id="controls" class="tab-content active">
+            <div class="card">
+                <h3>Live Game Master Controls</h3>
+                <div class="flex-row" style="margin-bottom: 1rem;">
+                    <button class="success" onclick="socket.emit('start-round')">▶ Start / Resume Round</button>
+                    <button onclick="socket.emit('next-question')">Next Question ⏭</button>
+                    <button class="danger" onclick="socket.emit('stop-reset')">⏹ Stop / Reset Game</button>
+                </div>
+                <p>Current Game Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
+            </div>
 
-        <div class="panel">
-            <h2>Active Playlist Queue</h2>
-            <div id="hostPlaylistQueue" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 13px;">No rounds loaded in queue yet.</p>
+            <div class="card">
+                <h3>Loaded Playlist Queue</h3>
+                <table id="playlistTable">
+                    <thead>
+                        <tr><th>#</th><th>Round Name</th><th>Category File</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="3" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="panel">
-            <h2>🏆 Live Team Scores</h2>
-            <div id="hostScoreList" style="max-height: 180px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 13px;">No teams connected yet.</p>
-            </div>
-            <button class="btn-api" style="background:#10b981; color:#000; margin-top:10px;" onclick="exportLeaderboardCSV()">📥 Download Final Leaderboard (CSV)</button>
-        </div>
-
-        <div class="panel full-width">
-            <h2>📊 Live Poll Votes Breakdown</h2>
-            <div id="hostPollVotesList" style="max-height: 180px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 13px;">No active poll votes yet.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 2: PLAYLIST BUILDER -->
-    <div id="tab-playlist" class="tab-content">
-        <div class="panel full-width" style="border: 1px solid var(--primary);">
-            <h2>🧠 Trivia Question Generator & Timers</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
-                <div>
+        <!-- TAB 2: PLAYLIST BUILDER -->
+        <div id="playlist" class="tab-content">
+            <div class="card">
+                <h3>Add New Quiz Round</h3>
+                <div class="form-group">
+                    <label>Select Category / Genre:</label>
+                    <select id="triviaGenreSelect">
+                        <option value="disney-pixar">Disney & Pixar</option>
+                        <option value="superhero-movies">Superhero Movies</option>
+                        <option value="guess-the-tv-show">Guess the TV Show</option>
+                        <option value="who-am-i">Who Am I?</option>
+                        <option value="guess-the-movie">Guess the Movie</option>
+                        <option value="whos-the-villain">Who's the Villain</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Round Custom Name:</label>
+                    <input type="text" id="roundNameInput" value="Movie & TV Round">
+                </div>
+                <div class="form-group">
                     <label>Question Count:</label>
-                    <select id="triviaCountSelect">
+                    <select id="questionCountSelect">
                         <option value="5">5 Questions</option>
                         <option value="10" selected>10 Questions</option>
                         <option value="15">15 Questions</option>
                         <option value="20">20 Questions</option>
                     </select>
                 </div>
-                <div>
-                    <label>Category:</label>
-                    <select id="triviaGenreSelect">
-                        <option value="for-kids">For Kids</option>
-                        <option value="general">General Knowledge</option>
-                        <option value="animals">Animals</option>
-                        <option value="brain-teasers">Brain Teasers</option>
-                        <option value="celebrities">Celebrities</option>
-                        <option value="entertainment">Entertainment</option>
-                        <option value="geography">Geography</option>
-                        <option value="history">History</option>
-                        <option value="hobbies">Hobbies</option>
-                        <option value="humanities">Humanities</option>
-                        <option value="literature">Literature</option>
-                        <option value="movies">Movies</option>
-                        <option value="music">Music</option>
-                        <option value="people">People</option>
-                        <option value="religion-faith">Religion & Faith</option>
-                        <option value="science-technology">Science & Technology</option>
-                        <option value="sports">Sports</option>
-                        <option value="television">Television</option>
-                        <option value="video-games">Video Games</option>
-                        <option value="world">World</option>
-                    </select>
-                </div>
+                <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
+                <button class="danger" onclick="socket.emit('clear-playlist')" style="margin-left: 1rem;">Clear Playlist</button>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                <div>
-                    <label>Question Timer (Seconds):</label>
-                    <input type="number" id="questionTimerInput" value="15" min="5" max="60">
-                </div>
-                <div>
-                    <label>Delay Between Questions (Seconds):</label>
-                    <input type="number" id="betweenDelayInput" value="5" min="2" max="30">
-                </div>
-            </div>
-            <button class="btn-api" onclick="addTriviaRound()">➕ Add Round to Playlist</button>
         </div>
 
-        <div class="panel full-width">
-            <h2>Playlist Queue (<span id="playlistCount">0</span>)</h2>
-            <div id="playlistContainer" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: var(--muted); font-size: 13px;">No rounds in playlist yet.</p>
+        <!-- TAB 3: ADVERTS & SPONSOR -->
+        <div id="adverts" class="tab-content">
+            <div class="card">
+                <h3>Broadcast Advert / Sponsor Slide</h3>
+                <div class="form-group">
+                    <label>Advert Title:</label>
+                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
+                </div>
+                <div class="form-group">
+                    <label>Upload Image / Logo:</label>
+                    <input type="file" id="adImageInput" accept="image/*">
+                </div>
+                <div class="flex-row">
+                    <button onclick="broadcastAdvert()">📢 Broadcast Advert Now</button>
+                    <button class="danger" onclick="socket.emit('hide-advert')">Hide Advert</button>
+                </div>
             </div>
         </div>
+
+        <!-- TAB 4: LOBBY & QR -->
+        <div id="lobby" class="tab-content">
+            <div class="card" style="text-align: center;">
+                <h3>Player Mobile Join QR Code</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Scan with phone camera to join the active game:</p>
+                <div id="qr-container"></div>
+                <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
+            </div>
+        </div>
+
     </div>
 
-    <!-- TAB 3: ADVERTS & POLLS -->
-    <div id="tab-media" class="tab-content">
-        <div class="panel">
-            <h2>🖼️ Saved Adverts Library (Local Storage)</h2>
-            <label>Advert Title:</label>
-            <input type="text" id="advertTitleInput" value="Sponsor Ad">
-            <label>Target Screen:</label>
-            <select id="advertTargetInput">
-                <option value="both">Both Screens</option>
-                <option value="projector">Projector Only</option>
-                <option value="mobile">Mobile Phones Only</option>
-            </select>
-            <label>Upload Image (JPG, PNG, WebP, GIF):</label>
-            <input type="file" id="advertImageInput" accept="image/*" style="margin-bottom:12px;">
-            <button class="btn-api" onclick="saveNewAdvert()">💾 Save to Library</button>
-            <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="hideAdvert()">❌ Hide Active Advert</button>
+    <script>
+        const socket = io();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Render QR Code pointing to player interface
+        const playerUrl = window.location.origin + '/player.html';
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("qr-container"), {
+            text: playerUrl,
+            width: 200,
+            height: 200
+        });
+
+        function addRoundToPlaylist() {
+            const genre = document.getElementById('triviaGenreSelect').value;
+            const name = document.getElementById('roundNameInput').value;
+            const count = parseInt(document.getElementById('questionCountSelect').value);
             
-            <h3 style="font-size:13px; color:var(--accent); margin-top:15px;">Your Stored Adverts:</h3>
-            <div id="savedAdsContainer" style="max-height:220px; overflow-y:auto;"></div>
-        </div>
+            socket.emit('add-round', { genre, name, count });
+            alert('Round added to playlist successfully!');
+        }
 
-        <div class="panel">
-            <h2>📊 Custom Icebreaker Poll Creator</h2>
-            <label>Poll Question:</label>
-            <input type="text" id="pollQuestionInput" value="What is your favorite pub drink?">
-            <label>Options (Comma separated):</label>
-            <input type="text" id="pollOptionsInput" value="Beer / Cider, Wine / Prosecco, Cocktails, Soft Drinks">
-            <button class="btn-api" style="background:#06b6d4; color:#000;" onclick="triggerCustomPoll(true)">🚀 Launch Poll on Phones</button>
-            <button class="btn-danger" style="margin-top:10px; width:100%;" onclick="triggerCustomPoll(false)">⏹️ Close Poll</button>
-        </div>
-    </div>
+        function broadcastAdvert() {
+            const title = document.getElementById('adTitleInput').value;
+            const fileInput = document.getElementById('adImageInput');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    socket.emit('broadcast-advert', { title, image: e.target.result });
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                socket.emit('broadcast-advert', { title, image: null });
+            }
+        }
 
-    <!-- TAB 4: SETTINGS -->
-    <div id="tab-settings" class="tab-content">
-        <div class="panel full-width">
-            <h2>⚙️ System Settings</h2>
-            <label>Event Title:</label>
-            <input type="text" id="eventTitleInput" value="TriviaMania Live Event">
-            <button class="btn-api" style="background:#10b981; color:#000;" onclick="saveSettings()">💾 Save Settings</button>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/dashboard.js"></script>
+        socket.on('state-update', (state) => {
+            document.getElementById('statusDisplay').innerText = state.status;
+            
+            // Update playlist table
+            const tbody = document.querySelector('#playlistTable tbody');
+            if (state.playlist.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
+            } else {
+                tbody.innerHTML = state.playlist.map((r, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${r.name}</td>
+                        <td>${r.genre}.txt (${r.questions.length} Qs)</td>
+                    </tr>
+                `).join('');
+            }
+        });
+    </script>
 </body>
 </html>
