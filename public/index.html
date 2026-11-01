@@ -69,7 +69,7 @@
         <div class="header-links">
             <span id="connectionStatus" style="color: var(--success);">● Connected</span>
             <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
-            <a href="/display.html" target="_blank">projector Display ↗</a>
+            <a href="/display.html" target="_blank">Projector Display ↗</a>
         </div>
     </header>
 
@@ -118,7 +118,6 @@
             </div>
 
             <div class="grid-2">
-                <!-- Playlist Queue -->
                 <div class="card">
                     <h3>Loaded Playlist Queue</h3>
                     <table id="playlistTable">
@@ -131,7 +130,6 @@
                     </table>
                 </div>
 
-                <!-- Live Leaderboard -->
                 <div class="card">
                     <h3>Live Leaderboard</h3>
                     <table id="hostLeaderboardTable">
@@ -145,7 +143,6 @@
                 </div>
             </div>
 
-            <!-- Connected Players -->
             <div class="card">
                 <h3>Connected Players (<span id="playerCount">0</span>)</h3>
                 <div id="joinedPlayersList" style="min-height: 50px;">
@@ -186,23 +183,48 @@
 
         <!-- TAB 3: ADVERTS & SPONSORS -->
         <div id="adverts" class="tab-content">
+            <div class="card" style="border: 2px solid var(--accent);">
+                <h3>Live Adverts Master Controls</h3>
+                <div class="grid-2" style="gap: 2rem;">
+                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--accent);">Projector Screen Advert</h4>
+                        <div class="form-group">
+                            <label>Select Saved Advert:</label>
+                            <select id="screenAdSelect">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                        </div>
+                        <div class="flex-row" style="margin-top: 1rem;">
+                            <button class="success small" onclick="launchScreenAd()">🖥 Upload to Screen</button>
+                            <button class="danger small" onclick="socket.emit('hide-advert-screen')">❌ Hide from Screen</button>
+                        </div>
+                    </div>
+
+                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--accent);">Mobile Devices Advert</h4>
+                        <div class="form-group">
+                            <label>Select Saved Advert:</label>
+                            <select id="mobileAdSelect">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                        </div>
+                        <div class="flex-row" style="margin-top: 1rem;">
+                            <button class="success small" onclick="launchMobileAd()">📱 Upload to Mobile</button>
+                            <button class="danger small" onclick="socket.emit('hide-advert-mobile')">❌ Hide from Mobile</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
-                <h3>Advert & Sponsor Library (Saved Locally)</h3>
+                <h3>Advert & Sponsor Library (Up to 50MB per file)</h3>
                 <div class="form-group">
                     <label>Advert Title / Message:</label>
                     <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
                 </div>
                 <div class="form-group">
-                    <label>Show On Display:</label>
-                    <select id="adTargetSelect">
-                        <option value="projector">Projector Screen Only</option>
-                        <option value="mobile">Mobile Players Only</option>
-                        <option value="both">Both Projector & Mobile</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Upload Image / Logo:</label>
-                    <input type="file" id="adImageInput" accept="image/*">
+                    <label>Upload Image (Any format, up to 50MB):</label>
+                    <input type="file" id="adImageInput">
                 </div>
                 <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
             </div>
@@ -212,7 +234,6 @@
                 <div id="savedAdsList">
                     <p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>
                 </div>
-                <button class="danger" onclick="socket.emit('hide-advert')" style="margin-top: 1rem;">❌ Hide Active Advert</button>
             </div>
         </div>
 
@@ -280,62 +301,83 @@
             alert('Round added to playlist!');
         }
 
-        // Persistent Adverts Library using localStorage
-        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads') || '[]');
+        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
 
         function saveNewAdvert() {
             const title = document.getElementById('adTitleInput').value;
-            const target = document.getElementById('adTargetSelect').value;
             const fileInput = document.getElementById('adImageInput');
 
             if (!title) { alert('Please enter an advert title!'); return; }
 
             if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('File is too large! Maximum file size is 50MB.');
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    savedAds.push({ title, target, image: e.target.result });
-                    localStorage.setItem('triviamania_ads', JSON.stringify(savedAds));
+                    savedAds.push({ title, image: e.target.result });
+                    localStorage.setItem('triviamania_ads_v2', JSON.stringify(savedAds));
                     renderAdsLibrary();
-                    alert('Advert saved to library successfully!');
+                    document.getElementById('adTitleInput').value = '';
+                    document.getElementById('adImageInput').value = '';
+                    alert('Advert saved successfully!');
                 };
-                reader.readAsDataURL(fileInput.files[0]);
+                reader.readAsDataURL(file);
             } else {
-                savedAds.push({ title, target, image: null });
-                localStorage.setItem('triviamania_ads', JSON.stringify(savedAds));
+                savedAds.push({ title, image: null });
+                localStorage.setItem('triviamania_ads_v2', JSON.stringify(savedAds));
                 renderAdsLibrary();
-                alert('Advert saved to library successfully!');
+                document.getElementById('adTitleInput').value = '';
+                alert('Advert saved successfully!');
             }
         }
 
         function renderAdsLibrary() {
             const listDiv = document.getElementById('savedAdsList');
+            const screenSelect = document.getElementById('screenAdSelect');
+            const mobileSelect = document.getElementById('mobileAdSelect');
+
+            const dropdownOptions = '<option value="">-- Choose Advert --</option>' + 
+                savedAds.map((ad, idx) => `<option value="${idx}">${ad.title}</option>`).join('');
+
+            screenSelect.innerHTML = dropdownOptions;
+            mobileSelect.innerHTML = dropdownOptions;
+
             if (savedAds.length === 0) {
                 listDiv.innerHTML = `<p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>`;
                 return;
             }
+
             listDiv.innerHTML = savedAds.map((ad, idx) => `
                 <div class="ad-item">
                     <div>
-                        <strong>${ad.title}</strong> <span style="font-size: 0.8rem; color: var(--text-muted);">(${ad.target})</span>
+                        <strong>${ad.title}</strong> ${ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : ''}
                     </div>
                     <div>
-                        <button class="small success" onclick="broadcastSavedAd(${idx})">📢 Broadcast</button>
                         <button class="small danger" onclick="deleteSavedAd(${idx})">🗑 Delete</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function broadcastSavedAd(index) {
-            const ad = savedAds[index];
-            if (ad) {
-                socket.emit('broadcast-advert', ad);
-            }
+        function launchScreenAd() {
+            const idx = document.getElementById('screenAdSelect').value;
+            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            socket.emit('broadcast-advert-screen', savedAds[idx]);
+        }
+
+        function launchMobileAd() {
+            const idx = document.getElementById('mobileAdSelect').value;
+            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            socket.emit('broadcast-advert-mobile', savedAds[idx]);
         }
 
         function deleteSavedAd(index) {
             savedAds.splice(index, 1);
-            localStorage.setItem('triviamania_ads', JSON.stringify(savedAds));
+            localStorage.setItem('triviamania_ads_v2', JSON.stringify(savedAds));
             renderAdsLibrary();
         }
 
