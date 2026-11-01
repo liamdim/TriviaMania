@@ -67,3 +67,353 @@ A Finding Nemo
 B Shark Tale
 C Moana
 D Happy Feet
+
+#Q Which 1994 drama starring Tim Robbins and Morgan Freeman takes place inside Shawshank State Penitentiary?
+^ The Shawshank Redemption
+A The Shawshank Redemption
+B The Green Mile
+C Escape from Alcatraz
+D Cool Hand Luke
+
+#Q What is the name of the fictional dystopian nation where teenagers are forced to fight to the death in a televised arena in The Hunger Games?
+^ Panem
+A Panem
+B District 12
+C Capitol City
+D Oceania
+
+#Q Which 2000 historical epic directed by Ridley Scott stars Russell Crowe as a betrayed Roman general seeking vengeance?
+^ Gladiator
+A Gladiator
+B Troy
+C 300
+D Alexander
+
+#Q In the 1984 sci-fi classic The Terminator, what year is the cyborg assassin sent back from?
+^ 2029
+A 2029
+B 1984
+C 2050
+D 1997
+
+#Q Which 1994 coming-of-age Disney animated film features the iconic song "Hakuna Matata"?
+^ The Lion King
+A The Lion King
+B Aladdin
+C Mulan
+D Hercules
+
+#Q What is the name of the high-speed racing franchise starring Vin Diesel and Paul Walker that began in 2001?
+^ The Fast and the Furious
+A The Fast and the Furious
+B Gone in 60 Seconds
+C Need for Speed
+D Driven
+
+#Q Which 2009 sci-fi epic directed by James Cameron is set on the lush alien moon of Pandora?
+^ Avatar
+A Avatar
+B Interstellar
+C Prometheus
+D The Martian
+
+#Q In the movie Home Alone, what are the names of the two burglars who try to rob Kevin McCallister's house?
+^ Harry and Marv
+A Harry and Marv
+B Larry and Moe
+C Bill and Ted
+D Buzz and Frank
+
+#Q Which 2002 musical film won the Academy Award for Best Picture, starring Catherine Zeta-Jones and Renée Zellweger?
+^ Chicago
+A Chicago
+B Moulin Rouge!
+C Les Misérables
+D La La Land
+
+#Q What is the name of the fictional hotel that serves as a neutral zone for assassins in the John Wick franchise?
+^ The Continental
+A The Continental
+B The Grand Budapest Hotel
+C The Plaza
+D The Overlook
+
+#Q Which 2008 Christopher Nolan superhero masterpiece features Heath Ledger's legendary performance as the Joker?
+^ The Dark Knight
+A The Dark Knight
+B Batman Begins
+C The Dark Knight Rises
+D Joker
+
+#Q In Finding Nemo, what dental office city is Nemo taken to after being captured by a scuba diver?
+^ Sydney
+A Sydney
+B Melbourne
+C Brisbane
+D Perth
+
+#Q Which 1999 psychological thriller starring Bruce Willis features the famous twist ending where he is actually a ghost?
+^ The Sixth Sense
+A The Sixth Sense
+B Unbreakable
+C Split
+D The Village
+
+#Q What is the name of the hobbit played by Elijah Wood who inherits the One Ring?
+^ Frodo Baggins
+A Frodo Baggins
+B Bilbo Baggins
+C Samwise Gamgee
+D Pippin Took
+
+#Q Which 2014 space exploration film directed by Christopher Nolan features a crew traveling through a wormhole near Saturn?
+^ Interstellar
+A Interstellar
+B Gravity
+C The Martian
+D Arrival
+
+#Q In Shrek, what is the name of the chatty talking animal companion who befriends the ogre?
+^ Donkey
+A Donkey
+B Puss in Boots
+C Dragon
+D Gingy
+
+#Q Which 1995 Pixar computer-animated buddy comedy film was the very first entirely computer-animated feature film?
+^ Toy Story
+A Toy Story
+B A Bug's Life
+C Monsters, Inc.
+D Antz
+
+#Q What is the name of the haunted hotel where Jack Torrance loses his mind in Stanley Kubrick's The Shining?
+^ The Overlook Hotel
+A The Overlook Hotel
+B The Bates Motel
+C The Grand Hotel
+D The Plaza Hotel
+
+#Q Which 2001 fantasy film introduces audiences to the magical wizard school Hogwarts?
+^ Harry Potter and the Philosopher's Stone
+A Harry Potter and the Philosopher's Stone
+B Harry Potter and the Chamber of Secrets
+C Fantastic Beasts and Where to Find Them
+D Percy Jackson
+
+#Q In the movie Jurassic Park, which dinosaur species is famously referred to as a "clever girl" by game warden Robert Muldoon?
+^ Velociraptor
+A Velociraptor
+B T-Rex
+C Triceratops
+D Dilophosaurus
+
+#Q Which 1985 adventure comedy film features a DeLorean time machine powered by plutonium and a flux capacitor?
+^ Back to the Future
+A Back to the Future
+B Ghostbusters
+C The Goonies
+D Blade Runner
+
+#Q What is the name of the fictional wizarding prison guarded by Dementors in the Harry Potter universe?
+^ Azkaban
+A Azkaban
+B Nurmengard
+C The Dungeon
+D Blackgate
+
+#Q Which 1994 dark comedy crime film directed by Quentin Tarantino features John Travolta and Samuel L. Jackson discussing hamburgers in Paris?
+^ Pulp Fiction
+A Pulp Fiction
+B Reservoir Dogs
+C Jackie Brown
+D Fargo
+
+#Q In the Matrix franchise, what is the color of the pill that Neo takes to wake up and see the harsh reality of the world?
+^ Red
+A Red
+B Blue
+C Green
+D Yellow
+
+#Q Which 2009 animated Pixar film features an old man flying his house away using thousands of colorful helium balloons?
+^ Up
+A Up
+B WALL-E
+C Inside Out
+D Ratatouille
+
+#Q What is the name of the ruthless pirate captain who hunts Peter Pan in Neverland?
+^ Captain Hook
+A Captain Hook
+B Long John Silver
+C Blackbeard
+D Captain Jack Sparrow
+
+#Q Which 1997 disaster romance film directed by James Cameron features a fictional love story aboard a doomed luxury ocean liner?
+^ Titanic
+A Titanic
+B The Poseidon Adventure
+C Ghost Ship
+D Pearl Harbor
+
+#Q In the Rocky film series, what is the nickname of Rocky Balboa's primary boxing rival played by Carl Weathers?
+^ Apollo Creed
+A Apollo Creed
+B Clubber Lang
+C Ivan Drago
+D Tommy Gunn
+
+#Q Which 2006 historical action film depicts the legendary Battle of Thermopylae with 300 Spartan warriors?
+^ 300
+A 300
+B Gladiator
+C Troy
+D Alexander
+
+#Q What is the name of the fictional high school where the Plastics rule in the 2004 comedy Mean Girls?
+^ North Shore High School
+A North Shore High School
+B West Beverly High
+C East High
+D Riverdale High
+
+#Q Which 2012 superhero crossover film brought together Iron Man, Captain America, Thor, and the Hulk for the first time in the MCU?
+^ The Avengers
+A The Avengers
+B Avengers: Age of Ultron
+C Guardians of the Galaxy
+D Justice League
+
+#Q In Toy Story, what is the name of the neurotic green Tyrannosaurus Rex toy who suffers from anxiety?
+^ Rex
+A Rex
+B Slinky Dog
+C Mr. Potato Head
+D Hamm
+
+#Q Which 1980 sci-fi sequel features the famous plot twist where Darth Vader reveals he is Luke Skywalker's father?
+^ The Empire Strikes Back
+A The Empire Strikes Back
+B A New Hope
+C Return of the Jedi
+D Revenge of the Sith
+
+#Q What is the name of the fictional town where most of the events of Stranger Things take place?
+^ Hawkins
+A Hawkins
+B Riverdale
+C Greendale
+D Sunnydale
+
+#Q Which 2004 zombie comedy film directed by Edgar Wright features vinyl records used as weapons against the undead?
+^ Shaun of the Dead
+A Shaun of the Dead
+B Zombieland
+C 28 Days Later
+D Dawn of the Dead
+
+#Q In the Harry Potter series, what is the name of Harry's loyal pet snowy owl?
+^ Hedwig
+A Hedwig
+B Crookshanks
+C Scabbers
+D Fang
+
+#Q Which 1999 mind-bending sci-fi action film stars Keanu Reeves as a computer programmer discovering reality is a simulation?
+^ The Matrix
+A The Matrix
+B Inception
+C Dark City
+D Equilibrium
+
+#Q What is the name of the magical board game that traps players inside a jungle in the 1995 Robin Williams adventure film?
+^ Jumanji
+A Jumanji
+B Zathura
+C Ouija
+D Clue
+
+#Q Which 2014 biographical drama starring Eddie Redpkin portrays the life and ALS diagnosis of physicist Stephen Hawking?
+^ The Theory of Everything
+A The Theory of Everything
+B The Imitation Game
+C A Beautiful Mind
+D Oppenheimer
+
+#Q In the Shrek franchise, what is the name of the kingdom where Princess Fiona's parents rule?
+^ Far Far Away
+A Far Far Away
+B Duloc
+C Camelot
+D Sherwood
+
+#Q Which 1991 thriller features Jodie Foster as FBI trainee Clarice Starling seeking help from an incarcerated cannibal?
+^ The Silence of the Lambs
+A The Silence of the Lambs
+B Seven
+C Zodiac
+D Shutter Island
+
+#Q What is the name of the fictional coffee shop where the characters hang out in the sitcom Friends?
+^ Central Perk
+A Central Perk
+B Monk's Café
+C MacLaren's Pub
+D Luke's Diner
+
+#Q Which 2003 animated adventure film features a young clownfish crossing the ocean with a forgetful blue fish?
+^ Finding Nemo
+A Finding Nemo
+B Shark Tale
+C Moana
+D Happy Feet
+
+#Q In the Indiana Jones series, what is the name of the fearless archaeologist's signature weapon?
+^ Bullwhip
+A Bullwhip
+B Revolver
+C Crossbow
+D Machete
+
+#Q Which 2010 Christopher Nolan thriller explores dream infiltration and corporate espionage inside nested subconscious layers?
+^ Inception
+A Inception
+B Interstellar
+C Shutter Island
+D The Prestige
+
+#Q What is the name of the loyal dog who accompanies Dorothy in The Wizard of Oz?
+^ Toto
+A Toto
+B Buster
+C Max
+D Lassie
+
+#Q Which 1993 Steven Spielberg dinosaur blockbuster is based on Michael Crichton's bestselling novel?
+^ Jurassic Park
+A Jurassic Park
+B The Lost World
+C Jurassic World
+D Congo
+
+#Q In the Toy Story franchise, what is the name of the space ranger action figure who initially believes he is a real space hero?
+^ Buzz Lightyear
+A Buzz Lightyear
+B Woody
+C Zurg
+D Rex
+
+#Q Which 2001 animated fantasy film by Studio Ghibli follows a young girl named Chihiro wandering into a mysterious spirit world?
+^ Spirited Away
+A Spirited Away
+B My Neighbor Totoro
+C Princess Mononoke
+D Howl's Moving Castle
+
+#Q What is the name of the fictional mob family boss played by Marlon Brando in Francis Ford Coppola's The Godfather?
+^ Don Vito Corleone
+A Don Vito Corleone
+B Michael Corleone
+C Tony Soprano
+D Sonny Corleone
