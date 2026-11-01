@@ -29,8 +29,8 @@
         .option-btn { width: 100%; padding: 1.25rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 10px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.85rem; cursor: pointer; transition: 0.2s; text-align: left; padding-left: 1.5rem; }
         .option-btn:hover:not(:disabled) { border-color: var(--accent); background: #1e293b; }
         
-        /* Locked selection style */
-        .option-btn.selected-lock { background: var(--accent) !important; border-color: white !important; color: white !important; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
+        /* Locked selection styles */
+        .option-btn.selected-lock { background: var(--accent) !important; border-color: white !important; color: white !important; box-shadow: 0 0 15px rgba(59,130,246,0.6); }
         .option-btn.correct { background: rgba(34, 197, 94, 0.3) !important; border-color: var(--success) !important; color: #4ade80 !important; }
         .option-btn.incorrect { background: rgba(239, 68, 68, 0.3) !important; border-color: var(--danger) !important; color: #f87171 !important; }
 
@@ -61,6 +61,8 @@
         const socket = io();
         let myName = '';
         let hasAnswered = false;
+        let selectedAnswerText = '';
+        let lastQuestionIndex = -1;
 
         function joinGame() {
             const input = document.getElementById('playerNameInput');
@@ -107,7 +109,13 @@
                 const q = round.questions[state.currentQuestionIndex];
                 if (!q) return;
 
-                hasAnswered = false;
+                // Reset answer flag if we moved to a new question
+                if (lastQuestionIndex !== state.currentQuestionIndex) {
+                    hasAnswered = false;
+                    selectedAnswerText = '';
+                    lastQuestionIndex = state.currentQuestionIndex;
+                }
+
                 app.innerHTML = `
                     <div class="meta-info">
                         <span>Q ${state.currentQuestionIndex + 1} of ${round.questions.length}</span>
@@ -115,8 +123,13 @@
                     </div>
                     <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; line-height: 1.4;">${q.question}</h3>
                     <div id="optionsContainer">
-                        ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}</button>`).join('')}
+                        ${q.options.map(opt => {
+                            const isSelected = selectedAnswerText === opt;
+                            const lockClass = hasAnswered ? (isSelected ? 'selected-lock' : '') : '';
+                            return `<button class="option-btn ${lockClass}" ${hasAnswered ? 'disabled' : ''} onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}</button>`;
+                        }).join('')}
                     </div>
+                    ${hasAnswered ? `<p style="margin-top: 1rem; font-size: 0.95rem; color: var(--accent);">Answer locked in! ✓</p>` : ''}
                 `;
             } else if (state.status === 'LEADERBOARD') {
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
@@ -146,25 +159,34 @@
         function submitAnswer(btnElement, answerText, timeRemaining) {
             if (hasAnswered) return;
             hasAnswered = true;
+            selectedAnswerText = answerText;
 
             socket.emit('submit-answer', { answer: answerText, timeRemaining });
 
-            // Immediately lock selection and keep it highlighted
-            btnElement.classList.add('selected-lock');
-            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
-
-            socket.once('answer-result', ({ correct, points }) => {
-                if (correct) {
-                    btnElement.classList.remove('selected-lock');
-                    btnElement.classList.add('correct');
-                    btnElement.innerHTML += `<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
-                } else {
-                    btnElement.classList.remove('selected-lock');
-                    btnElement.classList.add('incorrect');
-                    btnElement.innerHTML += `<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
+            // Lock selection immediately
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                if (btn.innerText.trim() === answerText.trim()) {
+                    btn.classList.add('selected-lock');
                 }
             });
         }
+
+        // Global answer result feedback listener
+        socket.on('answer-result', ({ correct, points }) => {
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                if (btn.classList.contains('selected-lock')) {
+                    btn.classList.remove('selected-lock');
+                    if (correct) {
+                        btn.classList.add('correct');
+                        btn.innerHTML += `<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
+                    } else {
+                        btn.classList.add('incorrect');
+                        btn.innerHTML += `<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>
