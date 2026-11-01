@@ -28,8 +28,6 @@
         button:hover { background: var(--accent-hover); }
 
         .option-btn { width: 100%; padding: 1.25rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 10px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.85rem; cursor: pointer; transition: 0.2s; text-align: left; padding-left: 1.5rem; }
-        .option-btn:hover:not(:disabled) { border-color: var(--accent); background: #1e293b; }
-        
         .option-btn.selected-lock { background: var(--accent) !important; border-color: white !important; color: white !important; box-shadow: 0 0 15px rgba(59,130,246,0.6); }
         .option-btn.correct { background: rgba(34, 197, 94, 0.4) !important; border-color: var(--success) !important; color: #4ade80 !important; }
         .option-btn.incorrect { background: rgba(239, 68, 68, 0.4) !important; border-color: var(--danger) !important; color: #f87171 !important; }
@@ -37,12 +35,10 @@
 
         .meta-info { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 600; text-transform: uppercase; }
         
-        /* Emoji Soundboard */
         .emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1.5rem; }
         .emoji-btn { background: #0f172a; border: 1px solid #475569; border-radius: 8px; font-size: 1.6rem; padding: 0.5rem; cursor: pointer; transition: 0.2s; text-align: center; }
         .emoji-btn:active { transform: scale(0.9); background: var(--accent); }
 
-        /* Host Announcement Banner at Bottom */
         #announcementBanner { position: fixed; bottom: 0; left: 0; right: 0; background: var(--warning); color: #000; padding: 0.75rem 1rem; font-weight: bold; text-align: center; display: none; z-index: 200; box-shadow: 0 -4px 15px rgba(0,0,0,0.5); font-size: 1rem; }
 
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; padding: 2rem; text-align: center; }
@@ -60,7 +56,6 @@
         </div>
     </div>
 
-    <!-- Host Announcement Sticky Banner -->
     <div id="announcementBanner">📢 <span id="announcementText"></span></div>
 
     <div id="advertOverlay">
@@ -78,6 +73,7 @@
         let answerResultState = null;
         let earnedPoints = 0;
         let currentCorrectAnswer = '';
+        let countdownSoundEnabled = true;
 
         function playMobileSound(type) {
             try {
@@ -88,7 +84,14 @@
                 osc.connect(gain);
                 gain.connect(ctx.destination);
 
-                if (type === 'lock') {
+                if (type === 'countdown') {
+                    if (!countdownSoundEnabled) return;
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                } else if (type === 'lock') {
                     osc.frequency.setValueAtTime(440, ctx.currentTime);
                     osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
                     gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -116,7 +119,6 @@
             } catch (e) {}
         }
 
-        // Listen for Host Announcements
         socket.on('announcement-update', (announcement) => {
             const banner = document.getElementById('announcementBanner');
             const textEl = document.getElementById('announcementText');
@@ -166,6 +168,10 @@
         }
 
         socket.on('state-update', (state) => {
+            if (state.settings && state.settings.countdownSound !== undefined) {
+                countdownSoundEnabled = state.settings.countdownSound;
+            }
+
             const app = document.getElementById('app');
             const adOverlay = document.getElementById('advertOverlay');
 
@@ -262,7 +268,12 @@
 
         socket.on('timer-tick', (timeLeft) => {
             const timerEl = document.getElementById('timerDisplay');
-            if (timerEl) timerEl.innerText = timeLeft + 's';
+            if (timerEl) {
+                timerEl.innerText = timeLeft + 's';
+                if (timeLeft <= 5) {
+                    playMobileSound('countdown');
+                }
+            }
         });
 
         function submitAnswer(btnElement, answerText, timeRemaining) {
