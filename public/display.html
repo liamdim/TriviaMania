@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriviaMania - Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -45,7 +46,11 @@
         .option-box.correct { background: rgba(34, 197, 94, 0.25); border-color: var(--success); color: #4ade80; box-shadow: 0 0 30px rgba(34,197,94,0.5); transform: scale(1.02); }
 
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
-        #advertOverlay img { max-height: 500px; max-width: 85%; border-radius: 16px; margin-top: 1.5rem; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.4); }
+        #advertOverlay img { max-height: 480px; max-width: 85%; border-radius: 16px; margin-top: 1rem; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.4); }
+        
+        /* Corner QR Badge on Adverts */
+        .corner-qr { position: absolute; bottom: 2rem; right: 2rem; background: white; padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .corner-qr span { font-size: 0.85rem; font-weight: bold; color: #0f172a; margin-top: 0.4rem; }
     </style>
 </head>
 <body>
@@ -57,15 +62,34 @@
         </div>
     </div>
 
+    <!-- Advert Overlay with Corner QR Code -->
     <div id="advertOverlay">
-        <h1 id="adTitleText" style="font-size: 3.5rem; color: var(--accent); margin-bottom: 1rem;"></h1>
+        <h1 id="adTitleText" style="font-size: 3rem; color: var(--accent); margin-bottom: 0.5rem;"></h1>
         <img id="adImageTag" src="" alt="Advert" style="display: none;">
+        <div class="corner-qr">
+            <div id="cornerQrContainer"></div>
+            <span>Scan to Join Game</span>
+        </div>
     </div>
 
     <script>
         const socket = io();
         const letters = ['A', 'B', 'C', 'D'];
         let currentQuestionData = null;
+        let venueDetailsText = '';
+
+        const playerUrl = window.location.origin + '/player.html';
+        
+        // Generate Corner QR Code for Adverts
+        new QRCode(document.getElementById("cornerQrContainer"), {
+            text: playerUrl,
+            width: 100,
+            height: 100
+        });
+
+        socket.on('venue-update', (text) => {
+            venueDetailsText = text;
+        });
 
         socket.on('state-update', (state) => {
             const displayArea = document.getElementById('displayArea');
@@ -88,9 +112,16 @@
 
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 displayArea.innerHTML = `
+                    ${venueDetailsText ? `<p style="color: var(--warning); font-size: 1.4rem; font-weight: 600; margin-bottom: 1.5rem; white-space: pre-line;">${venueDetailsText}</p>` : ''}
                     <h2>Game Lobby Open!</h2>
-                    <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code on your phone to join and play!</p>
+                    <p style="color: var(--text-muted); font-size: 1.4rem; margin-top: 1rem; margin-bottom: 1.5rem;">Scan the QR code with your phone camera to join and play!</p>
+                    <div id="lobbyQrContainer" style="display: flex; justify-content: center; background: white; padding: 1rem; border-radius: 12px; width: fit-content; margin: 0 auto;"></div>
                 `;
+                new QRCode(document.getElementById("lobbyQrContainer"), {
+                    text: playerUrl,
+                    width: 220,
+                    height: 220
+                });
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 if (!round) return;
@@ -110,7 +141,7 @@
                     </div>
                     <h2>${q.question}</h2>
                     <div class="options-grid">
-                        ${q.options.map((opt, idx) => `<div class="option-box" id="opt-${idx}"><strong>${letters[idx]}.</strong> ${opt}</div>`).join('')}
+                        ${q.options.link ? '' : q.options.map((opt, idx) => `<div class="option-box" id="opt-${idx}"><strong>${letters[idx]}.</strong> ${opt}</div>`).join('')}
                     </div>
                 `;
             } else if (state.status === 'LEADERBOARD') {
@@ -138,7 +169,6 @@
                     </table>
                 `;
 
-                // Highlight correct answer box if visible
                 if (q && currentQuestionData) {
                     q.options.forEach((opt, idx) => {
                         if (opt.trim().toLowerCase() === currentQuestionData.answer.trim().toLowerCase()) {
