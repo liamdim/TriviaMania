@@ -46,7 +46,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Robust Category Parser supporting both extensionless and .txt files
+// Robust Category Parser supporting option shuffling
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
@@ -67,7 +67,10 @@ function parseCategoryFile(filename) {
         line = line.trim();
         if (!line) continue;
         if (line.startsWith('#Q')) {
-            if (currentQ) questions.push(currentQ);
+            if (currentQ) {
+                currentQ.options.sort(() => 0.5 - Math.random());
+                questions.push(currentQ);
+            }
             currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '' };
         } else if (line.startsWith('^')) {
             if (currentQ) currentQ.answer = line.replace('^', '').trim();
@@ -78,7 +81,10 @@ function parseCategoryFile(filename) {
             }
         }
     }
-    if (currentQ) questions.push(currentQ);
+    if (currentQ) {
+        currentQ.options.sort(() => 0.5 - Math.random());
+        questions.push(currentQ);
+    }
     return questions;
 }
 
@@ -91,7 +97,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Guaranteed Answer Evaluation & Result Emission
     socket.on('submit-answer', ({ answer, timeRemaining }) => {
         if (gameState.status !== 'QUESTION') return;
         const player = gameState.scores[socket.id];
