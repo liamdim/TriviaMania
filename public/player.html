@@ -26,13 +26,15 @@
         button { width: 100%; padding: 1rem; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--accent-hover); }
 
-        .option-btn { width: 100%; padding: 1.25rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 10px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.85rem; cursor: pointer; transition: 0.2s; }
-        .option-btn:hover { border-color: var(--accent); background: #1e293b; }
-        .option-btn.correct { background: rgba(34, 197, 94, 0.3); border-color: var(--success); color: #4ade80; }
-        .option-btn.incorrect { background: rgba(239, 68, 68, 0.3); border-color: var(--danger); color: #f87171; }
+        .option-btn { width: 100%; padding: 1.25rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 10px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.85rem; cursor: pointer; transition: 0.2s; text-align: left; padding-left: 1.5rem; }
+        .option-btn:hover:not(:disabled) { border-color: var(--accent); background: #1e293b; }
+        
+        /* Locked selection style */
+        .option-btn.selected-lock { background: var(--accent) !important; border-color: white !important; color: white !important; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
+        .option-btn.correct { background: rgba(34, 197, 94, 0.3) !important; border-color: var(--success) !important; color: #4ade80 !important; }
+        .option-btn.incorrect { background: rgba(239, 68, 68, 0.3) !important; border-color: var(--danger) !important; color: #f87171 !important; }
 
         .meta-info { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 600; text-transform: uppercase; }
-        .timer { font-size: 1.6rem; font-weight: bold; color: var(--accent); margin-bottom: 1rem; }
         
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; text-align: center; }
         #advertOverlay img { max-height: 300px; max-width: 90%; border-radius: 10px; margin-top: 1rem; border: 2px solid var(--accent); }
@@ -120,10 +122,13 @@
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
                 const myRank = players.findIndex(p => p.name === myName) + 1;
                 const myScoreObj = state.scores[socket.id] || { score: 0 };
+                
+                const round = state.playlist[state.currentRoundIndex];
+                const isRoundEnd = round && (state.currentQuestionIndex + 1 >= round.questions.length);
 
                 app.innerHTML = `
-                    <h2 style="color: var(--success); margin-bottom: 0.5rem;">Intermission</h2>
-                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Look at the main screen for rankings</p>
+                    <h2 style="color: var(--success); margin-bottom: 0.5rem;">${isRoundEnd ? '🏁 Round Finished!' : 'Score Update'}</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Check the big screen for full rankings</p>
                     <div style="background: #0f172a; padding: 1.5rem; border-radius: 12px; border: 1px solid #475569;">
                         <p style="font-size: 1rem; color: var(--text-muted);">Your Score</p>
                         <h1 style="font-size: 2.5rem; color: var(--accent); margin: 0.5rem 0;">${myScoreObj.score}</h1>
@@ -144,14 +149,17 @@
 
             socket.emit('submit-answer', { answer: answerText, timeRemaining });
 
-            // Disable all options
+            // Immediately lock selection and keep it highlighted
+            btnElement.classList.add('selected-lock');
             document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
 
             socket.once('answer-result', ({ correct, points }) => {
                 if (correct) {
+                    btnElement.classList.remove('selected-lock');
                     btnElement.classList.add('correct');
                     btnElement.innerHTML += `<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
                 } else {
+                    btnElement.classList.remove('selected-lock');
                     btnElement.classList.add('incorrect');
                     btnElement.innerHTML += `<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
                 }
