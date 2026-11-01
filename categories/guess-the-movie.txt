@@ -1,0 +1,69 @@
+#Q Which 1993 science fiction adventure film directed by Steven Spielberg features cloned dinosaurs escaping a theme park?
+^ Jurassic Park
+A Jurassic Park
+B The Lost World
+C Jurassic World
+D King Kong
+
+#Q What is the name of the 1994 crime film directed by Quentin Tarantino featuring a briefcase, twist dancing, and multiple interwoven stories?
+^ Pulp Fiction
+A Pulp Fiction
+B Reservoir Dogs
+C GoodFellas
+D The Godfather
+
+#Q Which epic 1997 romantic drama directed by James Cameron is set aboard an ill-fated ocean liner?
+^ Titanic
+A Titanic
+B The Poseidon Adventure
+C Ghost Ship
+D Pearl Harbor
+
+#Q In which 1999 sci-fi action film does hacker Neo discover that humanity is trapped inside a simulated reality by machines?
+^ The Matrix
+A The Matrix
+B Blade Runner
+C Inception
+D Tron
+
+#Q Which 1994 animated masterpiece follows Simba's journey to reclaim his throne in the African pride lands?
+^ The Lion King
+A The Lion King
+B Tarzan
+C Mulan
+D Hercules
+
+#Q What 2001 fantasy film introduces audiences to a young wizard attending his very first year at Hogwarts?
+^ Harry Potter and the Philosopher's Stone
+A Harry Potter and the Philosopher's Stone
+B The Lord of the Rings: The Fellowship of the Ring
+C Percy Jackson & the Olympians
+D Fantastic Beasts and Where to Find Them
+
+#Q Which 2010 mind-bending sci-fi thriller directed by Christopher Nolan revolves around stealing secrets through people's dreams?
+^ Inception
+A Inception
+B Interstellar
+C Shutter Island
+D The Prestige
+
+#Q What 1985 sci-fi comedy features teenager Marty McFly traveling back to 1955 in a DeLorean time machine?
+^ Back to the Future
+A Back to the Future
+B Ghostbusters
+C The Goonies
+D Blade Runner
+
+#Q Which 1991 psychological horror thriller features FBI trainee Clarice Starling consulting imprisoned serial killer Hannibal Lecter?
+^ The Silence of the Lambs
+A The Silence of the Lambs
+B Seven
+C Zodiac
+D Shutter Island
+
+#Q What 2003 animated adventure film features a clownfish crossing the ocean to rescue his captured son?
+^ Finding Nemo
+A Finding Nemo
+B Shark Tale
+C Moana
+D Happy Feet
