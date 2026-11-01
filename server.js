@@ -27,7 +27,8 @@ let gameState = {
     announcement: { active: false, text: '' },
     settings: { 
         questionTime: 15,
-        intermissionTime: 5 
+        intermissionTime: 5,
+        countdownSound: true 
     }
 };
 
@@ -49,17 +50,13 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Robust Category Parser supporting option shuffling
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
     if (!fs.existsSync(filePath)) {
         filePath = path.join(categoriesDir, filename + '.txt');
     }
-    if (!fs.existsSync(filePath)) {
-        console.warn(`Category file not found: ${filename}`);
-        return [];
-    }
+    if (!fs.existsSync(filePath)) return [];
 
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split(/\r?\n/);
@@ -177,6 +174,7 @@ io.on('connection', (socket) => {
     socket.on('update-settings', (newSettings) => {
         if (newSettings.questionTime) gameState.settings.questionTime = parseInt(newSettings.questionTime);
         if (newSettings.intermissionTime) gameState.settings.intermissionTime = parseInt(newSettings.intermissionTime);
+        if (newSettings.countdownSound !== undefined) gameState.settings.countdownSound = newSettings.countdownSound;
         io.emit('state-update', gameState);
     });
 
@@ -185,13 +183,11 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Broadcast Announcement
     socket.on('update-announcement', (announcementData) => {
         gameState.announcement = announcementData;
         io.emit('announcement-update', gameState.announcement);
     });
 
-    // Emoji Reaction Relay
     socket.on('send-emoji', (emoji) => {
         io.emit('player-emoji', { id: socket.id, emoji });
     });
@@ -235,7 +231,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Independent Advert Controls
     socket.on('broadcast-advert-screen', (adData) => {
         gameState.activeScreenAdvert = adData;
         io.emit('state-update', gameState);
