@@ -12,7 +12,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Game State
 let gameState = {
     status: 'IDLE', // IDLE, LOBBY, QUESTION, LEADERBOARD, PAUSED
     currentRoundIndex: 0,
@@ -20,18 +19,17 @@ let gameState = {
     currentQuestionIndex: 0,
     timer: 0,
     timerMax: 15,
-    scores: {}, // socketId -> { name, score }
+    scores: {}, 
     activeAdvert: null,
     settings: { 
         questionTime: 15,
-        intermissionTime: 5 // Default 5 seconds between questions
+        intermissionTime: 5 
     }
 };
 
 let timerInterval = null;
 let leaderboardTimeout = null;
 
-// Endpoint to fetch categories dynamically
 app.get('/api/categories', (req, res) => {
     const categoriesDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(categoriesDir)) return res.json([]);
@@ -46,17 +44,13 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Robust Category Parser supporting both extensionless and .txt files
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
     if (!fs.existsSync(filePath)) {
         filePath = path.join(categoriesDir, filename + '.txt');
     }
-    if (!fs.existsSync(filePath)) {
-        console.warn(`Category file not found: ${filename}`);
-        return [];
-    }
+    if (!fs.existsSync(filePath)) return [];
 
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split(/\r?\n/);
@@ -154,18 +148,12 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Update Question & Intermission settings
     socket.on('update-settings', (newSettings) => {
-        if (newSettings.questionTime) {
-            gameState.settings.questionTime = parseInt(newSettings.questionTime);
-        }
-        if (newSettings.intermissionTime) {
-            gameState.settings.intermissionTime = parseInt(newSettings.intermissionTime);
-        }
+        if (newSettings.questionTime) gameState.settings.questionTime = parseInt(newSettings.questionTime);
+        if (newSettings.intermissionTime) gameState.settings.intermissionTime = parseInt(newSettings.intermissionTime);
         io.emit('state-update', gameState);
     });
 
-    // Start / Resume Game & load first question
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
         if (timerInterval) clearInterval(timerInterval);
@@ -241,19 +229,15 @@ function triggerLeaderboardAndAutoAdvance() {
     const round = gameState.playlist[gameState.currentRoundIndex];
     if (!round) return;
 
-    // Check if this was the last question of the entire playlist/round
     const isLastQuestion = gameState.currentQuestionIndex + 1 >= round.questions.length && 
                            gameState.currentRoundIndex + 1 >= gameState.playlist.length;
 
     gameState.status = 'LEADERBOARD';
     io.emit('state-update', gameState);
 
-    // If it's the absolute end of the quiz, stop auto-advancing
     if (isLastQuestion) return;
 
-    // Use the configured intermission time (default 5 seconds if not set)
     const intermissionMs = (gameState.settings.intermissionTime || 5) * 1000;
-
     leaderboardTimeout = setTimeout(() => {
         advanceToNextQuestion();
     }, intermissionMs);
