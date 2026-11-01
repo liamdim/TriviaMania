@@ -565,27 +565,35 @@
         }
 
         async function addBeatIQRoundToMainPlaylist() {
-            const genre = document.getElementById('beatiqGenreSelect').value;
-            const name = document.getElementById('beatiqRoundName').value;
-            const count = parseInt(document.getElementById('beatiqTrackCount').value);
+    const genre = document.getElementById('beatiqGenreSelect').value;
+    const name = document.getElementById('beatiqRoundName').value;
+    const count = parseInt(document.getElementById('beatiqTrackCount').value);
 
-            try {
-                const res = await fetch('/api/beatiq/tracks');
-                const allTracks = await res.json();
-                const genreTracks = allTracks.filter(t => t.genre === genre).sort(() => 0.5 - Math.random()).slice(0, count);
-
-                if (genreTracks.length === 0) {
-                    alert('No tracks found for this genre. Make sure curatedTracks.json is in your server data folder!');
-                    return;
-                }
-
-                socket.emit('add-beatiq-round', { genre, name, tracks: genreTracks });
-                alert(`Successfully added "${name}" to your main playlist queue!`);
-                switchTab('controls');
-            } catch (err) {
-                alert('Failed to load BeatIQ tracks.');
-            }
+    try {
+        const res = await fetch('/api/beatiq/tracks');
+        if (!res.ok) throw new Error('Network response was not ok');
+        
+        const allTracks = await res.json();
+        if (!Array.isArray(allTracks) || allTracks.length === 0) {
+            alert('Error: No tracks loaded. Check if data/curatedTracks.json exists and is valid JSON.');
+            return;
         }
+
+        const genreTracks = allTracks.filter(t => t.genre === genre).sort(() => 0.5 - Math.random()).slice(0, count);
+
+        if (genreTracks.length === 0) {
+            alert(`No tracks found for genre: "${genre}". Try selecting a different genre.`);
+            return;
+        }
+
+        socket.emit('add-beatiq-round', { genre, name, tracks: genreTracks });
+        alert(`Successfully added "${name}" to your main playlist queue!`);
+        switchTab('controls');
+    } catch (err) {
+        console.error(err);
+        alert('Failed to connect to server or load BeatIQ tracks.');
+    }
+}
 
         let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
 
