@@ -27,9 +27,27 @@ let gameState = {
 
 let timerInterval = null;
 
-// Custom Parser for #Q and ^ text category files (supports extensionless filenames)
+// Endpoint to fetch all available categories dynamically from the folder
+app.get('/api/categories', (req, res) => {
+    const categoriesDir = path.join(__dirname, 'categories');
+    if (!fs.existsSync(categoriesDir)) {
+        return res.json([]);
+    }
+    try {
+        const files = fs.readdirSync(categoriesDir);
+        // Clean filenames (remove extension if any are left over)
+        const categories = files
+            .filter(file => fs.statSync(path.join(categoriesDir, file)).isFile())
+            .map(file => file.replace(/\.[^/.]+$/, ''));
+        res.json(categories);
+    } catch (err) {
+        console.error('Error reading categories directory:', err);
+        res.json([]);
+    }
+});
+
+// Custom Parser for #Q and ^ text category files
 function parseCategoryFile(filename) {
-    // Strip .txt if it was passed so it matches your extensionless files on GitHub
     const cleanName = filename.replace('.txt', '');
     const filePath = path.join(__dirname, 'categories', cleanName);
     
@@ -72,18 +90,14 @@ function parseCategoryFile(filename) {
 // Socket.io Connection Handling
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
-
-    // Send current state on connection
     socket.emit('state-update', gameState);
 
-    // Player Joins Game
     socket.on('player-join', (playerName) => {
         const cleanName = playerName ? playerName.trim() : 'Anonymous';
         gameState.scores[socket.id] = { name: cleanName, score: 0 };
         io.emit('state-update', gameState);
     });
 
-    // Player Locks In Answer
     socket.on('submit-answer', ({ answer, timeRemaining }) => {
         if (gameState.status !== 'QUESTION') return;
         const player = gameState.scores[socket.id];
@@ -95,11 +109,9 @@ io.on('connection', (socket) => {
         const currentQ = currentRound.questions[gameState.currentQuestionIndex];
         if (!currentQ) return;
 
-        // Check if correct (case-insensitive trim match)
         const isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
         
         if (isCorrect && !player.hasAnsweredCurrent) {
-            // Speed points calculation (50 base + up to 50 scaling with remaining timer)
             const bonus = Math.floor((timeRemaining / gameState.timerMax) * 50);
             const pointsEarned = 50 + Math.max(0, bonus);
             player.score += pointsEarned;
@@ -111,9 +123,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Add Round to Playlist
     socket.on('add-round', (roundConfig) => {
-        // roundConfig expects { genre: 'guess-the-movie', name: 'Movie Round', count: 10 }
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
         
@@ -125,7 +135,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Clear Playlist
     socket.on('clear-playlist', () => {
         gameState.playlist = [];
         gameState.currentRoundIndex = 0;
@@ -134,14 +143,12 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Start / Resume Round
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
         gameState.status = 'LOBBY';
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Launch Question from Lobby / Next Question
     socket.on('next-question', () => {
         const round = gameState.playlist[gameState.currentRoundIndex];
         if (!round) return;
@@ -162,7 +169,6 @@ io.on('connection', (socket) => {
         startQuestionTimer();
     });
 
-    // Host Controls: Stop / Reset Game
     socket.on('stop-reset', () => {
         if (timerInterval) clearInterval(timerInterval);
         gameState.status = 'IDLE';
@@ -172,13 +178,11 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Broadcast Advert
     socket.on('broadcast-advert', (adData) => {
         gameState.activeAdvert = adData;
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Hide Advert
     socket.on('hide-advert', () => {
         gameState.activeAdvert = null;
         io.emit('state-update', gameState);
