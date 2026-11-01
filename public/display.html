@@ -54,11 +54,11 @@
             const displayArea = document.getElementById('displayArea');
             const adOverlay = document.getElementById('advertOverlay');
 
-            if (state.activeAdvert && (state.activeAdvert.target === 'both' || state.activeAdvert.target === 'projector')) {
-                document.getElementById('adTitleText').innerText = state.activeAdvert.title;
+            if (state.activeScreenAdvert) {
+                document.getElementById('adTitleText').innerText = state.activeScreenAdvert.title;
                 const imgTag = document.getElementById('adImageTag');
-                if (state.activeAdvert.image) {
-                    imgTag.src = state.activeAdvert.image;
+                if (state.activeScreenAdvert.image) {
+                    imgTag.src = state.activeScreenAdvert.image;
                     imgTag.style.display = 'block';
                 } else {
                     imgTag.style.display = 'none';
