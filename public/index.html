@@ -45,8 +45,6 @@
         button.success { background: var(--success); }
 
         .flex-row { display: flex; gap: 1rem; align-items: center; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
         th { color: var(--text-muted); }
@@ -103,14 +101,9 @@
             <div class="card">
                 <h3>Add New Quiz Round</h3>
                 <div class="form-group">
-                    <label>Select Category / Genre:</label>
+                    <label>Select Category / Genre (Auto-loaded from GitHub):</label>
                     <select id="triviaGenreSelect">
-                        <option value="disney-pixar">Disney & Pixar</option>
-                        <option value="superhero-movies">Superhero Movies</option>
-                        <option value="guess-the-tv-show">Guess the TV Show</option>
-                        <option value="who-am-i">Who Am I?</option>
-                        <option value="guess-the-movie">Guess the Movie</option>
-                        <option value="whos-the-villain">Who's the Villain</option>
+                        <option value="">Loading categories...</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -172,6 +165,26 @@
             event.target.classList.add('active');
         }
 
+        // Fetch categories dynamically on load
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                const categories = await res.json();
+                const select = document.getElementById('triviaGenreSelect');
+                
+                if (categories.length > 0) {
+                    select.innerHTML = categories.map(cat => 
+                        `<option value="${cat}">${cat.replace(/-/g, ' ').toUpperCase()}</option>`
+                    ).join('');
+                } else {
+                    select.innerHTML = `<option value="">No categories found</option>`;
+                }
+            } catch (err) {
+                console.error('Failed to load categories', err);
+            }
+        }
+        loadCategories();
+
         // Render QR Code pointing to player interface
         const playerUrl = window.location.origin + '/player.html';
         document.getElementById('playerJoinUrl').innerText = playerUrl;
@@ -186,6 +199,11 @@
             const name = document.getElementById('roundNameInput').value;
             const count = parseInt(document.getElementById('questionCountSelect').value);
             
+            if (!genre) {
+                alert('Please select a category!');
+                return;
+            }
+
             socket.emit('add-round', { genre, name, count });
             alert('Round added to playlist successfully!');
         }
@@ -208,7 +226,6 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
-            // Update playlist table
             const tbody = document.querySelector('#playlistTable tbody');
             if (state.playlist.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
@@ -217,7 +234,7 @@
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${r.name}</td>
-                        <td>${r.genre}.txt (${r.questions.length} Qs)</td>
+                        <td>${r.genre} (${r.questions.length} Qs)</td>
                     </tr>
                 `).join('');
             }
