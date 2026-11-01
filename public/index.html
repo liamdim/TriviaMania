@@ -49,7 +49,7 @@
         button.success { background: var(--success); }
         button.warning { background: var(--warning); color: #000; }
         button.warning:hover { background: #d97706; }
-        button.small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        button.small { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
 
         .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
@@ -60,6 +60,8 @@
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
         .player-badge { display: inline-block; background: #0f172a; border: 1px solid #334155; padding: 0.5rem 1rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
         .ad-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid #334155; }
+        
+        .quick-ad-box { background: #0f172a; border: 1px solid #334155; padding: 0.8rem; border-radius: 6px; flex: 1; min-width: 260px; }
     </style>
 </head>
 <body>
@@ -92,7 +94,8 @@
                     <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
                     <button class="danger" onclick="socket.emit('stop-reset')">🔄 Restart / Full Reset</button>
                 </div>
-                <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
+
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid #334155; padding-top: 1rem; align-items: flex-start;">
                     <div>
                         <label>Question Timer:</label>
                         <select id="questionTimerSelect" onchange="updateSettings()" style="width: 140px;">
@@ -112,9 +115,43 @@
                         </select>
                     </div>
                     <div>
-                        <p>Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
+                        <label>Status:</label>
+                        <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--accent); font-size: 1.1rem;">IDLE</strong></p>
                     </div>
                 </div>
+
+                <!-- QUICK ADVERT CONTROLS ADDED RIGHT HERE -->
+                <div style="margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1.2rem;">
+                    <label style="color: var(--accent); font-weight: bold; margin-bottom: 0.6rem;">⚡ Quick Advert Launchers</label>
+                    <div class="flex-row" style="gap: 1rem;">
+                        
+                        <!-- Projector Quick Box -->
+                        <div class="quick-ad-box">
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">🖥 Projector Screen</span>
+                            <select id="quickScreenAdSelect" style="margin-top: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                            <div class="flex-row" style="gap: 0.4rem;">
+                                <button class="success small" style="flex: 1;" onclick="launchQuickScreenAd()">Show</button>
+                                <button class="danger small" style="flex: 1;" onclick="socket.emit('hide-advert-screen')">Hide</button>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Quick Box -->
+                        <div class="quick-ad-box">
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">📱 Mobile Devices</span>
+                            <select id="quickMobileAdSelect" style="margin-top: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                            <div class="flex-row" style="gap: 0.4rem;">
+                                <button class="success small" style="flex: 1;" onclick="launchQuickMobileAd()">Show</button>
+                                <button class="danger small" style="flex: 1;" onclick="socket.emit('hide-advert-mobile')">Hide</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
 
             <div class="grid-2">
@@ -373,12 +410,16 @@
             const listDiv = document.getElementById('savedAdsList');
             const screenSelect = document.getElementById('screenAdSelect');
             const mobileSelect = document.getElementById('mobileAdSelect');
+            const quickScreenSelect = document.getElementById('quickScreenAdSelect');
+            const quickMobileSelect = document.getElementById('quickMobileAdSelect');
 
             const dropdownOptions = '<option value="">-- Choose Advert --</option>' + 
                 savedAds.map((ad, idx) => `<option value="${idx}">${ad.title}</option>`).join('');
 
             screenSelect.innerHTML = dropdownOptions;
             mobileSelect.innerHTML = dropdownOptions;
+            quickScreenSelect.innerHTML = dropdownOptions;
+            quickMobileSelect.innerHTML = dropdownOptions;
 
             if (savedAds.length === 0) {
                 listDiv.innerHTML = `<p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>`;
@@ -405,6 +446,18 @@
 
         function launchMobileAd() {
             const idx = document.getElementById('mobileAdSelect').value;
+            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            socket.emit('broadcast-advert-mobile', savedAds[idx]);
+        }
+
+        function launchQuickScreenAd() {
+            const idx = document.getElementById('quickScreenAdSelect').value;
+            if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
+            socket.emit('broadcast-advert-screen', savedAds[idx]);
+        }
+
+        function launchQuickMobileAd() {
+            const idx = document.getElementById('quickMobileAdSelect').value;
             if (idx === "") { alert('Please select an advert from the dropdown!'); return; }
             socket.emit('broadcast-advert-mobile', savedAds[idx]);
         }
