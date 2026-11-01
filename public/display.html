@@ -177,13 +177,14 @@
                     ${q && !isRoundEnd ? `<p style="font-size: 1.4rem; color: var(--text-muted); margin-bottom: 2rem;">Correct Answer: <strong style="color: var(--success);">${q.answer}</strong></p>` : ''}
                     <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.2rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player / Team</th><th style="padding: 1rem;">Total Score</th></tr>
+                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.2rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player / Team</th><th style="padding: 1rem;">Streak</th><th style="padding: 1rem;">Total Score</th></tr>
                         </thead>
                         <tbody>
                             ${players.map((p, idx) => `
                                 <tr style="border-bottom: 1px solid #334155; font-size: 1.4rem;">
                                     <td style="padding: 1rem;">#${idx + 1}</td>
                                     <td style="padding: 1rem;">${p.name}</td>
+                                    <td style="padding: 1rem; color: var(--warning);">🔥 x${p.streak || 0}</td>
                                     <td style="padding: 1rem; color: var(--accent); font-weight: bold;">${p.score}</td>
                                 </tr>
                             `).join('')}
