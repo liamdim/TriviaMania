@@ -20,7 +20,7 @@ let gameState = {
     currentQuestionIndex: 0,
     timer: 0,
     timerMax: 15,
-    scores: {}, // socketId -> { name, score }
+    scores: {}, // socketId -> { name, score, streak }
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
@@ -71,7 +71,7 @@ function parseCategoryFile(filename) {
                 currentQ.options.sort(() => 0.5 - Math.random());
                 questions.push(currentQ);
             }
-            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '' };
+            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '', fastestPlayerId: null };
         } else if (line.startsWith('^')) {
             if (currentQ) currentQ.answer = line.replace('^', '').trim();
         } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
 
     socket.on('player-join', (playerName) => {
         const cleanName = playerName ? playerName.trim() : 'Anonymous';
-        gameState.scores[socket.id] = { name: cleanName, score: 0 };
+        gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
         io.emit('state-update', gameState);
     });
 
@@ -121,14 +121,26 @@ io.on('connection', (socket) => {
         let pointsEarned = 0;
 
         if (isCorrect) {
-            const bonus = Math.floor((timeRemaining / gameState.timerMax) * 50);
-            pointsEarned = 50 + Math.max(0, bonus);
+            if (!currentQ.fastestPlayerId) {
+                currentQ.fastestPlayerId = socket.id;
+            }
+            const isFastest = currentQ.fastestPlayerId === socket.id;
+
+            player.streak = (player.streak || 0) + 1;
+            const streakMultiplier = player.streak >= 3 ? 1.5 : (player.streak >= 2 ? 1.25 : 1.0);
+            
+            const timeBonus = Math.floor((timeRemaining / gameState.timerMax) * 40);
+            const speedBonus = isFastest ? 25 : 0;
+            
+            pointsEarned = Math.round((50 + Math.max(0, timeBonus) + speedBonus) * streakMultiplier);
             player.score += pointsEarned;
+        } else {
+            player.streak = 0; // Reset streak on incorrect answer
         }
 
         player.hasAnsweredCurrent = true;
 
-        socket.emit('answer-result', { correct: isCorrect, points: pointsEarned });
+        socket.emit('answer-result', { correct: isCorrect, points: pointsEarned, streak: player.streak, isFastest: currentQ.fastestPlayerId === socket.id });
         io.emit('state-update', gameState);
     });
 
