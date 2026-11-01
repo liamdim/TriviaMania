@@ -27,34 +27,25 @@ let gameState = {
 
 let timerInterval = null;
 
-// Endpoint to fetch all available categories dynamically from the folder
+// Endpoint to fetch categories dynamically
 app.get('/api/categories', (req, res) => {
     const categoriesDir = path.join(__dirname, 'categories');
-    if (!fs.existsSync(categoriesDir)) {
-        return res.json([]);
-    }
+    if (!fs.existsSync(categoriesDir)) return res.json([]);
     try {
         const files = fs.readdirSync(categoriesDir);
-        // Clean filenames (remove extension if any are left over)
         const categories = files
             .filter(file => fs.statSync(path.join(categoriesDir, file)).isFile())
             .map(file => file.replace(/\.[^/.]+$/, ''));
         res.json(categories);
     } catch (err) {
-        console.error('Error reading categories directory:', err);
         res.json([]);
     }
 });
 
-// Custom Parser for #Q and ^ text category files (supports extensionless filenames)
 function parseCategoryFile(filename) {
     const cleanName = filename.replace('.txt', '');
     const filePath = path.join(__dirname, 'categories', cleanName);
-    
-    if (!fs.existsSync(filePath)) {
-        console.warn(`Category file not found: ${filePath}`);
-        return [];
-    }
+    if (!fs.existsSync(filePath)) return [];
 
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split(/\r?\n/);
@@ -64,18 +55,11 @@ function parseCategoryFile(filename) {
     for (let line of lines) {
         line = line.trim();
         if (!line) continue;
-
         if (line.startsWith('#Q')) {
             if (currentQ) questions.push(currentQ);
-            currentQ = {
-                question: line.replace('#Q', '').trim(),
-                options: [],
-                answer: ''
-            };
+            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '' };
         } else if (line.startsWith('^')) {
-            if (currentQ) {
-                currentQ.answer = line.replace('^', '').trim();
-            }
+            if (currentQ) currentQ.answer = line.replace('^', '').trim();
         } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
             if (currentQ) {
                 const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
@@ -87,9 +71,7 @@ function parseCategoryFile(filename) {
     return questions;
 }
 
-// Socket.io Connection Handling
 io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
     socket.emit('state-update', gameState);
 
     socket.on('player-join', (playerName) => {
@@ -123,7 +105,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Add Round to Playlist
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
@@ -136,7 +117,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Reorder Playlist (Move Up/Down)
     socket.on('move-round', ({ index, direction }) => {
         if (direction === 'up' && index > 0) {
             const temp = gameState.playlist[index];
@@ -150,13 +130,11 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Delete Round from Playlist
     socket.on('delete-round', (index) => {
         gameState.playlist.splice(index, 1);
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Clear Entire Playlist
     socket.on('clear-playlist', () => {
         gameState.playlist = [];
         gameState.currentRoundIndex = 0;
@@ -165,24 +143,46 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Start / Resume Game
-    socket.on('start-round', () => {
-        if (gameState.playlist.length === 0) return;
-        gameState.status = 'LOBBY';
+    // Update timer settings from host dashboard
+    socket.on('update-settings', (newSettings) => {
+        if (newSettings.questionTime) {
+            gameState.settings.questionTime = parseInt(newSettings.questionTime);
+        }
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Launch Question from Lobby / Next Question
+    // Start / Resume Game & immediately load first question
+    socket.on('start-round', () => {
+        if (gameState.playlist.length === 0) return;
+        gameState.status = 'QUESTION';
+        gameState.currentRoundIndex = 0;
+        gameState.currentQuestionIndex = 0;
+        gameState.timerMax = gameState.settings.questionTime || 15;
+        gameState.timer = gameState.timerMax;
+        
+        Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
+        io.emit('state-update', gameState);
+        startQuestionTimer();
+    });
+
+    // Launch Next Question
     socket.on('next-question', () => {
         const round = gameState.playlist[gameState.currentRoundIndex];
         if (!round) return;
 
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
+        gameState.currentQuestionIndex++;
 
         if (gameState.currentQuestionIndex >= round.questions.length) {
-            gameState.status = 'LEADERBOARD';
-            io.emit('state-update', gameState);
-            return;
+            // Check if there's another round in the playlist
+            if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
+                gameState.currentRoundIndex++;
+                gameState.currentQuestionIndex = 0;
+            } else {
+                gameState.status = 'LEADERBOARD';
+                io.emit('state-update', gameState);
+                return;
+            }
         }
 
         gameState.status = 'QUESTION';
@@ -193,14 +193,12 @@ io.on('connection', (socket) => {
         startQuestionTimer();
     });
 
-    // Host Controls: Pause / Stop Game (Without wiping scores)
     socket.on('stop-game', () => {
         if (timerInterval) clearInterval(timerInterval);
         gameState.status = 'PAUSED';
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Full Restart / Reset Game
     socket.on('stop-reset', () => {
         if (timerInterval) clearInterval(timerInterval);
         gameState.status = 'IDLE';
@@ -211,13 +209,11 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Broadcast Advert
     socket.on('broadcast-advert', (adData) => {
         gameState.activeAdvert = adData;
         io.emit('state-update', gameState);
     });
 
-    // Host Controls: Hide Advert
     socket.on('hide-advert', () => {
         gameState.activeAdvert = null;
         io.emit('state-update', gameState);
@@ -240,7 +236,6 @@ function startQuestionTimer() {
             if (gameState.timer <= 0) {
                 clearInterval(timerInterval);
                 gameState.status = 'LEADERBOARD';
-                gameState.currentQuestionIndex++;
                 io.emit('state-update', gameState);
             }
         }
