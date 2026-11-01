@@ -17,18 +17,20 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
         
-        .container { max-width: 900px; width: 100%; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 2.5rem; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .container { max-width: 1000px; width: 100%; }
+        .card { background: var(--panel-bg); border-radius: 16px; padding: 3rem; border: 1px solid #334155; box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
         
-        h2 { font-size: 2.2rem; margin-bottom: 1.5rem; color: var(--text); }
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
-        .option-box { background: #0f172a; border: 2px solid #475569; padding: 1.25rem; border-radius: 8px; font-size: 1.2rem; font-weight: 600; color: var(--text); }
-        
-        .timer-bar { font-size: 3rem; font-weight: bold; color: var(--accent); margin-bottom: 1rem; }
-        
+        .meta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; color: var(--text-muted); font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .timer-badge { background: #0f172a; border: 2px solid var(--accent); padding: 0.5rem 1.5rem; border-radius: 30px; color: var(--accent); font-size: 1.8rem; font-weight: bold; }
+
+        h2 { font-size: 2.5rem; margin-bottom: 2rem; color: var(--text); line-height: 1.3; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 2rem; }
+        .option-box { background: #0f172a; border: 2px solid #475569; padding: 1.5rem; border-radius: 10px; font-size: 1.4rem; font-weight: 600; color: var(--text); transition: 0.3s; }
+        .option-box.correct { background: rgba(34, 197, 94, 0.2); border-color: var(--success); color: #4ade80; box-shadow: 0 0 20px rgba(34,197,94,0.4); }
+
         /* Advert Overlay */
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
-        #advertOverlay img { max-height: 400px; max-width: 80%; border-radius: 8px; margin-top: 1.5rem; border: 2px solid var(--accent); }
+        #advertOverlay img { max-height: 450px; max-width: 85%; border-radius: 12px; margin-top: 1.5rem; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
@@ -36,7 +38,7 @@
     <div class="container">
         <div id="displayArea" class="card">
             <h2>Welcome to TriviaMania!</h2>
-            <p style="color: var(--text-muted); font-size: 1.2rem;">Waiting for host to start the game...</p>
+            <p style="color: var(--text-muted); font-size: 1.3rem;">Waiting for host to start the game...</p>
         </div>
     </div>
 
@@ -53,7 +55,6 @@
             const displayArea = document.getElementById('displayArea');
             const adOverlay = document.getElementById('advertOverlay');
 
-            // Handle Adverts
             if (state.activeAdvert && (state.activeAdvert.target === 'both' || state.activeAdvert.target === 'projector')) {
                 document.getElementById('adTitleText').innerText = state.activeAdvert.title;
                 const imgTag = document.getElementById('adImageTag');
@@ -72,7 +73,7 @@
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 displayArea.innerHTML = `
                     <h2>Game Lobby Open!</h2>
-                    <p style="color: var(--text-muted); font-size: 1.3rem; margin-top: 1rem;">Scan the QR code on your phone to join and play!</p>
+                    <p style="color: var(--text-muted); font-size: 1.4rem; margin-top: 1rem;">Scan the QR code on your phone to join and play!</p>
                 `;
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
@@ -81,26 +82,33 @@
                 if (!q) return;
 
                 displayArea.innerHTML = `
-                    <div class="timer-bar" id="timerDisplay">${state.timer}s</div>
-                    <h2 style="font-size: 2rem; margin-bottom: 2rem;">${q.question}</h2>
+                    <div class="meta-header">
+                        <span>Round: ${round.name} | Question ${state.currentQuestionIndex + 1} of ${round.questions.length}</span>
+                        <div class="timer-badge" id="timerDisplay">${state.timer}s</div>
+                    </div>
+                    <h2>${q.question}</h2>
                     <div class="options-grid">
                         ${q.options.map(opt => `<div class="option-box">${opt}</div>`).join('')}
                     </div>
                 `;
             } else if (state.status === 'LEADERBOARD') {
+                const round = state.playlist[state.currentRoundIndex];
+                const q = round ? round.questions[state.currentQuestionIndex] : null;
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+
                 displayArea.innerHTML = `
-                    <h2 style="color: var(--success); margin-bottom: 1.5rem;">Round Leaderboard</h2>
+                    <h2 style="color: var(--success); margin-bottom: 1rem;">Scoreboard & Standings</h2>
+                    ${q ? `<p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1.5rem;">Correct Answer was: <strong style="color: var(--success);">${q.answer}</strong></p>` : ''}
                     <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted);"><th style="padding: 0.75rem;">Rank</th><th style="padding: 0.75rem;">Player</th><th style="padding: 0.75rem;">Score</th></tr>
+                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.1rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player</th><th style="padding: 1rem;">Score</th></tr>
                         </thead>
                         <tbody>
                             ${players.slice(0, 5).map((p, idx) => `
-                                <tr style="border-bottom: 1px solid #334155; font-size: 1.3rem;">
-                                    <td style="padding: 0.75rem;">#${idx + 1}</td>
-                                    <td style="padding: 0.75rem;">${p.name}</td>
-                                    <td style="padding: 0.75rem; color: var(--accent); font-weight: bold;">${p.score}</td>
+                                <tr style="border-bottom: 1px solid #334155; font-size: 1.4rem;">
+                                    <td style="padding: 1rem;">#${idx + 1}</td>
+                                    <td style="padding: 1rem;">${p.name}</td>
+                                    <td style="padding: 1rem; color: var(--accent); font-weight: bold;">${p.score}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
