@@ -24,6 +24,7 @@ let gameState = {
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
+    announcement: { active: false, text: '' },
     settings: { 
         questionTime: 15,
         intermissionTime: 5 
@@ -98,6 +99,7 @@ function getCurrentRoundTimer() {
 
 io.on('connection', (socket) => {
     socket.emit('state-update', gameState);
+    socket.emit('announcement-update', gameState.announcement);
 
     socket.on('player-join', (playerName) => {
         const cleanName = playerName ? playerName.trim() : 'Anonymous';
@@ -181,6 +183,17 @@ io.on('connection', (socket) => {
     socket.on('update-venue-details', (details) => {
         gameState.venueDetails = details;
         io.emit('state-update', gameState);
+    });
+
+    // Host Broadcast Announcement
+    socket.on('update-announcement', (announcementData) => {
+        gameState.announcement = announcementData;
+        io.emit('announcement-update', gameState.announcement);
+    });
+
+    // Emoji Reaction Relay
+    socket.on('send-emoji', (emoji) => {
+        io.emit('player-emoji', { id: socket.id, emoji });
     });
 
     socket.on('start-round', () => {
