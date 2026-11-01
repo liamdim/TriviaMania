@@ -26,6 +26,7 @@ let gameState = {
 };
 
 let timerInterval = null;
+let leaderboardTimeout = null;
 
 // Endpoint to fetch categories dynamically
 app.get('/api/categories', (req, res) => {
@@ -45,8 +46,6 @@ app.get('/api/categories', (req, res) => {
 // Robust Category Parser supporting both extensionless and .txt files
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
-    
-    // Try exact filename first, then check with .txt if not found
     let filePath = path.join(categoriesDir, filename);
     if (!fs.existsSync(filePath)) {
         filePath = path.join(categoriesDir, filename + '.txt');
@@ -159,9 +158,12 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Start / Resume Game & load first question correctly
+    // Start / Resume Game & load first question
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
+        if (timerInterval) clearInterval(timerInterval);
+        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
+
         gameState.status = 'QUESTION';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
@@ -173,44 +175,21 @@ io.on('connection', (socket) => {
         startQuestionTimer();
     });
 
-    // Launch Next Question (Rock-solid progression through all questions)
+    // Manual or Auto Next Question trigger
     socket.on('next-question', () => {
-        const round = gameState.playlist[gameState.currentRoundIndex];
-        if (!round || !round.questions) return;
-
-        Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-
-        if (gameState.status === 'QUESTION' || gameState.status === 'LEADERBOARD') {
-            gameState.currentQuestionIndex++;
-        }
-
-        if (gameState.currentQuestionIndex >= round.questions.length) {
-            if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
-                gameState.currentRoundIndex++;
-                gameState.currentQuestionIndex = 0;
-            } else {
-                gameState.status = 'LEADERBOARD';
-                io.emit('state-update', gameState);
-                return;
-            }
-        }
-
-        gameState.status = 'QUESTION';
-        gameState.timerMax = gameState.settings.questionTime || 15;
-        gameState.timer = gameState.timerMax;
-        
-        io.emit('state-update', gameState);
-        startQuestionTimer();
+        advanceToNextQuestion();
     });
 
     socket.on('stop-game', () => {
         if (timerInterval) clearInterval(timerInterval);
+        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
         gameState.status = 'PAUSED';
         io.emit('state-update', gameState);
     });
 
     socket.on('stop-reset', () => {
         if (timerInterval) clearInterval(timerInterval);
+        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
@@ -237,6 +216,7 @@ io.on('connection', (socket) => {
 
 function startQuestionTimer() {
     if (timerInterval) clearInterval(timerInterval);
+    if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
 
     timerInterval = setInterval(() => {
         if (gameState.status === 'QUESTION') {
@@ -245,11 +225,52 @@ function startQuestionTimer() {
 
             if (gameState.timer <= 0) {
                 clearInterval(timerInterval);
-                gameState.status = 'LEADERBOARD';
-                io.emit('state-update', gameState);
+                triggerLeaderboardAndAutoAdvance();
             }
         }
     }, 1000);
+}
+
+function triggerLeaderboardAndAutoAdvance() {
+    gameState.status = 'LEADERBOARD';
+    io.emit('state-update', gameState);
+
+    // Automatically wait 5 seconds on leaderboard, then advance to next question
+    leaderboardTimeout = setTimeout(() => {
+        advanceToNextQuestion();
+    }, 5000);
+}
+
+function advanceToNextQuestion() {
+    if (timerInterval) clearInterval(timerInterval);
+    if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
+
+    const round = gameState.playlist[gameState.currentRoundIndex];
+    if (!round || !round.questions) return;
+
+    Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
+
+    // Move to next question index if we were in a question or leaderboard state
+    gameState.currentQuestionIndex++;
+
+    // Check if we finished the current round
+    if (gameState.currentQuestionIndex >= round.questions.length) {
+        if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
+            gameState.currentRoundIndex++;
+            gameState.currentQuestionIndex = 0;
+        } else {
+            gameState.status = 'LEADERBOARD'; // Final quiz leaderboard
+            io.emit('state-update', gameState);
+            return;
+        }
+    }
+
+    gameState.status = 'QUESTION';
+    gameState.timerMax = gameState.settings.questionTime || 15;
+    gameState.timer = gameState.timerMax;
+    
+    io.emit('state-update', gameState);
+    startQuestionTimer();
 }
 
 const PORT = process.env.PORT || 3000;
