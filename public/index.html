@@ -40,7 +40,7 @@
 
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        select, input { width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 4px; margin-bottom: 0.5rem; }
+        select, input, textarea { width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 4px; margin-bottom: 0.5rem; }
         
         button { background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         button:hover { background: var(--accent-hover); }
@@ -120,12 +120,10 @@
                     </div>
                 </div>
 
-                <!-- QUICK ADVERT CONTROLS ADDED RIGHT HERE -->
+                <!-- QUICK ADVERT CONTROLS -->
                 <div style="margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1.2rem;">
                     <label style="color: var(--accent); font-weight: bold; margin-bottom: 0.6rem;">⚡ Quick Advert Launchers</label>
                     <div class="flex-row" style="gap: 1rem;">
-                        
-                        <!-- Projector Quick Box -->
                         <div class="quick-ad-box">
                             <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">🖥 Projector Screen</span>
                             <select id="quickScreenAdSelect" style="margin-top: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">
@@ -137,7 +135,6 @@
                             </div>
                         </div>
 
-                        <!-- Mobile Quick Box -->
                         <div class="quick-ad-box">
                             <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">📱 Mobile Devices</span>
                             <select id="quickMobileAdSelect" style="margin-top: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">
@@ -148,7 +145,6 @@
                                 <button class="danger small" style="flex: 1;" onclick="socket.emit('hide-advert-mobile')">Hide</button>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
@@ -277,8 +273,12 @@
         <!-- TAB 4: LOBBY & QR -->
         <div id="lobby" class="tab-content">
             <div class="card" style="text-align: center;">
-                <h3>Player Mobile Join QR Code</h3>
-                <p style="color: var(--text-muted); margin-bottom: 1rem;">Scan with your phone camera to join:</p>
+                <h3>Lobby Screen & Venue Details</h3>
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Custom Venue / Event Details (Shown above QR on big screen):</label>
+                    <textarea id="venueDetailsInput" rows="3" placeholder="Welcome to The Crown Pub! Quiz Night Tuesdays. Free WiFi: CrownPub_Guest" oninput="saveVenueDetails()"></textarea>
+                </div>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Player Mobile Join QR Code:</p>
                 <div id="qr-container"></div>
                 <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
             </div>
@@ -303,6 +303,15 @@
             width: 200,
             height: 200
         });
+
+        // Venue details persistence
+        const venueInput = document.getElementById('venueDetailsInput');
+        venueInput.value = localStorage.getItem('triviamania_venue_details') || '';
+
+        function saveVenueDetails() {
+            localStorage.setItem('triviamania_venue_details', venueInput.value);
+            socket.emit('update-venue-details', venueInput.value);
+        }
 
         function copyPlayerLink() {
             navigator.clipboard.writeText(playerUrl);
