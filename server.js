@@ -46,7 +46,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Custom Parser for #Q and ^ text category files
+// Custom Parser for #Q and ^ text category files (supports extensionless filenames)
 function parseCategoryFile(filename) {
     const cleanName = filename.replace('.txt', '');
     const filePath = path.join(__dirname, 'categories', cleanName);
@@ -123,6 +123,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Host Controls: Add Round to Playlist
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
@@ -135,6 +136,27 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Host Controls: Reorder Playlist (Move Up/Down)
+    socket.on('move-round', ({ index, direction }) => {
+        if (direction === 'up' && index > 0) {
+            const temp = gameState.playlist[index];
+            gameState.playlist[index] = gameState.playlist[index - 1];
+            gameState.playlist[index - 1] = temp;
+        } else if (direction === 'down' && index < gameState.playlist.length - 1) {
+            const temp = gameState.playlist[index];
+            gameState.playlist[index] = gameState.playlist[index + 1];
+            gameState.playlist[index + 1] = temp;
+        }
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Delete Round from Playlist
+    socket.on('delete-round', (index) => {
+        gameState.playlist.splice(index, 1);
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Clear Entire Playlist
     socket.on('clear-playlist', () => {
         gameState.playlist = [];
         gameState.currentRoundIndex = 0;
@@ -143,12 +165,14 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Host Controls: Start / Resume Game
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
         gameState.status = 'LOBBY';
         io.emit('state-update', gameState);
     });
 
+    // Host Controls: Launch Question from Lobby / Next Question
     socket.on('next-question', () => {
         const round = gameState.playlist[gameState.currentRoundIndex];
         if (!round) return;
@@ -169,20 +193,31 @@ io.on('connection', (socket) => {
         startQuestionTimer();
     });
 
+    // Host Controls: Pause / Stop Game (Without wiping scores)
+    socket.on('stop-game', () => {
+        if (timerInterval) clearInterval(timerInterval);
+        gameState.status = 'PAUSED';
+        io.emit('state-update', gameState);
+    });
+
+    // Host Controls: Full Restart / Reset Game
     socket.on('stop-reset', () => {
         if (timerInterval) clearInterval(timerInterval);
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
         gameState.activeAdvert = null;
+        gameState.scores = {};
         io.emit('state-update', gameState);
     });
 
+    // Host Controls: Broadcast Advert
     socket.on('broadcast-advert', (adData) => {
         gameState.activeAdvert = adData;
         io.emit('state-update', gameState);
     });
 
+    // Host Controls: Hide Advert
     socket.on('hide-advert', () => {
         gameState.activeAdvert = null;
         io.emit('state-update', gameState);
