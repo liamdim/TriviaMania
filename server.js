@@ -22,7 +22,10 @@ let gameState = {
     timerMax: 15,
     scores: {}, // socketId -> { name, score }
     activeAdvert: null,
-    settings: { questionTime: 15 }
+    settings: { 
+        questionTime: 15,
+        intermissionTime: 5 // Default 5 seconds between questions
+    }
 };
 
 let timerInterval = null;
@@ -151,9 +154,13 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Update Question & Intermission settings
     socket.on('update-settings', (newSettings) => {
         if (newSettings.questionTime) {
             gameState.settings.questionTime = parseInt(newSettings.questionTime);
+        }
+        if (newSettings.intermissionTime) {
+            gameState.settings.intermissionTime = parseInt(newSettings.intermissionTime);
         }
         io.emit('state-update', gameState);
     });
@@ -175,7 +182,6 @@ io.on('connection', (socket) => {
         startQuestionTimer();
     });
 
-    // Manual or Auto Next Question trigger
     socket.on('next-question', () => {
         advanceToNextQuestion();
     });
@@ -232,13 +238,25 @@ function startQuestionTimer() {
 }
 
 function triggerLeaderboardAndAutoAdvance() {
+    const round = gameState.playlist[gameState.currentRoundIndex];
+    if (!round) return;
+
+    // Check if this was the last question of the entire playlist/round
+    const isLastQuestion = gameState.currentQuestionIndex + 1 >= round.questions.length && 
+                           gameState.currentRoundIndex + 1 >= gameState.playlist.length;
+
     gameState.status = 'LEADERBOARD';
     io.emit('state-update', gameState);
 
-    // Automatically wait 5 seconds on leaderboard, then advance to next question
+    // If it's the absolute end of the quiz, stop auto-advancing
+    if (isLastQuestion) return;
+
+    // Use the configured intermission time (default 5 seconds if not set)
+    const intermissionMs = (gameState.settings.intermissionTime || 5) * 1000;
+
     leaderboardTimeout = setTimeout(() => {
         advanceToNextQuestion();
-    }, 5000);
+    }, intermissionMs);
 }
 
 function advanceToNextQuestion() {
@@ -250,16 +268,14 @@ function advanceToNextQuestion() {
 
     Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
 
-    // Move to next question index if we were in a question or leaderboard state
     gameState.currentQuestionIndex++;
 
-    // Check if we finished the current round
     if (gameState.currentQuestionIndex >= round.questions.length) {
         if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
             gameState.currentRoundIndex++;
             gameState.currentQuestionIndex = 0;
         } else {
-            gameState.status = 'LEADERBOARD'; // Final quiz leaderboard
+            gameState.status = 'LEADERBOARD';
             io.emit('state-update', gameState);
             return;
         }
