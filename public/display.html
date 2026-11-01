@@ -11,6 +11,8 @@
             --panel-bg: #1e293b;
             --accent: #3b82f6;
             --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
             --text: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -18,18 +20,32 @@
         body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
         
         .container { max-width: 1000px; width: 100%; }
-        .card { background: var(--panel-bg); border-radius: 16px; padding: 3rem; border: 1px solid #334155; box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
+        .card { background: var(--panel-bg); border-radius: 20px; padding: 3rem; border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.7); animation: fadeIn 0.4s ease-out; }
         
-        .meta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; color: var(--text-muted); font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .timer-badge { background: #0f172a; border: 2px solid var(--accent); padding: 0.5rem 1.5rem; border-radius: 30px; color: var(--accent); font-size: 1.8rem; font-weight: bold; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        h2 { font-size: 2.5rem; margin-bottom: 2rem; color: var(--text); line-height: 1.3; }
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 2rem; }
-        .option-box { background: #0f172a; border: 2px solid #475569; padding: 1.5rem; border-radius: 10px; font-size: 1.4rem; font-weight: 600; color: var(--text); transition: 0.3s; text-align: left; }
-        .option-box.correct { background: rgba(34, 197, 94, 0.25); border-color: var(--success); color: #4ade80; box-shadow: 0 0 20px rgba(34,197,94,0.4); }
+        .meta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; color: var(--text-muted); font-size: 1.3rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .timer-badge { background: #0f172a; border: 3px solid var(--accent); padding: 0.5rem 2rem; border-radius: 40px; color: var(--accent); font-size: 2rem; font-weight: bold; transition: 0.3s; }
+        .timer-badge.warning { border-color: var(--warning); color: var(--warning); animation: pulse 0.8s infinite alternate; }
+        .timer-badge.danger { border-color: var(--danger); color: var(--danger); animation: pulse 0.4s infinite alternate; }
 
-        #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
-        #advertOverlay img { max-height: 450px; max-width: 85%; border-radius: 12px; margin-top: 1.5rem; border: 2px solid var(--accent); }
+        @keyframes pulse {
+            from { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+            to { transform: scale(1.08); box-shadow: 0 0 25px rgba(239, 68, 68, 0.6); }
+        }
+
+        h2 { font-size: 2.8rem; margin-bottom: 2.5rem; color: var(--text); line-height: 1.35; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; }
+        .option-box { background: #0f172a; border: 3px solid #475569; padding: 1.8rem; border-radius: 14px; font-size: 1.5rem; font-weight: 600; color: var(--text); transition: 0.3s; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .option-box.correct { background: rgba(34, 197, 94, 0.25); border-color: var(--success); color: #4ade80; box-shadow: 0 0 30px rgba(34,197,94,0.5); transform: scale(1.02); }
+
+        #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; }
+        #advertOverlay img { max-height: 500px; max-width: 85%; border-radius: 16px; margin-top: 1.5rem; border: 3px solid var(--accent); box-shadow: 0 10px 30px rgba(59,130,246,0.4); }
     </style>
 </head>
 <body>
@@ -37,18 +53,19 @@
     <div class="container">
         <div id="displayArea" class="card">
             <h2>Welcome to TriviaMania!</h2>
-            <p style="color: var(--text-muted); font-size: 1.3rem;">Waiting for host to start the game...</p>
+            <p style="color: var(--text-muted); font-size: 1.4rem;">Waiting for host to start the game...</p>
         </div>
     </div>
 
     <div id="advertOverlay">
-        <h1 id="adTitleText" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></h1>
+        <h1 id="adTitleText" style="font-size: 3.5rem; color: var(--accent); margin-bottom: 1rem;"></h1>
         <img id="adImageTag" src="" alt="Advert" style="display: none;">
     </div>
 
     <script>
         const socket = io();
         const letters = ['A', 'B', 'C', 'D'];
+        let currentQuestionData = null;
 
         socket.on('state-update', (state) => {
             const displayArea = document.getElementById('displayArea');
@@ -72,7 +89,7 @@
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 displayArea.innerHTML = `
                     <h2>Game Lobby Open!</h2>
-                    <p style="color: var(--text-muted); font-size: 1.4rem; margin-top: 1rem;">Scan the QR code on your phone to join and play!</p>
+                    <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code on your phone to join and play!</p>
                 `;
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
@@ -80,14 +97,20 @@
                 const q = round.questions[state.currentQuestionIndex];
                 if (!q) return;
 
+                currentQuestionData = q;
+
+                let timerClass = 'timer-badge';
+                if (state.timer <= 5) timerClass += ' danger';
+                else if (state.timer <= 8) timerClass += ' warning';
+
                 displayArea.innerHTML = `
                     <div class="meta-header">
                         <span>Round: ${round.name} | Question ${state.currentQuestionIndex + 1} of ${round.questions.length}</span>
-                        <div class="timer-badge" id="timerDisplay">${state.timer}s</div>
+                        <div class="${timerClass}" id="timerDisplay">${state.timer}s</div>
                     </div>
                     <h2>${q.question}</h2>
                     <div class="options-grid">
-                        ${q.options.map((opt, idx) => `<div class="option-box"><strong>${letters[idx]}.</strong> ${opt}</div>`).join('')}
+                        ${q.options.map((opt, idx) => `<div class="option-box" id="opt-${idx}"><strong>${letters[idx]}.</strong> ${opt}</div>`).join('')}
                     </div>
                 `;
             } else if (state.status === 'LEADERBOARD') {
@@ -98,28 +121,43 @@
 
                 displayArea.innerHTML = `
                     <h2 style="color: var(--success); margin-bottom: 0.5rem;">${isRoundEnd ? '🏁 Round Finished - Full Leaderboard' : 'Standings & Correct Answer'}</h2>
-                    ${q && !isRoundEnd ? `<p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1.5rem;">Correct Answer: <strong style="color: var(--success);">${q.answer}</strong></p>` : ''}
+                    ${q && !isRoundEnd ? `<p style="font-size: 1.4rem; color: var(--text-muted); margin-bottom: 2rem;">Correct Answer: <strong style="color: var(--success);">${q.answer}</strong></p>` : ''}
                     <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                         <thead>
-                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.1rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player / Team</th><th style="padding: 1rem;">Total Score</th></tr>
+                            <tr style="border-bottom: 2px solid #334155; color: var(--text-muted); font-size: 1.2rem;"><th style="padding: 1rem;">Rank</th><th style="padding: 1rem;">Player / Team</th><th style="padding: 1rem;">Total Score</th></tr>
                         </thead>
                         <tbody>
                             ${players.map((p, idx) => `
-                                <tr style="border-bottom: 1px solid #334155; font-size: 1.3rem;">
-                                    <td style="padding: 0.8rem;">#${idx + 1}</td>
-                                    <td style="padding: 0.8rem;">${p.name}</td>
-                                    <td style="padding: 0.8rem; color: var(--accent); font-weight: bold;">${p.score}</td>
+                                <tr style="border-bottom: 1px solid #334155; font-size: 1.4rem;">
+                                    <td style="padding: 1rem;">#${idx + 1}</td>
+                                    <td style="padding: 1rem;">${p.name}</td>
+                                    <td style="padding: 1rem; color: var(--accent); font-weight: bold;">${p.score}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
                 `;
+
+                // Highlight correct answer box if visible
+                if (q && currentQuestionData) {
+                    q.options.forEach((opt, idx) => {
+                        if (opt.trim().toLowerCase() === currentQuestionData.answer.trim().toLowerCase()) {
+                            const box = document.getElementById(`opt-${idx}`);
+                            if (box) box.classList.add('correct');
+                        }
+                    });
+                }
             }
         });
 
         socket.on('timer-tick', (timeLeft) => {
             const timerEl = document.getElementById('timerDisplay');
-            if (timerEl) timerEl.innerText = timeLeft + 's';
+            if (timerEl) {
+                timerEl.innerText = timeLeft + 's';
+                timerEl.className = 'timer-badge';
+                if (timeLeft <= 5) timerEl.classList.add('danger');
+                else if (timeLeft <= 8) timerEl.classList.add('warning');
+            }
         });
     </script>
 </body>
