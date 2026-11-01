@@ -17,24 +17,25 @@
             --text-muted: #94a3b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.2rem; }
         
         .container { max-width: 500px; width: 100%; margin: auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.3); text-align: center; }
+        .card { background: var(--panel-bg); border-radius: 16px; padding: 2rem; border: 1px solid #334155; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: center; }
         
-        input { width: 100%; padding: 1rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; font-size: 1.1rem; margin-bottom: 1rem; text-align: center; }
-        button { width: 100%; padding: 1rem; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        input { width: 100%; padding: 1rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 10px; font-size: 1.1rem; margin-bottom: 1rem; text-align: center; }
+        button { width: 100%; padding: 1rem; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--accent-hover); }
 
-        .option-btn { width: 100%; padding: 1.2rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 8px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.75rem; cursor: pointer; transition: 0.2s; }
+        .option-btn { width: 100%; padding: 1.25rem; background: #0f172a; border: 2px solid #475569; color: var(--text); border-radius: 10px; font-size: 1.1rem; font-weight: bold; margin-bottom: 0.85rem; cursor: pointer; transition: 0.2s; }
         .option-btn:hover { border-color: var(--accent); background: #1e293b; }
-        .option-btn.selected { background: var(--accent); border-color: white; }
+        .option-btn.correct { background: rgba(34, 197, 94, 0.3); border-color: var(--success); color: #4ade80; }
+        .option-btn.incorrect { background: rgba(239, 68, 68, 0.3); border-color: var(--danger); color: #f87171; }
 
-        .timer { font-size: 1.5rem; font-weight: bold; color: var(--accent); margin-bottom: 1rem; }
+        .meta-info { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 600; text-transform: uppercase; }
+        .timer { font-size: 1.6rem; font-weight: bold; color: var(--accent); margin-bottom: 1rem; }
         
-        /* Advert Overlay */
         #advertOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 2rem; text-align: center; }
-        #advertOverlay img { max-height: 300px; max-width: 90%; border-radius: 8px; margin-top: 1rem; border: 2px solid var(--accent); }
+        #advertOverlay img { max-height: 300px; max-width: 90%; border-radius: 10px; margin-top: 1rem; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
@@ -42,7 +43,7 @@
     <div class="container">
         <div id="app" class="card">
             <h2>Join TriviaMania</h2>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Enter your team or player name to join the live game:</p>
+            <p style="color: var(--text-muted); margin: 1rem 0 1.5rem 0;">Enter your player or team name to enter:</p>
             <input type="text" id="playerNameInput" placeholder="Your Name or Team">
             <button onclick="joinGame()">Join Game 🚀</button>
         </div>
@@ -65,12 +66,12 @@
             if (!myName) { alert('Please enter a name!'); return; }
             
             socket.emit('player-join', myName);
-            renderWaitingScreen('Waiting for host to start the next question...');
+            renderWaitingScreen('Waiting for host to start...');
         }
 
         function renderWaitingScreen(message) {
             document.getElementById('app').innerHTML = `
-                <h2>Welcome, ${myName}!</h2>
+                <h2>${myName}</h2>
                 <p style="color: var(--text-muted); margin-top: 1rem; font-size: 1.1rem;">${message}</p>
             `;
         }
@@ -79,7 +80,6 @@
             const app = document.getElementById('app');
             const adOverlay = document.getElementById('advertOverlay');
 
-            // Handle Adverts targeted to mobile or both
             if (state.activeAdvert && (state.activeAdvert.target === 'both' || state.activeAdvert.target === 'mobile')) {
                 document.getElementById('adTitleText').innerText = state.activeAdvert.title;
                 const imgTag = document.getElementById('adImageTag');
@@ -95,10 +95,10 @@
                 adOverlay.style.display = 'none';
             }
 
-            if (!myName) return; // If player hasn't joined yet, keep join screen
+            if (!myName) return;
 
             if (state.status === 'IDLE' || state.status === 'LOBBY' || state.status === 'PAUSED') {
-                renderWaitingScreen('Game is paused or in lobby. Get ready!');
+                renderWaitingScreen('Get ready! Game starting soon.');
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 if (!round) return;
@@ -107,14 +107,29 @@
 
                 hasAnswered = false;
                 app.innerHTML = `
-                    <div class="timer" id="timerDisplay">${state.timer}s</div>
-                    <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;">${q.question}</h3>
+                    <div class="meta-info">
+                        <span>Q ${state.currentQuestionIndex + 1} of ${round.questions.length}</span>
+                        <span id="timerDisplay" style="color: var(--accent);">${state.timer}s</span>
+                    </div>
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; line-height: 1.4;">${q.question}</h3>
                     <div id="optionsContainer">
-                        ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}</button>`).join('')}
+                        ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer(this, '${opt.replace(/'/g, "\\'")}', ${state.timer})">${opt}</button>`).join('')}
                     </div>
                 `;
             } else if (state.status === 'LEADERBOARD') {
-                renderWaitingScreen('Round finished! Check the big screen for the leaderboard.');
+                const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+                const myRank = players.findIndex(p => p.name === myName) + 1;
+                const myScoreObj = state.scores[socket.id] || { score: 0 };
+
+                app.innerHTML = `
+                    <h2 style="color: var(--success); margin-bottom: 0.5rem;">Intermission</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Look at the main screen for rankings</p>
+                    <div style="background: #0f172a; padding: 1.5rem; border-radius: 12px; border: 1px solid #475569;">
+                        <p style="font-size: 1rem; color: var(--text-muted);">Your Score</p>
+                        <h1 style="font-size: 2.5rem; color: var(--accent); margin: 0.5rem 0;">${myScoreObj.score}</h1>
+                        <p style="font-size: 1.1rem;">Your Rank: <strong style="color: var(--success);">#${myRank > 0 ? myRank : '-'}</strong></p>
+                    </div>
+                `;
             }
         });
 
@@ -123,32 +138,25 @@
             if (timerEl) timerEl.innerText = timeLeft + 's';
         });
 
-        function submitAnswer(answerText, timeRemaining) {
+        function submitAnswer(btnElement, answerText, timeRemaining) {
             if (hasAnswered) return;
             hasAnswered = true;
 
             socket.emit('submit-answer', { answer: answerText, timeRemaining });
 
-            // Highlight selected option
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                if (btn.innerText === answerText) {
-                    btn.classList.add('selected');
+            // Disable all options
+            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+
+            socket.once('answer-result', ({ correct, points }) => {
+                if (correct) {
+                    btnElement.classList.add('correct');
+                    btnElement.innerHTML += `<br><span style="font-size: 0.9rem; color: #4ade80;">✓ Correct! (+${points} pts)</span>`;
+                } else {
+                    btnElement.classList.add('incorrect');
+                    btnElement.innerHTML += `<br><span style="font-size: 0.9rem; color: #f87171;">✗ Incorrect</span>`;
                 }
-                btn.disabled = true;
             });
-
-            document.getElementById('app').innerHTML += `
-                <p style="margin-top: 1.5rem; color: var(--success); font-weight: bold;">Answer locked in: ${answerText} ✓</p>
-            `;
         }
-
-        socket.on('answer-result', ({ correct, points }) => {
-            if (correct) {
-                console.log(`Correct! Earned ${points} points.`);
-            } else {
-                console.log('Incorrect answer.');
-            }
-        });
     </script>
 </body>
 </html>
