@@ -97,6 +97,11 @@
                         <button class="danger small" onclick="clearAnnouncement()">Clear</button>
                     </div>
                 </div>
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
+                        <input type="checkbox" id="countdownSoundToggle" checked style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime on Projector
+                    </label>
+                </div>
             </div>
 
             <!-- HOST QUESTION PREVIEW CARD -->
@@ -375,7 +380,6 @@
             height: 200
         });
 
-        // Venue details sync (Fixed parenthesis bracket bug here!)
         const venueInput = document.getElementById('venueDetailsInput');
         venueInput.value = localStorage.getItem('triviamania_venue_details') || '';
 
@@ -410,7 +414,8 @@
         function updateSettings() {
             const questionTime = document.getElementById('questionTimerSelect').value;
             const intermissionTime = document.getElementById('intermissionTimerSelect').value;
-            socket.emit('update-settings', { questionTime, intermissionTime });
+            const countdownSound = document.getElementById('countdownSoundToggle').checked;
+            socket.emit('update-settings', { questionTime, intermissionTime, countdownSound });
         }
 
         function addRoundToPlaylist() {
