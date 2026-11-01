@@ -86,18 +86,27 @@
 
         <!-- TAB 1: CONTROLS & LIVE GAME -->
         <div id="controls" class="tab-content active">
+            
+            <!-- HOST QUESTION PREVIEW CARD -->
+            <div class="card" style="border: 2px dashed var(--accent); background: #172033;">
+                <h3>👀 Host Question Preview (Next Up)</h3>
+                <div id="hostPreviewBox">
+                    <p style="color: var(--text-muted);">Game not started or round queue empty.</p>
+                </div>
+            </div>
+
             <div class="card">
                 <h3>Live Game Master Controls</h3>
                 <div class="flex-row" style="margin-bottom: 1rem;">
-                    <button class="success" onclick="socket.emit('start-round')">▶ Start Game / First Question</button>
-                    <button onclick="socket.emit('next-question')">Next Question ⏭</button>
+                    <button class="success" onclick="playSound('success'); socket.emit('start-round')">▶ Start Game / First Question</button>
+                    <button onclick="playSound('tick'); socket.emit('next-question')">Next Question ⏭</button>
                     <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
                     <button class="danger" onclick="socket.emit('stop-reset')">🔄 Restart / Full Reset</button>
                 </div>
 
                 <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid #334155; padding-top: 1rem; align-items: flex-start;">
                     <div>
-                        <label>Question Timer:</label>
+                        <label>Global Default Timer:</label>
                         <select id="questionTimerSelect" onchange="updateSettings()" style="width: 140px;">
                             <option value="10">10 Seconds</option>
                             <option value="15" selected>15 Seconds</option>
@@ -207,6 +216,16 @@
                         <option value="20">20 Questions</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Round Custom Timer (Optional):</label>
+                    <select id="roundTimerSelect">
+                        <option value="">Use Global Default</option>
+                        <option value="10">10 Seconds per question</option>
+                        <option value="15">15 Seconds per question</option>
+                        <option value="20">20 Seconds per question</option>
+                        <option value="30">30 Seconds per question</option>
+                    </select>
+                </div>
                 <div class="flex-row">
                     <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
                     <button class="danger" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button>
@@ -289,6 +308,36 @@
     <script>
         const socket = io();
 
+        // Web Audio API Synthesizer for Game Show Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (!audioCtx) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                if (type === 'tick') {
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                }
+            } catch (err) {}
+        }
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -313,7 +362,6 @@
             socket.emit('update-venue-details', venueInput.value);
         }
 
-        // Send initial saved venue details once connected
         socket.on('connect', () => {
             if (venueInput.value) {
                 socket.emit('update-venue-details', venueInput.value);
@@ -349,8 +397,9 @@
             const genre = document.getElementById('triviaGenreSelect').value;
             const name = document.getElementById('roundNameInput').value;
             const count = parseInt(document.getElementById('questionCountSelect').value);
+            const timer = document.getElementById('roundTimerSelect').value;
             if (!genre) { alert('Please select a category!'); return; }
-            socket.emit('add-round', { genre, name, count });
+            socket.emit('add-round', { genre, name, count, timer: timer ? parseInt(timer) : null });
             alert('Round added to playlist!');
         }
 
@@ -489,6 +538,25 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
+            // Host Preview Box Update
+            const previewBox = document.getElementById('hostPreviewBox');
+            const currentRound = state.playlist[state.currentRoundIndex];
+            if (currentRound && currentRound.questions) {
+                const nextQIndex = state.status === 'QUESTION' ? state.currentQuestionIndex + 1 : state.currentQuestionIndex;
+                const nextQ = currentRound.questions[nextQIndex];
+                if (nextQ) {
+                    previewBox.innerHTML = `
+                        <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text);">Q${nextQIndex + 1} (${currentRound.name}): ${nextQ.question}</p>
+                        <p style="color: var(--success); font-size: 0.95rem;">Correct Answer: <strong>${nextQ.answer}</strong></p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.3rem;">Choices: ${nextQ.options.join(' | ')}</p>
+                    `;
+                } else {
+                    previewBox.innerHTML = `<p style="color: var(--warning);">End of current round / playlist queue reached!</p>`;
+                }
+            } else {
+                previewBox.innerHTML = `<p style="color: var(--text-muted);">No active rounds in playlist.</p>`;
+            }
+
             const tbody = document.querySelector('#playlistTable tbody');
             if (state.playlist.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
@@ -497,7 +565,7 @@
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${r.name}</td>
-                        <td>${r.genre} (${r.questions.length} Qs)</td>
+                        <td>${r.genre} (${r.questions.length} Qs ${r.timer ? '• ' + r.timer + 's' : ''})</td>
                         <td>
                             <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'up' })">⬆</button>
                             <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'down' })">⬇</button>
