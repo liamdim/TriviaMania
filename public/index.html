@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TriviaMania - Host Dashboard</title>
+    <title>TriviaMania - Master Host Dashboard</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -14,6 +14,7 @@
             --accent-hover: #2563eb;
             --danger: #ef4444;
             --success: #22c55e;
+            --warning: #f59e0b;
             --text: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -22,6 +23,9 @@
         
         header { background: var(--panel-bg); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
         header h1 { font-size: 1.5rem; color: var(--accent); }
+        .header-links { display: flex; gap: 1rem; align-items: center; }
+        .header-links a { color: var(--accent); text-decoration: none; font-size: 0.9rem; background: #0f172a; padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #334155; }
+        .header-links a:hover { background: #334155; }
         
         .nav-tabs { display: flex; gap: 0.5rem; background: var(--panel-bg); padding: 0.5rem 2rem; border-bottom: 1px solid #334155; }
         .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 0.5rem 1rem; cursor: pointer; font-weight: 600; border-radius: 4px; transition: 0.2s; }
@@ -43,56 +47,87 @@
         button.danger { background: var(--danger); }
         button.danger:hover { background: #dc2626; }
         button.success { background: var(--success); }
+        button.warning { background: var(--warning); color: #000; }
+        button.warning:hover { background: #d97706; }
+        button.small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
 
-        .flex-row { display: flex; gap: 1rem; align-items: center; }
+        .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
         th { color: var(--text-muted); }
 
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
+        .player-badge { display: inline-block; background: #0f172a; border: 1px solid #334155; padding: 0.5rem 1rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>TriviaMania Master Dashboard</h1>
-        <div class="flex-row">
-            <span id="connectionStatus" style="color: var(--success);">● Live Connected</span>
-            <a href="/display.html" target="_blank"><button>Open Projector Display ↗</button></a>
+        <div class="header-links">
+            <span id="connectionStatus" style="color: var(--success);">● Connected</span>
+            <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Join Link</a>
+            <a href="/display.html" target="_blank"> projector Display ↗</a>
         </div>
     </header>
 
     <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('controls')">Controls & Queue</button>
+        <button class="tab-btn active" onclick="switchTab('controls')">Live Controls & Game</button>
         <button class="tab-btn" onclick="switchTab('playlist')">Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('adverts')">Adverts & Sponsor</button>
+        <button class="tab-btn" onclick="switchTab('adverts')">Adverts & Sponsors</button>
         <button class="tab-btn" onclick="switchTab('lobby')">Lobby & QR</button>
     </div>
 
     <div class="container">
 
-        <!-- TAB 1: CONTROLS & QUEUE -->
+        <!-- TAB 1: CONTROLS & LIVE GAME -->
         <div id="controls" class="tab-content active">
             <div class="card">
                 <h3>Live Game Master Controls</h3>
                 <div class="flex-row" style="margin-bottom: 1rem;">
-                    <button class="success" onclick="socket.emit('start-round')">▶ Start / Resume Round</button>
+                    <button class="success" onclick="socket.emit('start-round')">▶ Start / Resume Game</button>
                     <button onclick="socket.emit('next-question')">Next Question ⏭</button>
-                    <button class="danger" onclick="socket.emit('stop-reset')">⏹ Stop / Reset Game</button>
+                    <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
+                    <button class="danger" onclick="socket.emit('stop-reset')">🔄 Restart / Full Reset</button>
                 </div>
-                <p>Current Game Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
+                <p>Current Status: <strong id="statusDisplay" style="color: var(--accent);">IDLE</strong></p>
             </div>
 
+            <div class="grid-2">
+                <!-- Loaded Playlist Queue -->
+                <div class="card">
+                    <h3>Loaded Playlist Queue</h3>
+                    <table id="playlistTable">
+                        <thead>
+                            <tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Live Leaderboard Preview -->
+                <div class="card">
+                    <h3>Live Leaderboard</h3>
+                    <table id="hostLeaderboardTable">
+                        <thead>
+                            <tr><th>Rank</th><th>Player Name</th><th>Score</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3" style="color: var(--text-muted);">No scores recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Joined Players List -->
             <div class="card">
-                <h3>Loaded Playlist Queue</h3>
-                <table id="playlistTable">
-                    <thead>
-                        <tr><th>#</th><th>Round Name</th><th>Category File</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="3" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>
-                    </tbody>
-                </table>
+                <h3>Connected Players (<span id="playerCount">0</span>)</h3>
+                <div id="joinedPlayersList" style="min-height: 50px;">
+                    <span style="color: var(--text-muted);">Waiting for players to join...</span>
+                </div>
             </div>
         </div>
 
@@ -101,14 +136,14 @@
             <div class="card">
                 <h3>Add New Quiz Round</h3>
                 <div class="form-group">
-                    <label>Select Category / Genre (Auto-loaded from GitHub):</label>
+                    <label>Select Category (Auto-loaded from GitHub):</label>
                     <select id="triviaGenreSelect">
                         <option value="">Loading categories...</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Round Custom Name:</label>
-                    <input type="text" id="roundNameInput" value="Movie & TV Round">
+                    <input type="text" id="roundNameInput" value="General Knowledge Round">
                 </div>
                 <div class="form-group">
                     <label>Question Count:</label>
@@ -119,21 +154,31 @@
                         <option value="20">20 Questions</option>
                     </select>
                 </div>
-                <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
-                <button class="danger" onclick="socket.emit('clear-playlist')" style="margin-left: 1rem;">Clear Playlist</button>
+                <div class="flex-row">
+                    <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
+                    <button class="danger" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button>
+                </div>
             </div>
         </div>
 
-        <!-- TAB 3: ADVERTS & SPONSOR -->
+        <!-- TAB 3: ADVERTS & SPONSORS -->
         <div id="adverts" class="tab-content">
             <div class="card">
                 <h3>Broadcast Advert / Sponsor Slide</h3>
                 <div class="form-group">
-                    <label>Advert Title:</label>
+                    <label>Advert Title / Message:</label>
                     <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
                 </div>
                 <div class="form-group">
-                    <label>Upload Image / Logo:</label>
+                    <label>Show On:</label>
+                    <select id="adTargetSelect">
+                        <option value="both">Projector Screen & Mobile Players</option>
+                        <option value="projector">Projector Screen Only</option>
+                        <option value="mobile">Mobile Players Only</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Upload Image / Logo (Optional):</label>
                     <input type="file" id="adImageInput" accept="image/*">
                 </div>
                 <div class="flex-row">
@@ -147,7 +192,7 @@
         <div id="lobby" class="tab-content">
             <div class="card" style="text-align: center;">
                 <h3>Player Mobile Join QR Code</h3>
-                <p style="color: var(--text-muted); margin-bottom: 1rem;">Scan with phone camera to join the active game:</p>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Scan with your phone camera to join:</p>
                 <div id="qr-container"></div>
                 <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
             </div>
@@ -165,13 +210,24 @@
             event.target.classList.add('active');
         }
 
-        // Fetch categories dynamically on load
+        const playerUrl = window.location.origin + '/player.html';
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("qr-container"), {
+            text: playerUrl,
+            width: 200,
+            height: 200
+        });
+
+        function copyPlayerLink() {
+            navigator.clipboard.writeText(playerUrl);
+            alert('Player mobile link copied to clipboard!');
+        }
+
         async function loadCategories() {
             try {
                 const res = await fetch('/api/categories');
                 const categories = await res.json();
                 const select = document.getElementById('triviaGenreSelect');
-                
                 if (categories.length > 0) {
                     select.innerHTML = categories.map(cat => 
                         `<option value="${cat}">${cat.replace(/-/g, ' ').toUpperCase()}</option>`
@@ -185,56 +241,74 @@
         }
         loadCategories();
 
-        // Render QR Code pointing to player interface
-        const playerUrl = window.location.origin + '/player.html';
-        document.getElementById('playerJoinUrl').innerText = playerUrl;
-        new QRCode(document.getElementById("qr-container"), {
-            text: playerUrl,
-            width: 200,
-            height: 200
-        });
-
         function addRoundToPlaylist() {
             const genre = document.getElementById('triviaGenreSelect').value;
             const name = document.getElementById('roundNameInput').value;
             const count = parseInt(document.getElementById('questionCountSelect').value);
-            
-            if (!genre) {
-                alert('Please select a category!');
-                return;
-            }
-
+            if (!genre) { alert('Please select a category!'); return; }
             socket.emit('add-round', { genre, name, count });
-            alert('Round added to playlist successfully!');
+            alert('Round added to playlist!');
         }
 
         function broadcastAdvert() {
             const title = document.getElementById('adTitleInput').value;
+            const target = document.getElementById('adTargetSelect').value;
             const fileInput = document.getElementById('adImageInput');
             
             if (fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    socket.emit('broadcast-advert', { title, image: e.target.result });
+                    socket.emit('broadcast-advert', { title, target, image: e.target.result });
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
-                socket.emit('broadcast-advert', { title, image: null });
+                socket.emit('broadcast-advert', { title, target, image: null });
             }
         }
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
+            // Playlist table with delete & move buttons
             const tbody = document.querySelector('#playlistTable tbody');
             if (state.playlist.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder.</td></tr>`;
             } else {
                 tbody.innerHTML = state.playlist.map((r, idx) => `
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${r.name}</td>
                         <td>${r.genre} (${r.questions.length} Qs)</td>
+                        <td>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'up' })">⬆</button>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'down' })">⬇</button>
+                            <button class="small danger" onclick="socket.emit('delete-round', ${idx})">❌</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // Players list & count
+            const players = Object.values(state.scores || {});
+            document.getElementById('playerCount').innerText = players.length;
+            const playersListDiv = document.getElementById('joinedPlayersList');
+            if (players.length === 0) {
+                playersListDiv.innerHTML = `<span style="color: var(--text-muted);">Waiting for players to join...</span>`;
+            } else {
+                playersListDiv.innerHTML = players.map(p => `<span class="player-badge">👤 ${p.name} (${p.score} pts)</span>`).join('');
+            }
+
+            // Host Leaderboard Table
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
+            if (sortedPlayers.length === 0) {
+                lbTbody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted);">No scores recorded yet.</td></tr>`;
+            } else {
+                lbTbody.innerHTML = sortedPlayers.map((p, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${p.name}</td>
+                        <td><strong>${p.score}</strong></td>
                     </tr>
                 `).join('');
             }
