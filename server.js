@@ -50,17 +50,20 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Endpoint to load BeatIQ music tracks & genres
+// Endpoint to load BeatIQ music tracks & genres safely
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
-        const curatedTracksPath = path.join(__dirname, 'data', 'curatedTracks.json');
-        if (fs.existsSync(curatedTracksPath)) {
-            const data = JSON.parse(fs.readFileSync(curatedTracksPath, 'utf8'));
+        const filePath = path.join(__dirname, 'data', 'curatedTracks.json');
+        if (fs.existsSync(filePath)) {
+            const rawData = fs.readFileSync(filePath, 'utf8');
+            const data = JSON.parse(rawData);
             return res.json(data);
         }
-        res.json([]);
+        console.warn('Warning: data/curatedTracks.json not found on disk.');
+        return res.json([]);
     } catch (err) {
-        res.json([]);
+        console.error('Error parsing curatedTracks.json:', err.message);
+        return res.json([]);
     }
 });
 
