@@ -9,83 +9,83 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --panel-bg: #1e293b;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-color: #05050a;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffee00;
+            --text: #ffffff;
+            --text-muted: #8b9bb4;
+            --border-glow: 0 0 15px rgba(0, 243, 255, 0.25);
+            --pink-glow: 0 0 15px rgba(255, 0, 85, 0.25);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
         
-        header { background: var(--panel-bg); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
-        header h1 { font-size: 1.5rem; color: var(--accent); }
+        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+        header h1 { font-size: 1.5rem; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); letter-spacing: 1px; }
         .header-links { display: flex; gap: 1rem; align-items: center; }
-        .header-links a { color: var(--accent); text-decoration: none; font-size: 0.9rem; background: #0f172a; padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #334155; }
-        .header-links a:hover { background: #334155; }
+        .header-links a { color: var(--neon-blue); text-decoration: none; font-size: 0.9rem; background: rgba(0, 243, 255, 0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.4); transition: 0.3s; }
+        .header-links a:hover { background: rgba(0, 243, 255, 0.25); box-shadow: var(--border-glow); }
         
-        .nav-tabs { display: flex; gap: 0.5rem; background: var(--panel-bg); padding: 0.5rem 2rem; border-bottom: 1px solid #334155; flex-wrap: wrap; }
-        .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 0.5rem 1rem; cursor: pointer; font-weight: 600; border-radius: 4px; transition: 0.2s; }
-        .tab-btn.active, .tab-btn:hover { background: var(--accent); color: white; }
+        .nav-tabs { display: flex; gap: 0.75rem; background: rgba(10, 15, 30, 0.8); padding: 0.75rem 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap; backdrop-filter: blur(10px); }
+        .tab-btn { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 0.5rem 1.2rem; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.3s; }
+        .tab-btn.active, .tab-btn:hover { background: rgba(0, 243, 255, 0.15); color: var(--neon-blue); border-color: var(--neon-blue); box-shadow: var(--border-glow); }
 
         .container { flex: 1; padding: 2rem; max-width: 1200px; width: 100%; margin: 0 auto; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .card { background: var(--panel-bg); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
-        .card h3 { margin-bottom: 1rem; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .card { background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); display: flex; justify-content: space-between; align-items: center; font-weight: 600; text-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
 
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        select, input, textarea { width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 4px; margin-bottom: 0.5rem; }
+        select, input, textarea { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; margin-bottom: 0.5rem; transition: 0.3s; }
+        select:focus, input:focus, textarea:focus { outline: none; border-color: var(--neon-blue); box-shadow: var(--border-glow); }
         
-        button { background: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        button:hover { background: var(--accent-hover); }
-        button.danger { background: var(--danger); }
-        button.danger:hover { background: #dc2626; }
-        button.success { background: var(--success); }
-        button.warning { background: var(--warning); color: #000; }
-        button.warning:hover { background: #d97706; }
-        button.small { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); }
+        button:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); transform: translateY(-1px); }
+        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055); box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3); }
+        button.danger:hover { box-shadow: var(--pink-glow); }
+        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
+        button.warning { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; box-shadow: 0 4px 15px rgba(255, 238, 0, 0.3); }
+        button.small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
 
         .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
-        th { color: var(--text-muted); }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        th { color: var(--neon-blue); font-weight: 600; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
-        .player-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: #0f172a; border: 1px solid #334155; padding: 0.4rem 0.8rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
-        .ad-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid #334155; }
-        .quick-ad-box { background: #0f172a; border: 1px solid #334155; padding: 0.8rem; border-radius: 6px; flex: 1; min-width: 260px; }
+        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
+        .player-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 243, 255, 0.08); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.4rem 0.8rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
+        .ad-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
+        .quick-ad-box { background: rgba(5, 10, 20, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.8rem; border-radius: 8px; flex: 1; min-width: 260px; }
         
-        /* Hidden state for privacy toggle */
-        .hidden-preview { filter: blur(6px); user-select: none; transition: filter 0.2s; }
-        .hidden-preview:hover { filter: blur(3px); }
+        .hidden-preview { filter: blur(8px); user-select: none; transition: filter 0.3s; }
+        .hidden-preview:hover { filter: blur(4px); }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>TriviaMania Master Dashboard</h1>
+        <h1>TRIVIAMANIA // HOST CONTROL</h1>
         <div class="header-links">
-            <span id="connectionStatus" style="color: var(--success);">● Connected</span>
+            <span id="connectionStatus" style="color: var(--neon-green); text-shadow: 0 0 8px rgba(0,255,102,0.5);">● ONLINE</span>
             <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
             <a href="/display.html" target="_blank">Projector Display ↗</a>
         </div>
     </header>
 
     <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('controls', this)">Live Controls & Game</button>
-        <button class="tab-btn" onclick="switchTab('playlist', this)">Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('beatiq', this)" style="color: #34d399;">🎵 BeatIQ Music Studio</button>
-        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: #f43f5e;">🎮 Mini-Games Studio</button>
-        <button class="tab-btn" onclick="switchTab('adverts', this)">Adverts & Sponsors</button>
-        <button class="tab-btn" onclick="switchTab('lobby', this)">Lobby & QR</button>
+        <button class="tab-btn active" onclick="switchTab('controls', this)">⚡ Live Controls & Game</button>
+        <button class="tab-btn" onclick="switchTab('playlist', this)">📂 Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('beatiq', this)" style="color: var(--neon-green);">🎵 BeatIQ Music Studio</button>
+        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: var(--neon-pink);">🎮 Mini-Games Studio</button>
+        <button class="tab-btn" onclick="switchTab('adverts', this)">📢 Adverts & Sponsors</button>
+        <button class="tab-btn" onclick="switchTab('lobby', this)">🌐 Lobby & QR</button>
     </div>
 
     <div class="container">
@@ -94,7 +94,7 @@
         <div id="controls" class="tab-content active">
             
             <!-- 1. PRIMARY GAME MASTER CONTROLS FIRST -->
-            <div class="card" style="border: 2px solid var(--accent);">
+            <div class="card" style="border: 2px solid var(--neon-blue); box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);">
                 <h3>Live Game Master Controls</h3>
                 <div class="flex-row" style="margin-bottom: 1rem;">
                     <button class="success" onclick="playSound('success'); socket.emit('start-round')">▶ Start Game / First Question</button>
@@ -104,7 +104,7 @@
                     <button class="danger" onclick="if(confirm('Are you sure you want to completely reset and disconnect all players?')) socket.emit('stop-reset')">⚠️ Full Reset</button>
                 </div>
 
-                <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid #334155; padding-top: 1rem; align-items: flex-start;">
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; align-items: flex-start;">
                     <div>
                         <label>Global Default Timer:</label>
                         <select id="questionTimerSelect" onchange="updateSettings()" style="width: 140px;">
@@ -125,12 +125,12 @@
                     </div>
                     <div>
                         <label>Status:</label>
-                        <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--accent); font-size: 1.1rem;">IDLE</strong></p>
+                        <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--neon-yellow); text-shadow: 0 0 8px rgba(255,238,0,0.4); font-size: 1.1rem;">IDLE</strong></p>
                     </div>
                 </div>
 
-                <div style="margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1.2rem;">
-                    <label style="color: var(--accent); font-weight: bold; margin-bottom: 0.6rem;">⚡ Quick Advert Launchers</label>
+                <div style="margin-top: 1.2rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.2rem;">
+                    <label style="color: var(--neon-blue); font-weight: bold; margin-bottom: 0.6rem;">⚡ Quick Advert Launchers</label>
                     <div class="flex-row" style="gap: 1rem;">
                         <div class="quick-ad-box">
                             <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">🖥 Projector Screen</span>
@@ -159,7 +159,7 @@
 
             <!-- 2. SOUNDBOARD & MODERATION (Compact Row) -->
             <div class="grid-2">
-                <div class="card" style="background: #172033;">
+                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
                     <h3>🎛️ Live Host Soundboard</h3>
                     <div class="flex-row" style="gap: 0.5rem;">
                         <button class="small warning" onclick="playHostSound('applause')">👏 Applause</button>
@@ -169,7 +169,7 @@
                     </div>
                 </div>
 
-                <div class="card" style="background: #172033;">
+                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
                     <h3>📢 Live Ticker & Moderation</h3>
                     <div class="form-group" style="margin-bottom: 0.5rem;">
                         <div class="flex-row" style="gap: 0.4rem;">
@@ -192,9 +192,9 @@
             <!-- 3. CHAT MONITOR & QUESTION PREVIEW (Below Master Controls) -->
             <div class="grid-2">
                 <!-- Host Live Chat Monitor -->
-                <div class="card" style="background: #172033;">
+                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
                     <h3>💬 Host Live Chat Monitor</h3>
-                    <div id="hostChatLog" style="height: 110px; overflow-y: auto; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                    <div id="hostChatLog" style="height: 110px; overflow-y: auto; background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
                         <span style="color: var(--text-muted); font-style: italic;">Monitoring live player chat...</span>
                     </div>
                     <div class="flex-row" style="gap: 0.4rem;">
@@ -204,8 +204,8 @@
                 </div>
 
                 <!-- Host Question Preview with Privacy Hide Button -->
-                <div class="card" style="border: 2px dashed var(--accent); background: #172033;">
-                    <h3>
+                <div class="card" style="border: 1px dashed var(--neon-pink); background: rgba(10, 15, 30, 0.6); box-shadow: 0 0 15px rgba(255, 0, 85, 0.1);">
+                    <h3 style="color: var(--neon-pink); text-shadow: 0 0 8px rgba(255, 0, 85, 0.3);">
                         <span>👀 Next Question Preview</span>
                         <button class="small warning" id="previewToggleBtn" onclick="toggleQuestionPreview()">👁️ Hide</button>
                     </h3>
@@ -292,8 +292,8 @@
 
         <!-- TAB 3: BEATIQ MUSIC STUDIO -->
         <div id="beatiq" class="tab-content">
-            <div class="card" style="border: 2px solid #34d399; background: #064e3b22;">
-                <h3 style="color: #34d399;">🎵 BeatIQ Music Quiz Studio</h3>
+            <div class="card" style="border: 2px solid var(--neon-green); background: rgba(0, 255, 102, 0.03);">
+                <h3 style="color: var(--neon-green);">🎵 BeatIQ Music Quiz Studio</h3>
                 <p style="color: var(--text-muted); margin-bottom: 1rem;">
                     Select from curated music genres and 100+ master tracks powered by BeatIQ!
                 </p>
@@ -340,8 +340,8 @@
 
         <!-- TAB 4: MINI-GAMES STUDIO -->
         <div id="minigames" class="tab-content">
-            <div class="card" style="border: 2px solid #f43f5e; background: #4c051922;">
-                <h3 style="color: #f43f5e;">🎮 Mini-Games Studio (Lingo, Word Scramble & Higher/Lower)</h3>
+            <div class="card" style="border: 2px solid var(--neon-pink); background: rgba(255, 0, 85, 0.03);">
+                <h3 style="color: var(--neon-pink);">🎮 Mini-Games Studio (Lingo, Word Scramble & Higher/Lower)</h3>
                 <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
                     Inject high-energy interactive mini-games directly into your main event playlist queue!
                 </p>
@@ -371,11 +371,11 @@
 
         <!-- TAB 5: ADVERTS & SPONSORS -->
         <div id="adverts" class="tab-content">
-            <div class="card" style="border: 2px solid var(--accent);">
+            <div class="card" style="border: 2px solid var(--neon-blue);">
                 <h3>Live Adverts Master Controls</h3>
                 <div class="grid-2" style="gap: 2rem;">
-                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px;">
-                        <h4 style="margin-bottom: 0.75rem; color: var(--accent);">Projector Screen Advert</h4>
+                    <div style="background: rgba(5, 10, 20, 0.6); padding: 1.2rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--neon-blue);">Projector Screen Advert</h4>
                         <div class="form-group">
                             <label>Select Saved Advert:</label>
                             <select id="screenAdSelect">
@@ -387,8 +387,8 @@
                             <button class="danger small" onclick="socket.emit('hide-advert-screen')">❌ Hide from Screen</button>
                         </div>
                     </div>
-                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px;">
-                        <h4 style="margin-bottom: 0.75rem; color: var(--accent);">Mobile Devices Advert</h4>
+                    <div style="background: rgba(5, 10, 20, 0.6); padding: 1.2rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--neon-blue);">Mobile Devices Advert</h4>
                         <div class="form-group">
                             <label>Select Saved Advert:</label>
                             <select id="mobileAdSelect">
@@ -595,7 +595,7 @@
                     chatLog.innerHTML = '';
                 }
                 const msgEl = document.createElement('div');
-                msgEl.innerHTML = '<span style="color: var(--accent); font-weight: bold;">' + name + ':</span> ' + text;
+                msgEl.innerHTML = '<span style="color: var(--neon-blue); font-weight: bold;">' + name + ':</span> ' + text;
                 chatLog.appendChild(msgEl);
                 chatLog.scrollTop = chatLog.scrollHeight;
             }
@@ -846,7 +846,7 @@
 
             listDiv.innerHTML = savedAds.map((ad, idx) => 
                 '<div class="ad-item">' +
-                    '<div><strong>' + ad.title + '</strong> ' + (ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : '') + '</div>' +
+                    '<div><strong>' + ad.title + '</strong> ' + (ad.image ? '<span style="color: var(--neon-green); font-size: 0.8rem;">(Has Image)</span>' : '') + '</div>' +
                     '<div><button class="small danger" onclick="deleteSavedAd(' + idx + ')">🗑 Delete</button></div>' +
                 '</div>'
             ).join('');
@@ -903,9 +903,9 @@
                 if (nextQ) {
                     previewBox.innerHTML = 
                         '<p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text);">Q' + (nextQIndex + 1) + ' (' + currentRound.name + '): ' + nextQ.question + '</p>' +
-                        '<p style="color: var(--success); font-size: 0.95rem;">Correct Answer: <strong>' + nextQ.answer + '</strong></p>';
+                        '<p style="color: var(--neon-green); font-size: 0.95rem;">Correct Answer: <strong>' + nextQ.answer + '</strong></p>';
                 } else {
-                    previewBox.innerHTML = '<p style="color: var(--warning);">End of current round reached!</p>';
+                    previewBox.innerHTML = '<p style="color: var(--neon-yellow);">End of current round reached!</p>';
                 }
             } else {
                 previewBox.innerHTML = '<p style="color: var(--text-muted);">No active rounds in playlist.</p>';
