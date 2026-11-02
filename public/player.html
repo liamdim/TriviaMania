@@ -83,7 +83,6 @@
                 </div>
             </div>
 
-            <!-- Dynamic Emoji Bar -->
             <div class="emoji-bar" id="mobileEmojiBar">
                 <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
                 <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
@@ -99,6 +98,12 @@
         const socket = io();
         let myName = '';
         let answeredCurrent = false;
+
+        socket.on('connect', () => {
+            if (myName) {
+                socket.emit('player-join', myName);
+            }
+        });
 
         socket.on('player-emoji', (data) => {
             const el = document.createElement('div');
@@ -148,7 +153,6 @@
             const player = state.scores[socket.id];
             if (player) document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
 
-            // Update mobile emoji bar dynamically if custom emojis are set
             if (state.customEmojis && state.customEmojis.length > 0) {
                 const bar = document.getElementById('mobileEmojiBar');
                 bar.innerHTML = state.customEmojis.map(e => '<button class="emoji-btn" onclick="sendEmoji(\'' + e + '\')">' + e + '</button>').join('');
