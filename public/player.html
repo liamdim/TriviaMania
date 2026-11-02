@@ -46,16 +46,24 @@
             0% { transform: translateY(0) scale(0.5); opacity: 1; }
             100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
         }
+
+        #mobileAdvertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
     </style>
 </head>
 <body>
 
     <audio id="mobileAudioPlayer" preload="auto"></audio>
+
+    <div id="mobileAdvertOverlay">
+        <h2 id="mobileAdTitle" style="font-size: 2rem; color: var(--neon-blue); margin-bottom: 1.5rem;"></h2>
+        <img id="mobileAdImage" style="max-height: 50vh; max-width: 85vw; border-radius: 12px; box-shadow: 0 0 20px rgba(0,243,255,0.4); display: none;" />
+    </div>
+
     <div id="announcementBanner"></div>
 
     <div id="joinScreen" class="card" style="margin-top: auto; margin-bottom: auto;">
         <h2 style="color: var(--neon-blue); margin-bottom: 0.5rem;">TRIVIAMANIA</h2>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Enter your player nickname</p>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;" id="mobileWaitingSubText">Enter your player nickname</p>
         <input type="text" id="playerNameInput" placeholder="Your Nickname" maxlength="15">
         <button onclick="joinGame()">Join Game 🚀</button>
     </div>
@@ -69,7 +77,7 @@
         </div>
 
         <div id="gameStage" class="card" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-            <h3 style="color: var(--text-muted);">Waiting for host to start game...</h3>
+            <h3 style="color: var(--text-muted);" id="mobileWaitingHeading">Waiting for host to start game...</h3>
         </div>
 
         <div id="chatControlsWrapper">
@@ -120,6 +128,16 @@
             setTimeout(() => el.remove(), 1500);
         });
 
+        socket.on('announcement-update', (announcement) => {
+            const banner = document.getElementById('announcementBanner');
+            if (announcement.active && announcement.text) {
+                banner.style.display = 'block';
+                banner.innerText = '📢 ' + announcement.text;
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+
         socket.on('chat-message', (data) => {
             appendChatMessage(data.name, data.text);
         });
@@ -146,7 +164,6 @@
             if (!name) { alert('Please enter a nickname!'); return; }
             myName = name;
 
-            // Unlock audio context on mobile upon join click
             const audio = document.getElementById('mobileAudioPlayer');
             audio.play().catch(() => {});
             audio.pause();
@@ -185,13 +202,34 @@
             const player = state.scores[socket.id];
             if (player) document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
 
+            if (state.mobileWaitingText) {
+                document.getElementById('mobileWaitingSubText').innerText = state.mobileWaitingText;
+            }
+
+            const mobileAdOverlay = document.getElementById('mobileAdvertOverlay');
+            if (state.activeMobileAdvert) {
+                mobileAdOverlay.style.display = 'flex';
+                document.getElementById('mobileAdTitle').innerText = state.activeMobileAdvert.title;
+                const mImg = document.getElementById('mobileAdImage');
+                if (state.activeMobileAdvert.image) {
+                    mImg.src = state.activeMobileAdvert.image;
+                    mImg.style.display = 'block';
+                } else {
+                    mImg.style.display = 'none';
+                }
+            } else {
+                mobileAdOverlay.style.display = 'none';
+            }
+
             if (state.customEmojis && state.customEmojis.length > 0) {
                 const bar = document.getElementById('mobileEmojiBar');
                 bar.innerHTML = state.customEmojis.map(e => '<button class="emoji-btn" onclick="sendEmoji(\'' + e + '\')">' + e + '</button>').join('');
             }
 
             const stage = document.getElementById('gameStage');
-            if (state.status === 'QUESTION') {
+            if (state.status === 'IDLE' || state.status === 'PAUSED') {
+                stage.innerHTML = '<h3 style="color: var(--text-muted);" id="mobileWaitingHeading">' + (state.mobileWaitingText || 'Waiting for host to start game...') + '</h3>';
+            } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
 
@@ -201,7 +239,6 @@
                 }
 
                 if (round && q) {
-                    // Play audio snippet on mobile if available
                     if (q.audioPreviewUrl) {
                         const audio = document.getElementById('mobileAudioPlayer');
                         if (audio.src !== q.audioPreviewUrl) {
