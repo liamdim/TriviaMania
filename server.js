@@ -1,5 +1,5 @@
 const express = require('express');
-const http = http = require('http');
+const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +9,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Initialize Gemini AI (uses process.env.GEMINI_API_KEY)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(express.json({ limit: '50mb' }));
@@ -43,10 +42,7 @@ let gameState = {
 
 let timerInterval = null;
 
-const badWords = [
-    'damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 
-    'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'
-];
+const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
 
 function sanitizeText(text) {
     if (!text) return '';
@@ -140,21 +136,21 @@ function parseCategoryFile(filename) {
         currentQ.options.sort(() => 0.5 - Math.random());
         questions.push(currentQ);
     }
-    return questions;
+    return questions.sort(() => 0.5 - Math.random());
 }
 
 async function generateAIQuestions(type, count) {
     let prompt = '';
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} unique 5-letter English words for a Lingo/Wordle style pub game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (a short clever clue). No markdown formatting or extra text.`;
+        prompt = `Generate exactly ${count} unique, completely fresh 5-letter English words for a Lingo game. Ensure they are varied and randomized. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (a short clever clue). No markdown.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} famous words or names (like bands, cities, movies) for a word scramble game. Return ONLY a valid JSON array of objects with keys "word" (the uppercase answer) and "scrambled" (the letters spaced out with spaces, e.g. "S E T A E B L"). No markdown or extra text.`;
+        prompt = `Generate exactly ${count} completely fresh and randomized famous words, bands, or cities for a word scramble game. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} interesting trivia statistics questions where the answer is Higher or Lower or a number. Return ONLY a valid JSON array of objects with keys "fact" (the trivia statement), "options" (array containing exactly ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown or extra text.`;
+        prompt = `Generate exactly ${count} completely randomized trivia statistics questions. Return ONLY a valid JSON array of objects with keys "fact" (trivia statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
     } else if (type === 'tenable') {
-        prompt = `Generate exactly ${count} Tenable-style top list challenges (e.g., Top 5 most populous countries, top 5 highest grossing movies). Return ONLY a valid JSON array of objects with keys "category" (the list description) and "answer" (one correct top item from that list). No markdown or extra text.`;
+        prompt = `Generate exactly ${count} completely randomized Tenable top list challenges. Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
     } else if (type === 'one-percent') {
-        prompt = `Generate exactly ${count} lateral thinking brainteasers or clever math/word puzzles for a 1% Club style game show. Return ONLY a valid JSON array of objects with keys "q" (the puzzle question), "answer" (the correct short answer), and "options" (an array of 4 possible choices including the correct answer). No markdown or extra text.`;
+        prompt = `Generate exactly ${count} completely randomized 1% Club logic brainteasers or math/word puzzles. Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
     }
 
     try {
@@ -164,16 +160,11 @@ async function generateAIQuestions(type, count) {
         });
 
         let text = response.text.trim();
-        if (text.startsWith('```json')) {
-            text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        } else if (text.startsWith('```')) {
-            text = text.replace(/^```/, '').replace(/```$/, '').trim();
-        }
+        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
 
-        const parsed = JSON.parse(text);
-        return parsed;
+        return JSON.parse(text);
     } catch (err) {
-        console.error('AI Generation Error:', err);
         return [];
     }
 }
@@ -207,18 +198,11 @@ io.on('connection', (socket) => {
 
         if (player.hasAnsweredCurrent) return;
 
-        let isCorrect = false;
-        if (currentQ.gameType === 'lingo') {
-            isCorrect = answer.trim().toUpperCase() === currentQ.answer.trim().toUpperCase();
-        } else {
-            isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
-        }
-
+        let isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
         let pointsEarned = 0;
+
         if (isCorrect) {
-            if (!currentQ.fastestPlayerId) {
-                currentQ.fastestPlayerId = socket.id;
-            }
+            if (!currentQ.fastestPlayerId) currentQ.fastestPlayerId = socket.id;
             const isFastest = currentQ.fastestPlayerId === socket.id;
 
             player.streak = (player.streak || 0) + 1;
@@ -234,13 +218,20 @@ io.on('connection', (socket) => {
         }
 
         player.hasAnsweredCurrent = true;
-        socket.emit('answer-result', { correct: isCorrect, points: pointsEarned, streak: player.streak, isFastest: currentQ.fastestPlayerId === socket.id });
+
+        socket.emit('answer-result', { 
+            correct: isCorrect, 
+            points: pointsEarned, 
+            streak: player.streak, 
+            correctAnswer: currentQ.answer,
+            isFastest: currentQ.fastestPlayerId === socket.id 
+        });
         io.emit('state-update', gameState);
     });
 
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
-        const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
+        const selectedQuestions = questions.slice(0, roundConfig.count || 10);
         
         gameState.playlist.push({
             name: roundConfig.name || roundConfig.genre,
@@ -265,18 +256,13 @@ io.on('connection', (socket) => {
                             if (file === 'node_modules' || file === '.git') continue;
                             const found = findFile(fullPath, filename);
                             if (found) return found;
-                        } else if (file === filename) {
-                            return fullPath;
-                        }
+                        } else if (file === filename) return fullPath;
                     } catch (e) {}
                 }
                 return null;
             }
-
             const foundPath = findFile(__dirname, 'curatedTracks.json');
-            if (foundPath) {
-                allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
-            }
+            if (foundPath) allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
         } catch (err) {}
 
         const targetGenre = roundConfig.genre;
@@ -290,18 +276,15 @@ io.on('connection', (socket) => {
 
         const questions = selectedTracks.map((t) => {
             const wrongArtists = allArtists.filter(a => a !== t.artist).sort(() => 0.5 - Math.random()).slice(0, 3);
-            while (wrongArtists.length < 3) {
-                wrongArtists.push('Alternative Artist ' + (wrongArtists.length + 1));
-            }
+            while (wrongArtists.length < 3) wrongArtists.push('Alternative Artist ' + (wrongArtists.length + 1));
             const options = [t.artist, ...wrongArtists].sort(() => 0.5 - Math.random());
 
             return {
-                question: '🎧 Listen to the snippet: Which artist or band performed "' + t.title + '"?',
+                question: '🎧 Listen to snippet: Which artist performed "' + t.title + '"?',
                 options: options,
                 answer: t.artist,
                 fastestPlayerId: null,
-                audioPreviewUrl: t.previewUrl || null,
-                spotifyUrl: t.spotifyUrl || null
+                audioPreviewUrl: t.previewUrl || null
             };
         });
 
@@ -322,7 +305,7 @@ io.on('connection', (socket) => {
         if (config.type === 'lingo') {
             questions = rawItems.map(item => ({
                 gameType: 'lingo',
-                question: '🔤 LINGO: Guess the 5-letter word! Hint: ' + (item.hint || 'Mystery word'),
+                question: '🔤 LINGO: Guess 5-letter word! Hint: ' + (item.hint || 'Clue'),
                 answer: (item.word || 'SHARK').toUpperCase(),
                 options: [],
                 fastestPlayerId: null
@@ -331,11 +314,10 @@ io.on('connection', (socket) => {
             questions = rawItems.map(item => {
                 const ans = (item.word || 'BEATLES').toUpperCase();
                 const scrambled = item.scrambled || ans.split('').join(' ');
-                const wrongOpts = [ans, 'MUSIC', 'BAND', 'STAGE'].filter(w => w !== ans).slice(0, 3);
-                const options = [ans, ...wrongOpts].sort(() => 0.5 - Math.random());
+                const options = [ans, 'MUSIC', 'BAND', 'STAGE'].sort(() => 0.5 - Math.random());
                 return {
                     gameType: 'scramble',
-                    question: '🔀 WORD SCRAMBLE: Unscramble letters: [ ' + scrambled + ' ]',
+                    question: '🔀 WORD SCRAMBLE: [ ' + scrambled + ' ]',
                     answer: ans,
                     options: options,
                     fastestPlayerId: null
@@ -344,7 +326,7 @@ io.on('connection', (socket) => {
         } else if (config.type === 'higher-lower') {
             questions = rawItems.map(item => ({
                 gameType: 'higher-lower',
-                question: '⬆️ HIGHER OR LOWER: ' + (item.fact || 'Statistic prediction'),
+                question: '⬆️ HIGHER OR LOWER: ' + (item.fact || 'Statistic'),
                 answer: item.answer || 'Higher',
                 options: ['Higher', 'Lower'],
                 fastestPlayerId: null
@@ -352,10 +334,10 @@ io.on('connection', (socket) => {
         } else if (config.type === 'tenable') {
             questions = rawItems.map(item => {
                 const ans = item.answer || 'Top Choice';
-                const options = [ans, 'Alternative A', 'Alternative B', 'Alternative C'].sort(() => 0.5 - Math.random());
+                const options = [ans, 'Option A', 'Option B', 'Option C'].sort(() => 0.5 - Math.random());
                 return {
                     gameType: 'tenable',
-                    question: '🔟 TENABLE: ' + (item.category || 'Name an entry in this top list'),
+                    question: '🔟 TENABLE: ' + (item.category || 'Top List'),
                     answer: ans,
                     options: options,
                     fastestPlayerId: null
@@ -364,11 +346,11 @@ io.on('connection', (socket) => {
         } else if (config.type === 'one-percent') {
             questions = rawItems.map(item => {
                 const ans = item.answer || 'Solution';
-                const opts = item.options ? [...item.options] : [ans, 'Wrong 1', 'Wrong 2', 'Wrong 3'];
+                const opts = item.options ? [...item.options] : [ans, 'A', 'B', 'C'];
                 if (!opts.includes(ans)) opts[0] = ans;
                 return {
                     gameType: 'one-percent',
-                    question: '🧠 THE 1% CLUB: ' + (item.q || 'Brainteaser puzzle'),
+                    question: '🧠 1% CLUB: ' + (item.q || 'Brainteaser'),
                     answer: ans,
                     options: opts.sort(() => 0.5 - Math.random()),
                     fastestPlayerId: null
@@ -387,77 +369,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('move-round', ({ index, direction }) => {
-        if (direction === 'up' && index > 0) {
-            const temp = gameState.playlist[index];
-            gameState.playlist[index] = gameState.playlist[index - 1];
-            gameState.playlist[index - 1] = temp;
-        } else if (direction === 'down' && index < gameState.playlist.length - 1) {
-            const temp = gameState.playlist[index];
-            gameState.playlist[index] = gameState.playlist[index + 1];
-            gameState.playlist[index + 1] = temp;
-        }
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('delete-round', (index) => {
-        gameState.playlist.splice(index, 1);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('clear-playlist', () => {
-        gameState.playlist = [];
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.status = 'IDLE';
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-settings', (newSettings) => {
-        if (newSettings.questionTime) gameState.settings.questionTime = parseInt(newSettings.questionTime);
-        if (newSettings.intermissionTime) gameState.settings.intermissionTime = parseInt(newSettings.intermissionTime);
-        if (newSettings.countdownSound !== undefined) gameState.settings.countdownSound = newSettings.countdownSound;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-venue-details', (details) => {
-        gameState.venueDetails = sanitizeText(details);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-welcome-header', (headerText) => {
-        gameState.welcomeHeader = sanitizeText(headerText);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-mobile-waiting', (waitingText) => {
-        gameState.mobileWaitingText = sanitizeText(waitingText);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-custom-emojis', (emojisArray) => {
-        gameState.customEmojis = emojisArray;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('toggle-chat', (enabled) => {
-        gameState.chatEnabled = enabled;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('toggle-mute-player', (socketId) => {
-        gameState.mutedPlayers[socketId] = !gameState.mutedPlayers[socketId];
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-announcement', (announcementData) => {
-        gameState.announcement = {
-            active: announcementData.active,
-            text: sanitizeText(announcementData.text)
-        };
-        io.emit('announcement-update', gameState.announcement);
-    });
-
     socket.on('send-emoji', (emoji) => {
         if (!gameState.chatEnabled) return;
         if (gameState.mutedPlayers[socket.id]) return;
@@ -467,17 +378,10 @@ io.on('connection', (socket) => {
     socket.on('player-chat', (message) => {
         if (!gameState.chatEnabled) return;
         if (gameState.mutedPlayers[socket.id]) return;
-        
         const cleanMsg = sanitizeText(message);
         if (!cleanMsg) return;
-
         const player = gameState.scores[socket.id];
-        const playerName = player ? player.name : 'Anonymous';
-
-        const chatObj = { name: playerName, text: cleanMsg };
-        gameState.chatHistory.push(chatObj);
-        if (gameState.chatHistory.length > 30) gameState.chatHistory.shift();
-
+        const chatObj = { name: player ? player.name : 'Anonymous', text: cleanMsg };
         io.emit('chat-message', chatObj);
     });
 
@@ -513,9 +417,7 @@ io.on('connection', (socket) => {
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
         Object.values(gameState.scores).forEach(p => {
-            p.score = 0;
-            p.streak = 0;
-            p.hasAnsweredCurrent = false;
+            p.score = 0; p.streak = 0; p.hasAnsweredCurrent = false;
         });
         io.emit('stop-audio');
         io.emit('state-update', gameState);
@@ -526,32 +428,9 @@ io.on('connection', (socket) => {
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
-        gameState.activeScreenAdvert = null;
-        gameState.activeMobileAdvert = null;
         gameState.scores = {};
         gameState.mutedPlayers = {};
-        gameState.chatHistory = [];
         io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('broadcast-advert-screen', (adData) => {
-        gameState.activeScreenAdvert = adData;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-screen', () => {
-        gameState.activeScreenAdvert = null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('broadcast-advert-mobile', (adData) => {
-        gameState.activeMobileAdvert = adData;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-mobile', () => {
-        gameState.activeMobileAdvert = null;
         io.emit('state-update', gameState);
     });
 
@@ -572,19 +451,10 @@ function startQuestionTimer() {
 
             if (gameState.timer <= 0) {
                 clearInterval(timerInterval);
-                triggerLeaderboardAndAutoAdvance();
+                advanceToNextQuestion();
             }
         }
     }, 1000);
-}
-
-function triggerLeaderboardAndAutoAdvance() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (!round) return;
-
-    gameState.status = 'LEADERBOARD';
-    io.emit('stop-audio');
-    io.emit('state-update', gameState);
 }
 
 function advanceToNextQuestion() {
