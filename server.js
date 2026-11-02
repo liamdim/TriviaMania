@@ -174,7 +174,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Add BeatIQ Music round into main playlist with strict genre filtering
+    // Add BeatIQ Music round into main playlist with exact count guarantee and genre filtering
     socket.on('add-beatiq-round', (roundConfig) => {
         const filePath = path.resolve(__dirname, 'data', 'curatedTracks.json');
         let allTracks = [];
@@ -187,11 +187,12 @@ io.on('connection', (socket) => {
         }
 
         const targetGenre = roundConfig.genre;
-        const genreFilteredTracks = allTracks.filter(t => t.genre === targetGenre);
-
-        const trackPool = genreFilteredTracks.length >= 3 ? genreFilteredTracks : allTracks;
-        const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
+        const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
         
+        let genreFilteredTracks = allTracks.filter(t => t.genre === targetGenre);
+        let trackPool = genreFilteredTracks.length >= requestedCount ? genreFilteredTracks : allTracks;
+        
+        const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, requestedCount);
         const allArtists = allTracks.map(t => t.artist);
 
         const questions = selectedTracks.map((t) => {
@@ -272,6 +273,7 @@ io.on('connection', (socket) => {
         if (timerInterval) clearInterval(timerInterval);
         if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
 
+        // Forcefully reset to question 0 of round 0 on start
         gameState.status = 'QUESTION';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
