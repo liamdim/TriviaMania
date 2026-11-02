@@ -22,6 +22,7 @@ let gameState = {
     scores: {},
     mutedPlayers: {}, // socketId -> boolean
     chatEnabled: true, // Master chat toggle
+    chatHistory: [], // Recent chat messages log
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
@@ -355,7 +356,11 @@ io.on('connection', (socket) => {
         const player = gameState.scores[socket.id];
         const playerName = player ? player.name : 'Anonymous';
 
-        io.emit('chat-message', { name: playerName, text: cleanMsg });
+        const chatObj = { name: playerName, text: cleanMsg };
+        gameState.chatHistory.push(chatObj);
+        if (gameState.chatHistory.length > 30) gameState.chatHistory.shift();
+
+        io.emit('chat-message', chatObj);
     });
 
     socket.on('start-round', () => {
@@ -396,6 +401,7 @@ io.on('connection', (socket) => {
         gameState.activeMobileAdvert = null;
         gameState.scores = {};
         gameState.mutedPlayers = {};
+        gameState.chatHistory = [];
         io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
