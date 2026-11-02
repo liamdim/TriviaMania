@@ -9,7 +9,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Initialize Gemini AI (uses process.env.GEMINI_API_KEY)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(express.json({ limit: '50mb' }));
@@ -42,7 +41,7 @@ let gameState = {
 };
 
 let timerInterval = null;
-let disconnectedPlayers = {}; // 10-second grace window buffer for phone calls / app switches
+let disconnectedPlayers = {};
 
 const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
 
@@ -137,16 +136,17 @@ function parseCategoryFile(filename) {
 
 async function generateAIQuestions(type, count) {
     let prompt = '';
+    const seed = Math.floor(Math.random() * 100000);
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} unique, completely fresh 5-letter English words for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clue). No markdown.`;
+        prompt = `Generate exactly ${count} completely unique and randomized 5-letter English words (Random Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely fresh and randomized famous words, bands, or cities for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
+        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Random Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} randomized trivia statistics questions. Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Random Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
     } else if (type === 'tenable') {
-        prompt = `Generate exactly ${count} randomized Tenable top list challenges. Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized Tenable top list challenges (Random Seed ${seed}). Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
     } else if (type === 'one-percent') {
-        prompt = `Generate exactly ${count} randomized 1% Club logic brainteasers. Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized 1% Club logic brainteasers (Random Seed ${seed}). Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
     }
 
     try {
@@ -177,7 +177,6 @@ io.on('connection', (socket) => {
 
     socket.on('player-join', (playerName) => {
         const cleanName = sanitizeText(playerName) || 'Anonymous';
-        
         if (disconnectedPlayers[cleanName]) {
             clearTimeout(disconnectedPlayers[cleanName].timeout);
             gameState.scores[socket.id] = disconnectedPlayers[cleanName].playerData;
@@ -271,8 +270,9 @@ io.on('connection', (socket) => {
         const targetGenre = roundConfig.genre;
         const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
         
-        let genreFilteredTracks = allTracks.filter(t => t.genre === targetGenre);
-        let trackPool = genreFilteredTracks.length >= requestedCount ? genreFilteredTracks : allTracks;
+        // Filter specifically for the selected genre, fallback to all tracks only if genre pool is empty
+        let genreFilteredTracks = allTracks.filter(t => t.genre && t.genre.toLowerCase() === targetGenre.toLowerCase());
+        let trackPool = genreFilteredTracks.length >= 3 ? genreFilteredTracks : allTracks;
         
         const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, requestedCount);
         const allArtists = allTracks.map(t => t.artist);
@@ -372,11 +372,44 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('update-venue-details', (details) => {
+        gameState.venueDetails = sanitizeText(details);
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('update-welcome-header', (headerText) => {
+        gameState.welcomeHeader = sanitizeText(headerText);
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('update-mobile-waiting', (waitingText) => {
+        gameState.mobileWaitingText = sanitizeText(waitingText);
+        io.emit('state-update', gameState);
+    });
+
     socket.on('update-custom-emojis', (emojisArray) => {
         if (Array.isArray(emojisArray)) {
             gameState.customEmojis = emojisArray;
             io.emit('state-update', gameState);
         }
+    });
+
+    socket.on('toggle-chat', (enabled) => {
+        gameState.chatEnabled = enabled;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('toggle-mute-player', (socketId) => {
+        gameState.mutedPlayers[socketId] = !gameState.mutedPlayers[socketId];
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('update-announcement', (announcementData) => {
+        gameState.announcement = {
+            active: announcementData.active,
+            text: sanitizeText(announcementData.text)
+        };
+        io.emit('announcement-update', gameState.announcement);
     });
 
     socket.on('send-emoji', (emoji) => {
@@ -393,6 +426,26 @@ io.on('connection', (socket) => {
         const player = gameState.scores[socket.id];
         const chatObj = { name: player ? player.name : 'Anonymous', text: cleanMsg };
         io.emit('chat-message', chatObj);
+    });
+
+    socket.on('broadcast-advert-screen', (adData) => {
+        gameState.activeScreenAdvert = adData;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('hide-advert-screen', () => {
+        gameState.activeScreenAdvert = null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('broadcast-advert-mobile', (adData) => {
+        gameState.activeMobileAdvert = adData;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('hide-advert-mobile', () => {
+        gameState.activeMobileAdvert = null;
+        io.emit('state-update', gameState);
     });
 
     socket.on('start-round', () => {
@@ -438,6 +491,8 @@ io.on('connection', (socket) => {
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
+        gameState.activeScreenAdvert = null;
+        gameState.activeMobileAdvert = null;
         gameState.scores = {};
         gameState.mutedPlayers = {};
         disconnectedPlayers = {};
