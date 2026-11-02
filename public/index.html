@@ -78,7 +78,7 @@
         <button class="tab-btn active" onclick="switchTab('controls', this)">Live Controls & Game</button>
         <button class="tab-btn" onclick="switchTab('playlist', this)">Playlist Builder</button>
         <button class="tab-btn" onclick="switchTab('beatiq', this)" style="color: #34d399;">🎵 BeatIQ Music Studio</button>
-        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: #f59e0b;">🎮 Mini-Games Studio</button>
+        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: #f43f5e;">🎮 Mini-Games Studio</button>
         <button class="tab-btn" onclick="switchTab('adverts', this)">Adverts & Sponsors</button>
         <button class="tab-btn" onclick="switchTab('lobby', this)">Lobby & QR</button>
     </div>
@@ -87,6 +87,7 @@
 
         <!-- TAB 1: CONTROLS & LIVE GAME -->
         <div id="controls" class="tab-content active">
+            
             <div class="card" style="border: 2px solid var(--accent); background: #172033;">
                 <h3>🎛️ Live Host Soundboard</h3>
                 <div class="flex-row" style="gap: 0.75rem;">
@@ -157,6 +158,34 @@
                         <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--accent); font-size: 1.1rem;">IDLE</strong></p>
                     </div>
                 </div>
+
+                <div style="margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1.2rem;">
+                    <label style="color: var(--accent); font-weight: bold; margin-bottom: 0.6rem;">⚡ Quick Advert Launchers</label>
+                    <div class="flex-row" style="gap: 1rem;">
+                        <div class="quick-ad-box">
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">🖥 Projector Screen</span>
+                            <select id="quickScreenAdSelect" style="margin-top: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                            <div class="flex-row" style="gap: 0.4rem;">
+                                <button class="success small" style="flex: 1;" onclick="launchQuickScreenAd()">Show</button>
+                                <button class="danger small" style="flex: 1;" onclick="socket.emit('hide-advert-screen')">Hide</button>
+                            </div>
+                        </div>
+
+                        <div class="quick-ad-box">
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">📱 Mobile Devices</span>
+                            <select id="quickMobileAdSelect" style="margin-top: 0.3rem; margin-bottom: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                            <div class="flex-row" style="gap: 0.4rem;">
+                                <button class="success small" style="flex: 1;" onclick="launchQuickMobileAd()">Show</button>
+                                <button class="danger small" style="flex: 1;" onclick="socket.emit('hide-advert-mobile')">Hide</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <div class="grid-2">
@@ -167,7 +196,7 @@
                             <tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder or Studios.</td></tr>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder, BeatIQ, or Mini-Games.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -216,6 +245,16 @@
                         <option value="20">20 Questions</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Round Custom Timer (Optional):</label>
+                    <select id="roundTimerSelect">
+                        <option value="">Use Global Default</option>
+                        <option value="10">10 Seconds per question</option>
+                        <option value="15">15 Seconds per question</option>
+                        <option value="20">20 Seconds per question</option>
+                        <option value="30">30 Seconds per question</option>
+                    </select>
+                </div>
                 <div class="flex-row">
                     <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
                     <button class="danger" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button>
@@ -228,67 +267,635 @@
             <div class="card" style="border: 2px solid #34d399; background: #064e3b22;">
                 <h3 style="color: #34d399;">🎵 BeatIQ Music Quiz Studio</h3>
                 <p style="color: var(--text-muted); margin-bottom: 1rem;">
-                    Select from curated music genres and 100+ master tracks powered by BeatIQ.
+                    Select from curated music genres and 100+ master tracks powered by BeatIQ, and inject them straight into your main event playlist queue!
                 </p>
+                
                 <div class="form-group">
                     <label>Select Music Genre:</label>
                     <select id="beatiqGenreSelect">
                         <option value="pop">Pop & Modern Hits</option>
                         <option value="classic-rock">Classic Rock (60s–70s)</option>
-                        <option value="synthpop-80s">80s Synthpop & Retro</option>
                         <option value="grunge-90s">90s Grunge & Rock</option>
+                        <option value="synthpop-80s">80s Synthpop & Retro</option>
                         <option value="hip-hop">Hip-Hop & Rap</option>
+                        <option value="electronic-edm">Electronic & EDM</option>
+                        <option value="alt-indie">Alternative & Indie</option>
+                        <option value="r-and-b">R&B & Neo-Soul</option>
+                        <option value="heavy-metal">Heavy Metal & Hard Rock</option>
+                        <option value="jazz-blues">Jazz & Blues Classics</option>
+                        <option value="classical">Classical & Orchestral</option>
+                        <option value="latin-reggaeton">Latin & Reggaeton</option>
+                        <option value="country">Country & Americana</option>
+                        <option value="k-pop">K-Pop & Asian Pop</option>
+                        <option value="pop-punk">Pop-Punk & 2000s Alt</option>
+                        <option value="y2k-2000s">2000s Pop Nostalgia</option>
+                        <option value="tv-themes">TV Show Themes</option>
+                        <option value="movie-themes">Movie Themes & Soundtracks</option>
+                        <option value="disney-pixar">Disney & Pixar Themes</option>
+                        <option value="cartoon-themes">Cartoon & Anime Themes</option>
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label>Round Name:</label>
                     <input type="text" id="beatiqRoundName" value="80s Synthpop Music Round">
                 </div>
+
                 <div class="form-group">
-                    <label>Number of Tracks:</label>
+                    <label>Number of Tracks to Include:</label>
                     <select id="beatiqTrackCount">
                         <option value="5">5 Tracks</option>
                         <option value="10" selected>10 Tracks</option>
+                        <option value="15">15 Tracks</option>
                     </select>
                 </div>
-                <button class="success" onclick="addBeatIQRoundToMainPlaylist()">➕ Add BeatIQ Round to Playlist</button>
+
+                <button class="success" onclick="addBeatIQRoundToMainPlaylist()">➕ Add BeatIQ Round to Main Playlist</button>
             </div>
         </div>
 
-        <!-- TAB 4: MINI-GAMES STUDIO (NEW) -->
+        <!-- TAB 4: MINI-GAMES STUDIO (Lingo, Scramble, Higher/Lower) -->
         <div id="minigames" class="tab-content">
-            <div class="card" style="border: 2px solid #f59e0b; background: #78350f22;">
-                <h3 style="color: #f59e0b;">🎮 Mini-Games Studio</h3>
+            <div class="card" style="border: 2px solid #f43f5e; background: #4c051922;">
+                <h3 style="color: #f43f5e;">🎮 Mini-Games Studio (Lingo, Word Scramble & Higher/Lower)</h3>
                 <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
-                    Inject high-energy interactive mini-games directly into your event playlist queue!
+                    Inject high-energy interactive mini-games directly into your main event playlist queue!
                 </p>
 
-                <div class="grid-2" style="gap: 1.5rem;">
-                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px; border: 1px solid #334155;">
-                        <h4 style="color: #f59e0b; margin-bottom: 0.5rem;">🔤 Lingo (Wordle Guessing)</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Players race to guess a 5-letter target word with color-coded feedback tiles on their phones.</p>
-                        <button class="warning small" onclick="addMiniGame('lingo')">➕ Add Lingo Round</button>
-                    </div>
-
-                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px; border: 1px solid #334155;">
-                        <h4 style="color: #f59e0b; margin-bottom: 0.5rem;">🔀 Word Scramble</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Unscramble letters for famous band names or movie titles as fast as possible.</p>
-                        <button class="warning small" onclick="addMiniGame('scramble')">➕ Add Scramble Round</button>
-                    </div>
-
-                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px; border: 1px solid #334155;">
-                        <h4 style="color: #f59e0b; margin-bottom: 0.5rem;">⬆️ Higher or Lower</h4>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Fast-paced statistical prediction questions for the crowd.</p>
-                        <button class="warning small" onclick="addMiniGame('higherlower')">➕ Add Higher/Lower Round</button>
-                    </div>
+                <div class="form-group">
+                    <label>Select Mini-Game Type:</label>
+                    <select id="miniGameTypeSelect" onchange="updateMiniGameLabels()">
+                        <option value="lingo">🔤 Lingo (Wordle-style 5-letter guessing game)</option>
+                        <option value="scramble">🔀 Word Scramble (Anagram speed race)</option>
+                        <option value="higher-lower">⬆️ Higher or Lower (Statistics prediction game)</option>
+                    </select>
                 </div>
+
+                <div class="form-group">
+                    <label>Round Name:</label>
+                    <input type="text" id="miniGameRoundName" value="Lingo Word Game Round">
+                </div>
+
+                <div class="form-group">
+                    <label>Number of Puzzles / Questions:</label>
+                    <select id="miniGameCount">
+                        <option value="3">3 Puzzles</option>
+                        <option value="5" selected>5 Puzzles</option>
+                        <option value="8">8 Puzzles</option>
+                    </select>
+                </div>
+
+                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Mini-Game Round to Main Playlist</button>
             </div>
         </div>
 
         <!-- TAB 5: ADVERTS & SPONSORS -->
         <div id="adverts" class="tab-content">
+            <div class="card" style="border: 2px solid var(--accent);">
+                <h3>Live Adverts Master Controls</h3>
+                <div class="grid-2" style="gap: 2rem;">
+                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--accent);">Projector Screen Advert</h4>
+                        <div class="form-group">
+                            <label>Select Saved Advert:</label>
+                            <select id="screenAdSelect">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                        </div>
+                        <div class="flex-row" style="margin-top: 1rem;">
+                            <button class="success small" onclick="launchScreenAd()">🖥 Upload to Screen</button>
+                            <button class="danger small" onclick="socket.emit('hide-advert-screen')">❌ Hide from Screen</button>
+                        </div>
+                    </div>
+
+                    <div style="background: #0f172a; padding: 1.2rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--accent);">Mobile Devices Advert</h4>
+                        <div class="form-group">
+                            <label>Select Saved Advert:</label>
+                            <select id="mobileAdSelect">
+                                <option value="">-- Choose Advert --</option>
+                            </select>
+                        </div>
+                        <div class="flex-row" style="margin-top: 1rem;">
+                            <button class="success small" onclick="launchMobileAd()">📱 Upload to Mobile</button>
+                            <button class="danger small" onclick="socket.emit('hide-advert-mobile')">❌ Hide from Mobile</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <h3>Advert & Sponsor Library</h3>
                 <div class="form-group">
                     <label>Advert Title / Message:</label>
-                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails
+                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
+                </div>
+                <div class="form-group">
+                    <label>Upload Image (Up to 5MB optimized):</label>
+                    <input type="file" id="adImageInput" accept="image/*">
+                </div>
+                <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
+            </div>
+
+            <div class="card">
+                <h3>Saved Adverts Library</h3>
+                <div id="savedAdsList">
+                    <p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: LOBBY & QR -->
+        <div id="lobby" class="tab-content">
+            <div class="card" style="text-align: center;">
+                <h3>Lobby Screen & Customizer</h3>
+                
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Projector Screen Welcome Header (Replaces "Welcome to TriviaMania!"):</label>
+                    <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!" oninput="saveWelcomeHeader()">
+                </div>
+
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Custom Venue / Event Details (Shown above QR on big screen):</label>
+                    <textarea id="venueDetailsInput" rows="2" placeholder="Welcome to The Crown Pub! Quiz Night Tuesdays." oninput="saveVenueDetails()"></textarea>
+                </div>
+
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Mobile Device Waiting Message (Replaces "Waiting for host to start game..."):</label>
+                    <input type="text" id="mobileWaitingInput" placeholder="Waiting for host to start game..." oninput="saveMobileWaiting()">
+                </div>
+
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Live Mobile Emojis (Comma separated):</label>
+                    <input type="text" id="customEmojisInput" value="🔥, 🍻, 👏, 😂, 🎉, 💡" oninput="saveCustomEmojis()">
+                </div>
+
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Player Mobile Join QR Code:</p>
+                <div id="qr-container"></div>
+                <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const socket = io();
+
+        function toggleGlobalChat() {
+            const enabled = document.getElementById('globalChatToggle').checked;
+            socket.emit('toggle-chat', enabled);
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'tick') {
+                    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08);
+                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16);
+                    osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.24);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                }
+            } catch (e) {}
+        }
+
+        function playHostSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                if (type === 'buzzer') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(110, ctx.currentTime);
+                    osc.frequency.setValueAtTime(90, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + (i * 0.12));
+                        gain.gain.setValueAtTime(0.15, ctx.currentTime + (i * 0.12));
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (i * 0.12) + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + (i * 0.12));
+                        osc.stop(ctx.currentTime + (i * 0.12) + 0.3);
+                    });
+                } else if (type === 'drumroll') {
+                    for (let i = 0; i < 8; i++) {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(120 + Math.random() * 30, ctx.currentTime + (i * 0.05));
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime + (i * 0.05));
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (i * 0.05) + 0.04);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + (i * 0.05));
+                        osc.stop(ctx.currentTime + (i * 0.05) + 0.04);
+                    }
+                } else if (type === 'applause') {
+                    const bufferSize = ctx.sampleRate * 0.5;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 1000;
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    noise.start();
+                }
+            } catch (e) {}
+        }
+
+        function sendAnnouncement() {
+            const text = document.getElementById('announcementInput').value.trim();
+            socket.emit('update-announcement', { active: true, text });
+            alert('Announcement broadcasted to all mobile screens!');
+        }
+
+        function clearAnnouncement() {
+            document.getElementById('announcementInput').value = '';
+            socket.emit('update-announcement', { active: false, text: '' });
+        }
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            } else {
+                const btn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+                if (btn) btn.classList.add('active');
+            }
+        }
+
+        const playerUrl = window.location.origin + '/player.html';
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("qr-container"), {
+            text: playerUrl,
+            width: 200,
+            height: 200
+        });
+
+        const venueInput = document.getElementById('venueDetailsInput');
+        venueInput.value = localStorage.getItem('triviamania_venue_details') || '';
+
+        const welcomeHeaderInput = document.getElementById('welcomeHeaderInput');
+        welcomeHeaderInput.value = localStorage.getItem('triviamania_welcome_header') || 'Welcome to TriviaMania!';
+
+        const mobileWaitingInput = document.getElementById('mobileWaitingInput');
+        mobileWaitingInput.value = localStorage.getItem('triviamania_mobile_waiting') || 'Waiting for host to start game...';
+
+        const customEmojisInput = document.getElementById('customEmojisInput');
+        customEmojisInput.value = localStorage.getItem('triviamania_custom_emojis') || '🔥, 🍻, 👏, 😂, 🎉, 💡';
+
+        function saveVenueDetails() {
+            localStorage.setItem('triviamania_venue_details', venueInput.value);
+            socket.emit('update-venue-details', venueInput.value);
+        }
+
+        function saveWelcomeHeader() {
+            localStorage.setItem('triviamania_welcome_header', welcomeHeaderInput.value);
+            socket.emit('update-welcome-header', welcomeHeaderInput.value);
+        }
+
+        function saveMobileWaiting() {
+            localStorage.setItem('triviamania_mobile_waiting', mobileWaitingInput.value);
+            socket.emit('update-mobile-waiting', mobileWaitingInput.value);
+        }
+
+        function saveCustomEmojis() {
+            localStorage.setItem('triviamania_custom_emojis', customEmojisInput.value);
+            const emojis = customEmojisInput.value.split(',').map(e => e.trim()).filter(Boolean);
+            socket.emit('update-custom-emojis', emojis);
+        }
+
+        socket.on('connect', () => {
+            if (venueInput.value) socket.emit('update-venue-details', venueInput.value);
+            if (welcomeHeaderInput.value) socket.emit('update-welcome-header', welcomeHeaderInput.value);
+            if (mobileWaitingInput.value) socket.emit('update-mobile-waiting', mobileWaitingInput.value);
+            if (customEmojisInput.value) socket.emit('update-custom-emojis', customEmojisInput.value.split(',').map(e => e.trim()));
+        });
+
+        function copyPlayerLink() {
+            navigator.clipboard.writeText(playerUrl);
+            alert('Player mobile link copied!');
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                const categories = await res.json();
+                const select = document.getElementById('triviaGenreSelect');
+                if (categories.length > 0) {
+                    select.innerHTML = categories.map(cat => 
+                        `<option value="${cat}">${cat.replace(/-/g, ' ').toUpperCase()}</option>`
+                    ).join('');
+                }
+            } catch (err) {}
+        }
+        loadCategories();
+
+        function updateSettings() {
+            const questionTime = document.getElementById('questionTimerSelect').value;
+            const intermissionTime = document.getElementById('intermissionTimerSelect').value;
+            const countdownSound = document.getElementById('countdownSoundToggle').checked;
+            socket.emit('update-settings', { questionTime, intermissionTime, countdownSound });
+        }
+
+        function addRoundToPlaylist() {
+            const genre = document.getElementById('triviaGenreSelect').value;
+            const name = document.getElementById('roundNameInput').value;
+            const count = parseInt(document.getElementById('questionCountSelect').value);
+            const timer = document.getElementById('roundTimerSelect').value;
+            if (!genre) { alert('Please select a category!'); return; }
+            socket.emit('add-round', { genre, name, count, timer: timer ? parseInt(timer) : null });
+            alert('Round added to playlist!');
+        }
+
+        async function addBeatIQRoundToMainPlaylist() {
+            const genre = document.getElementById('beatiqGenreSelect').value;
+            const name = document.getElementById('beatiqRoundName').value;
+            const count = parseInt(document.getElementById('beatiqTrackCount').value);
+
+            try {
+                const res = await fetch('/api/beatiq/tracks');
+                if (!res.ok) throw new Error('Network response was not ok');
+                
+                const allTracks = await res.json();
+                if (!Array.isArray(allTracks) || allTracks.length === 0) {
+                    alert('Error: No tracks loaded. Check if curatedTracks.json exists inside your beats-main folder.');
+                    return;
+                }
+
+                let genreTracks = allTracks.filter(t => t.genre === genre);
+                let trackPool = genreTracks.length >= count ? genreTracks : allTracks;
+                const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, count);
+
+                if (selectedTracks.length === 0) {
+                    alert(`No tracks found. Try selecting a different genre.`);
+                    return;
+                }
+
+                socket.emit('add-beatiq-round', { genre, name, questionCount: count });
+                alert(`Successfully added "${name}" to your main playlist queue!`);
+                switchTab('controls');
+            } catch (err) {
+                console.error(err);
+                alert('Failed to connect to server or load BeatIQ tracks.');
+            }
+        }
+
+        function updateMiniGameLabels() {
+            const type = document.getElementById('miniGameTypeSelect').value;
+            const nameInput = document.getElementById('miniGameRoundName');
+            if (type === 'lingo') nameInput.value = 'Lingo Word Game Round';
+            else if (type === 'scramble') nameInput.value = 'Word Scramble Anagram Round';
+            else if (type === 'higher-lower') nameInput.value = 'Higher or Lower Prediction Round';
+        }
+
+        function addMiniGameRoundToPlaylist() {
+            const type = document.getElementById('miniGameTypeSelect').value;
+            const name = document.getElementById('miniGameRoundName').value;
+            const count = parseInt(document.getElementById('miniGameCount').value);
+
+            socket.emit('add-minigame-round', { type, name, count });
+            alert(`Successfully added "${name}" to your main playlist queue!`);
+            switchTab('controls');
+        }
+
+        let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
+
+        function saveNewAdvert() {
+            const title = document.getElementById('adTitleInput').value;
+            const fileInput = document.getElementById('adImageInput');
+
+            if (!title) { alert('Please enter an advert title!'); return; }
+
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+                        try {
+                            savedAds.push({ title, image: compressedDataUrl });
+                            localStorage.setItem('triviamania_ads_v2', JSON.stringify(savedAds));
+                            renderAdsLibrary();
+                            document.getElementById('adTitleInput').value = '';
+                            document.getElementById('adImageInput').value = '';
+                            alert('Advert saved successfully!');
+                        } catch (err) { alert('Storage quota exceeded!'); }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                try {
+                    savedAds.push({ title, image: null });
+                    localStorage.setItem('triviamania_ads_v2', JSON.stringify(savedAds));
+                    renderAdsLibrary();
+                    document.getElementById('adTitleInput').value = '';
+                    alert('Advert saved successfully!');
+                } catch (err) { alert('Storage quota exceeded!'); }
+            }
+        }
+
+        function renderAdsLibrary() {
+            const listDiv = document.getElementById('savedAdsList');
+            const screenSelect = document.getElementById('screenAdSelect');
+            const mobileSelect = document.getElementById('mobileAdSelect');
+            const quickScreenSelect = document.getElementById('quickScreenAdSelect');
+            const quickMobileSelect = document.getElementById('quickMobileAdSelect');
+
+            const dropdownOptions = '<option value="">-- Choose Advert --</option>' + 
+                savedAds.map((ad, idx) => `<option value="${idx}">${ad.title}</option>`).join('');
+
+            screenSelect.innerHTML = dropdownOptions;
+            mobileSelect.innerHTML = dropdownOptions;
+            quickScreenSelect.innerHTML = dropdownOptions;
+            quickMobileSelect.innerHTML = dropdownOptions;
+
+            if (savedAds.length === 0) {
+                listDiv.innerHTML = `<p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>`;
+                return;
+            }
+
+            listDiv.innerHTML = savedAds.map((ad, idx) => `
+                <div class="ad-item">
+                    <div><strong>${ad.title}</strong> ${ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : ''}</div>
+                    <div><button class="small danger" onclick="deleteSavedAd(${idx})">🗑 Delete</button></div>
+                </div>
+            `).join('');
+        }
+
+        function launchScreenAd() {
+            const idx = document.getElementById('screenAdSelect').value;
+            if (idx === "") { alert('Please select an advert!'); return; }
+            socket.emit('broadcast-advert-screen', savedAds[idx]);
+        }
+
+        function launchMobileAd() {
+            const idx = document.getElementById('mobileAdSelect').value;
+            if (idx === "") { alert('Please select an advert!'); return; }
+            socket.emit('broadcast-advert-mobile', savedAds[idx]);
+        }
+
+        function launchQuickScreenAd() {
+            const idx = document.getElementById('quickScreenAdSelect').value;
+            if (idx === "") { alert('Please select an advert!'); return; }
+            socket.emit('broadcast-advert-screen', savedAds[idx]);
+        }
+
+        function launchQuickMobileAd() {
+            const idx = document.getElementById('quickMobileAdSelect').value;
+            if (idx === "") { alert('Please select an advert!'); return; }
+            socket.emit('broadcast-advert-mobile', savedAds[idx]);
+        }
+
+        function deleteSavedAd(index) {
+            savedAds.splice(index, 1);
+            localStorage.setItem('triviamania_ads_v2', JSON.stringify(savedAds));
+            renderAdsLibrary();
+        }
+
+        renderAdsLibrary();
+
+        socket.on('state-update', (state) => {
+            document.getElementById('statusDisplay').innerText = state.status;
+            
+            if (state.chatEnabled !== undefined) {
+                document.getElementById('globalChatToggle').checked = state.chatEnabled;
+            }
+
+            if (state.settings && state.settings.countdownSound !== undefined) {
+                document.getElementById('countdownSoundToggle').checked = state.settings.countdownSound;
+            }
+            
+            const previewBox = document.getElementById('hostPreviewBox');
+            const currentRound = state.playlist[state.currentRoundIndex];
+            if (currentRound && currentRound.questions) {
+                const nextQIndex = state.status === 'QUESTION' ? state.currentQuestionIndex + 1 : state.currentQuestionIndex;
+                const nextQ = currentRound.questions[nextQIndex];
+                if (nextQ) {
+                    previewBox.innerHTML = `
+                        <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text);">Q${nextQIndex + 1} (${currentRound.name}): ${nextQ.question}</p>
+                        <p style="color: var(--success); font-size: 0.95rem;">Correct Answer: <strong>${nextQ.answer}</strong></p>
+                    `;
+                } else {
+                    previewBox.innerHTML = `<p style="color: var(--warning);">End of current round reached!</p>`;
+                }
+            } else {
+                previewBox.innerHTML = `<p style="color: var(--text-muted);">No active rounds in playlist.</p>`;
+            }
+
+            const tbody = document.querySelector('#playlistTable tbody');
+            if (state.playlist.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>`;
+            } else {
+                tbody.innerHTML = state.playlist.map((r, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${r.name}</td>
+                        <td>${r.genre} (${r.questions.length} Qs ${r.timer ? '• ' + r.timer + 's' : ''})</td>
+                        <td>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'up' })">⬆</button>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'down' })">⬇</button>
+                            <button class="small danger" onclick="socket.emit('delete-round', ${idx})">❌</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const players = Object.entries(state.scores || {});
+            document.getElementById('playerCount').innerText = players.length;
+            const playersListDiv = document.getElementById('joinedPlayersList');
+            if (players.length === 0) {
+                playersListDiv.innerHTML = `<span style="color: var(--text-muted);">Waiting for players to join...</span>`;
+            } else {
+                playersListDiv.innerHTML = players.map(([id, p]) => {
+                    const isMuted = state.mutedPlayers && state.mutedPlayers[id];
+                    return `
+                        <span class="player-badge">
+                            👤 ${p.name} (${p.score} pts)
+                            <button class="small ${isMuted ? 'success' : 'warning'}" style="padding: 0.1rem 0.4rem; margin-left: 0.4rem;" onclick="socket.emit('toggle-mute-player', '${id}')">
+                                ${isMuted ? 'Unmute' : 'Mute'}
+                            </button>
+                        </span>
+                    `;
+                }).join('');
+            }
+
+            const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+            const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
+            if (sortedPlayers.length === 0) {
+                lbTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>`;
+            } else {
+                lbTbody.innerHTML = sortedPlayers.map((p, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${p.name}</td>
+                        <td>🔥 x${p.streak || 0}</td>
+                        <td><strong>${p.score}</strong></td>
+                    </tr>
+                `).join('');
+            }
+        });
+    </script>
+</body>
+</html>
