@@ -105,6 +105,12 @@
             if (myName) socket.emit('player-join', myName);
         });
 
+        socket.on('stop-audio', () => {
+            const audio = document.getElementById('mobileAudioPlayer');
+            audio.pause();
+            audio.currentTime = 0;
+        });
+
         socket.on('player-emoji', (data) => {
             const el = document.createElement('div');
             el.className = 'floating-emoji';
@@ -139,6 +145,12 @@
             const name = document.getElementById('playerNameInput').value.trim();
             if (!name) { alert('Please enter a nickname!'); return; }
             myName = name;
+
+            // Unlock audio context on mobile upon join click
+            const audio = document.getElementById('mobileAudioPlayer');
+            audio.play().catch(() => {});
+            audio.pause();
+
             socket.emit('player-join', myName);
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'flex';
@@ -185,32 +197,39 @@
 
                 if (state.currentQuestionIndex !== lastQuestionIndex) {
                     lastQuestionIndex = state.currentQuestionIndex;
-                    answeredCurrent = false; // Reset lock state for new question
+                    answeredCurrent = false;
                 }
 
                 if (round && q) {
+                    // Play audio snippet on mobile if available
+                    if (q.audioPreviewUrl) {
+                        const audio = document.getElementById('mobileAudioPlayer');
+                        if (audio.src !== q.audioPreviewUrl) {
+                            audio.src = q.audioPreviewUrl;
+                            audio.load();
+                            audio.play().catch(e => {});
+                        }
+                    } else {
+                        const audio = document.getElementById('mobileAudioPlayer');
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+
                     document.getElementById('mobileQuestionCounter').innerText = 'Q ' + (state.currentQuestionIndex + 1) + '/' + round.questions.length;
                     
                     if (player && player.hasAnsweredCurrent) {
-                        // Keep locked message displayed
+                        // Locked state
                     } else if (!answeredCurrent) {
-                        if (q.gameType === 'lingo') {
-                            stage.innerHTML = 
-                                '<p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold;">' + q.question + '</p>' +
-                                '<div style="margin-top: 1rem;">' +
-                                    '<input type="text" id="lingoInput" placeholder="5-LETTER WORD" maxlength="5" style="text-transform: uppercase; font-size: 1.4rem; letter-spacing: 3px; margin-bottom: 1rem;">' +
-                                    '<button class="success" onclick="submitLingoAnswer()">Submit Guess 🎯</button>' +
-                                '</div>';
-                        } else {
-                            stage.innerHTML = 
-                                '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p>' +
-                                '<div class="options-stack">' +
-                                    q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\', this)">' + opt + '</button>').join('') +
-                                '</div>';
-                        }
+                        stage.innerHTML = 
+                            '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p>' +
+                            '<div class="options-stack">' +
+                                q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\', this)">' + opt + '</button>').join('') +
+                            '</div>';
                     }
                 }
             } else if (state.status === 'LEADERBOARD') {
+                const audio = document.getElementById('mobileAudioPlayer');
+                audio.pause();
                 stage.innerHTML = '<h3 style="color: var(--neon-blue);">🏆 Standings</h3>';
             }
         });
@@ -218,18 +237,9 @@
         function submitAnswer(answer, btnElement) {
             if (answeredCurrent) return;
             answeredCurrent = true;
-            if (btnElement) {
-                btnElement.classList.add('success');
-            }
+            if (btnElement) btnElement.classList.add('success');
             socket.emit('submit-answer', { answer, timeRemaining: 15 });
             document.getElementById('gameStage').innerHTML = '<h3 style="color: var(--neon-yellow);">Answer Locked In! 🔒</h3>';
-        }
-
-        function submitLingoAnswer() {
-            const input = document.getElementById('lingoInput');
-            const val = input ? input.value.trim().toUpperCase() : '';
-            if (val.length !== 5) { alert('Please enter a 5-letter word!'); return; }
-            submitAnswer(val, null);
         }
     </script>
 </body>
