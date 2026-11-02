@@ -38,7 +38,6 @@ let gameState = {
 };
 
 let timerInterval = null;
-let leaderboardTimeout = null;
 
 const badWords = [
     'damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 
@@ -49,7 +48,7 @@ function sanitizeText(text) {
     if (!text) return '';
     let clean = text.trim();
     badWords.forEach(word => {
-        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        const regex = new RegExp('\\b' + word + '\\b', 'gi');
         clean = clean.replace(regex, '****');
     });
     return clean;
@@ -262,7 +261,7 @@ io.on('connection', (socket) => {
             const options = [t.artist, ...wrongArtists].sort(() => 0.5 - Math.random());
 
             return {
-                question: `🎧 Listen to the snippet: Which artist or band performed "${t.title}"?`,
+                question: '🎧 Listen to the snippet: Which artist or band performed "' + t.title + '"?',
                 options: options,
                 answer: t.artist,
                 fastestPlayerId: null,
@@ -272,15 +271,14 @@ io.on('connection', (socket) => {
         });
 
         gameState.playlist.push({
-            name: `🎵 Music: ${roundConfig.name}`,
-            genre: `BeatIQ (${targetGenre})`,
+            name: '🎵 Music: ' + roundConfig.name,
+            genre: 'BeatIQ (' + targetGenre + ')',
             timer: 20,
             questions: questions
         });
         io.emit('state-update', gameState);
     });
 
-    // MINI-GAME ROUND GENERATORS (With Unique Scramble Options)
     socket.on('add-minigame-round', (config) => {
         let questions = [];
         if (config.type === 'lingo') {
@@ -305,7 +303,7 @@ io.on('connection', (socket) => {
             const selected = [...lingoWords].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
             questions = selected.map(item => ({
                 gameType: 'lingo',
-                question: `🔤 LINGO ROUND: Guess the 5-letter word! Hint: ${item.hint}`,
+                question: '🔤 LINGO ROUND: Guess the 5-letter word! Hint: ' + item.hint,
                 answer: item.word,
                 options: [],
                 fastestPlayerId: null
@@ -332,7 +330,7 @@ io.on('connection', (socket) => {
                 const options = [item.word, ...wrongOpts].sort(() => 0.5 - Math.random());
                 return {
                     gameType: 'scramble',
-                    question: `🔀 WORD SCRAMBLE: Unscramble these letters: [ ${item.scrambled} ]`,
+                    question: '🔀 WORD SCRAMBLE: Unscramble these letters: [ ' + item.scrambled + ' ]',
                     answer: item.word,
                     options: options,
                     fastestPlayerId: null
@@ -350,7 +348,7 @@ io.on('connection', (socket) => {
             const selected = [...hlItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
             questions = selected.map(item => ({
                 gameType: 'higher-lower',
-                question: `⬆️ HIGHER OR LOWER: ${item.fact}`,
+                question: '⬆️ HIGHER OR LOWER: ' + item.fact,
                 answer: item.answer,
                 options: item.options,
                 fastestPlayerId: null
@@ -359,8 +357,8 @@ io.on('connection', (socket) => {
 
         if (questions.length > 0) {
             gameState.playlist.push({
-                name: config.name || `🎮 Mini-Game: ${config.type.toUpperCase()}`,
-                genre: `Mini-Game (${config.type})`,
+                name: config.name || '🎮 Mini-Game: ' + config.type.toUpperCase(),
+                genre: 'Mini-Game (' + config.type + ')',
                 timer: 20,
                 questions: questions
             });
@@ -465,7 +463,6 @@ io.on('connection', (socket) => {
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
         if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
 
         gameState.status = 'QUESTION';
         gameState.currentRoundIndex = 0;
@@ -484,16 +481,13 @@ io.on('connection', (socket) => {
 
     socket.on('stop-game', () => {
         if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
         gameState.status = 'PAUSED';
         io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
 
-    // Soft Restart (Resets game loop to beginning without kicking players or wiping scores)
     socket.on('restart-game', () => {
         if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
@@ -506,10 +500,8 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Full Reset (Wipes everything including players and playlist)
     socket.on('stop-reset', () => {
         if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
@@ -551,7 +543,6 @@ io.on('connection', (socket) => {
 
 function startQuestionTimer() {
     if (timerInterval) clearInterval(timerInterval);
-    if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
 
     timerInterval = setInterval(() => {
         if (gameState.status === 'QUESTION') {
@@ -570,24 +561,13 @@ function triggerLeaderboardAndAutoAdvance() {
     const round = gameState.playlist[gameState.currentRoundIndex];
     if (!round) return;
 
-    const isLastQuestion = gameState.currentQuestionIndex + 1 >= round.questions.length && 
-                           gameState.currentRoundIndex + 1 >= gameState.playlist.length;
-
     gameState.status = 'LEADERBOARD';
     io.emit('stop-audio');
     io.emit('state-update', gameState);
-
-    if (isLastQuestion) return;
-
-    const intermissionMs = (gameState.settings.intermissionTime || 5) * 1000;
-    leaderboardTimeout = setTimeout(() => {
-        advanceToNextQuestion();
-    }, intermissionMs);
 }
 
 function advanceToNextQuestion() {
     if (timerInterval) clearInterval(timerInterval);
-    if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
 
     const round = gameState.playlist[gameState.currentRoundIndex];
     if (!round || !round.questions) return;
@@ -618,5 +598,5 @@ function advanceToNextQuestion() {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`TriviaMania server running on http://localhost:${PORT}`);
+    console.log('TriviaMania server running on port ' + PORT);
 });
