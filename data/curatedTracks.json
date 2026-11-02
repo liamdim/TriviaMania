@@ -1,4 +1,6 @@
-[
+import { Track } from "../types/quiz";
+
+export const CURATED_TRACKS: Track[] = [
   {
     "id": "sp-pop-01",
     "title": "Blinding Lights",
@@ -1594,5 +1596,1414 @@
     "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/46/17/30/4617308e-15f3-c9cb-144c-0587d865ae58/880242699879.jpg/600x600bb.jpg",
     "spotifyUrl": "https://open.spotify.com/search/The%20Hoyt%20Curtin%20Orchestra%20Meet%20the%20Flintstones",
     "popularity": 92
+  },
+  // --- Video Game OSTs & Themes ---
+  {
+    "id": "sp-vg-01",
+    "title": "Super Mario Bros. Main Theme",
+    "artist": "Koji Kondo",
+    "album": "Super Mario Bros. Original Soundtrack",
+    "year": 1985,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/64/7b/0a/647b0a72-04e4-7cb5-eb65-f9be8f97c413/mzaf_17208153434680879684.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/71/eb/7e/71eb7e13-640a-5b1b-5fae-64c8f0fc44c4/195497259648.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Koji%20Kondo%20Super%20Mario%20Bros%20Theme",
+    "popularity": 95
+  },
+  {
+    "id": "sp-vg-02",
+    "title": "Zelda's Lullaby",
+    "artist": "Koji Kondo",
+    "album": "The Legend of Zelda: Ocarina of Time OST",
+    "year": 1998,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/ec/3b/b5/ec3bb5b5-773a-4bfe-d5e1-ee2ba1688db6/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/e0/fa/1c/e0fa1cb5-5551-9ef0-e8f0-1e52dbb0c950/00050087361952.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Koji%20Kondo%20Zelda%27s%20Lullaby",
+    "popularity": 92
+  },
+  {
+    "id": "sp-vg-03",
+    "title": "Halo Theme (Mjolnir Mix)",
+    "artist": "Martin O'Donnell & Michael Salvatori",
+    "album": "Halo 2 Original Soundtrack, Vol. 1",
+    "year": 2004,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/5a/08/6c/5a086c02-e25b-01c9-5a63-4ba9a7eb4232/mzaf_6135899981882006764.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music/v4/62/1f/2e/621f2e46-5ba3-d499-563b-6ce0d8666358/821603700320.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Martin%20ODonnell%20Halo%20Theme",
+    "popularity": 90
+  },
+  {
+    "id": "sp-vg-04",
+    "title": "Dragonborn (Skyrim Theme)",
+    "artist": "Jeremy Soule",
+    "album": "The Elder Scrolls V: Skyrim (Original Game Soundtrack)",
+    "year": 2011,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/97/81/b9/9781b9bc-bdf8-6c8a-7848-18e470876127/mzaf_10599661477759882200.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a0/01/69/a0016912-7065-f938-251f-5ce2593feaa6/886443834019.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Jeremy%20Soule%20Dragonborn%20Skyrim",
+    "popularity": 93
+  },
+  {
+    "id": "sp-vg-05",
+    "title": "One-Winged Angel",
+    "artist": "Nobuo Uematsu",
+    "album": "Final Fantasy VII Original Soundtrack",
+    "year": 1997,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/b4/2c/3f/b42c3fd2-143d-6ff5-ae53-c90a1811a2f6/mzaf_11303274712071239564.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/0c/e5/ea/0ce5ea4e-5e85-f1a8-8e62-ef7b337c7674/SQEX-10001-4.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Nobuo%20Uematsu%20One-Winged%20Angel",
+    "popularity": 91
+  },
+  {
+    "id": "sp-vg-06",
+    "title": "Megalovania",
+    "artist": "Toby Fox",
+    "album": "UNDERTALE Soundtrack",
+    "year": 2015,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/cb/76/97/cb76974d-5bb6-f947-f418-80beea9e8f47/mzaf_15082104576302919932.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7e/8a/7e/7e8a7e0a-bdf1-30db-e789-f5ce8019ae4b/mzi.bspctbba.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Toby%20Fox%20Megalovania",
+    "popularity": 94
+  },
+  {
+    "id": "sp-vg-07",
+    "title": "Sweden",
+    "artist": "C418",
+    "album": "Minecraft - Volume Alpha",
+    "year": 2011,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/d9/3d/8c/d93d8cf6-cbf7-1234-a169-1c95b6c7a6e1/mzaf_10034606198956961448.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/eb/aa/bb/ebaabb1e-648c-7f55-1f9f-5c589b27a3c3/859705646194_cover.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/C418%20Sweden%20Minecraft",
+    "popularity": 90
+  },
+  {
+    "id": "sp-vg-08",
+    "title": "BFG Division",
+    "artist": "Mick Gordon",
+    "album": "Doom (Original Game Soundtrack)",
+    "year": 2016,
+    "genre": "video-game",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/31/3b/b7/313bb74f-94d7-1335-cf27-66c507c6f059/mzaf_7875953051410116805.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/64/df/aa/64dfaa6e-b3f5-9378-0112-9c98bc011f07/886446132711.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Mick%20Gordon%20BFG%20Division",
+    "popularity": 91
+  },
+
+  // --- Anime Openings & OSTs ---
+  {
+    "id": "sp-anime-01",
+    "title": "A Cruel Angel's Thesis",
+    "artist": "Yoko Takahashi",
+    "album": "Neon Genesis Evangelion Soundtrack",
+    "year": 1995,
+    "genre": "anime-ost",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/55/3a/0b/553a0bcf-ff0d-cb96-419b-6b71f9cf3ee4/mzaf_13506456075427181822.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/28/ff/ca/28ffca17-ce64-ff66-5085-f55bc8b15d2a/KICA-286.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Yoko%20Takahashi%20A%20Cruel%20Angel%27s%20Thesis",
+    "popularity": 94
+  },
+  {
+    "id": "sp-anime-02",
+    "title": "Guren no Yumiya (Attack on Titan)",
+    "artist": "Linked Horizon",
+    "album": "Jiyuu e no Shingeki",
+    "year": 2013,
+    "genre": "anime-ost",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/71/84/02/71840212-be00-bca8-e7da-3db4c676d1e4/mzaf_17208153434680879684.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/61/c2/f7/61c2f7c0-2e4b-01ee-a9f8-b3d562141707/PCCA-03836.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Linked%20Horizon%20Guren%20no%20Yumiya",
+    "popularity": 93
+  },
+  {
+    "id": "sp-anime-03",
+    "title": "Silhouette",
+    "artist": "KANA-BOON",
+    "album": "TIME",
+    "year": 2014,
+    "genre": "anime-ost",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/7f/77/82/7f778241-1188-75a7-96a2-ea82079f2fe4/mzaf_3992383856272545070.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/3d/c0/f5/3dc0f5d5-961a-0ec0-a292-6f2aa7477c44/KSCL-2535.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/KANA-BOON%20Silhouette",
+    "popularity": 92
+  },
+  {
+    "id": "sp-anime-04",
+    "title": "Tank!",
+    "artist": "The Seatbelts",
+    "album": "Cowboy Bebop (Original Soundtrack)",
+    "year": 1998,
+    "genre": "anime-ost",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/c7/bd/e9/c7bde935-8ea5-625d-4f2d-8ad4e4fe5257/mzaf_13506456075427181822.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/83/87/b6/8387b6a4-4a0b-22df-b789-20fbbadbb802/VICL-60201.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/The%20Seatbelts%20Tank!",
+    "popularity": 91
+  },
+  {
+    "id": "sp-anime-05",
+    "title": "Gurenge",
+    "artist": "LiSA",
+    "album": "LEO-NiNE",
+    "year": 2019,
+    "genre": "anime-ost",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/8c/fb/b0/8cfbb062-8e12-b352-79ee-2b0021e17b73/mzaf_8497645163319087593.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/91/92/ff/9192fffc-dc3e-eb6b-67df-9831ff616fe5/VVCL-1707.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/LiSA%20Gurenge",
+    "popularity": 95
+  },
+  {
+    "id": "sp-anime-06",
+    "title": "One Summer's Day",
+    "artist": "Joe Hisaishi",
+    "album": "Spirited Away (Original Soundtrack)",
+    "year": 2001,
+    "genre": "anime-ost",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/d4/0b/b7/d40bb718-4a6f-35fe-da62-1144f80cfa66/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/ee/12/35/ee1235b2-3dc3-e8ec-40ee-b2cfc1b7b7a1/TKCA-72165.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Joe%20Hisaishi%20One%20Summer%27s%20Day",
+    "popularity": 92
+  },
+
+  // --- Motown & Classic Soul ---
+  {
+    "id": "sp-motown-01",
+    "title": "Superstition",
+    "artist": "Stevie Wonder",
+    "album": "Talking Book",
+    "year": 1972,
+    "genre": "motown-soul",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/ec/3b/b5/ec3bb5b5-773a-4bfe-d5e1-ee2ba1688db6/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/6e/b4/0c/6eb40c7d-8b0d-b4b6-79c2-5be69bca4027/00602537077673.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Stevie%20Wonder%20Superstition",
+    "popularity": 93
+  },
+  {
+    "id": "sp-motown-02",
+    "title": "What's Going On",
+    "artist": "Marvin Gaye",
+    "album": "What's Going On",
+    "year": 1971,
+    "genre": "motown-soul",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/09/f7/60/09f76019-33b9-a417-ea46-e51cfaaa6ea9/mzaf_7009491754094251101.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d9/3c/cf/d93ccfc0-7667-bbfa-b50a-e5550fb8b789/00602537243931.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Marvin%20Gaye%20What%27s%20Going%20On",
+    "popularity": 91
+  },
+  {
+    "id": "sp-motown-03",
+    "title": "Respect",
+    "artist": "Aretha Franklin",
+    "album": "I Never Loved a Man the Way I Love You",
+    "year": 1967,
+    "genre": "motown-soul",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/c3/87/1f/c3871f7e-3260-d615-1c66-5fdca2c3a48f/mzaf_10721331211699880949.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/1e/c4/99/1ec4998e-c90a-a131-a88a-d5faeeff650f/081227986506.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Aretha%20Franklin%20Respect",
+    "popularity": 92
+  },
+  {
+    "id": "sp-motown-04",
+    "title": "My Girl",
+    "artist": "The Temptations",
+    "album": "The Temptations Sing Smokey",
+    "year": 1965,
+    "genre": "motown-soul",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/5a/08/6c/5a086c02-e25b-01c9-5a63-4ba9a7eb4232/mzaf_6135899981882006764.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/6e/89/3b/6e893bfb-75db-2b62-c1f0-46603a11dc31/00602537751993.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/The%20Temptations%20My%20Girl",
+    "popularity": 92
+  },
+  {
+    "id": "sp-motown-05",
+    "title": "I Want You Back",
+    "artist": "The Jackson 5",
+    "album": "Diana Ross Presents The Jackson 5",
+    "year": 1969,
+    "genre": "motown-soul",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/31/3b/b7/313bb74f-94d7-1335-cf27-66c507c6f059/mzaf_7875953051410116805.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/b8/b6/2a/b8b62a66-7b56-c2ba-508b-b1e17d9e4a50/00602537243917.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/The%20Jackson%205%20I%20Want%20You%20Back",
+    "popularity": 93
+  },
+  {
+    "id": "sp-motown-06",
+    "title": "Ain't No Mountain High Enough",
+    "artist": "Marvin Gaye & Tammi Terrell",
+    "album": "United",
+    "year": 1967,
+    "genre": "motown-soul",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/97/81/b9/9781b9bc-bdf8-6c8a-7848-18e470876127/mzaf_10599661477759882200.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/21/df/b6/21dfb68d-8066-ae38-349f-b76b2c2be9a4/00602537243924.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Marvin%20Gaye%20Aint%20No%20Mountain%20High%20Enough",
+    "popularity": 93
+  },
+
+  // --- 70s & 80s Disco & Funk ---
+  {
+    "id": "sp-disco-01",
+    "title": "September",
+    "artist": "Earth, Wind & Fire",
+    "album": "The Best of Earth, Wind & Fire, Vol. 1",
+    "year": 1978,
+    "genre": "disco-funk",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/12/73/ca/1273ca46-233a-5331-189b-25ac1d656533/mzaf_976341070785891411.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/58/05/2d/58052d9b-a352-7aa7-013b-aaee84f5dca7/886444007870.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Earth%20Wind%20Fire%20September",
+    "popularity": 95
+  },
+  {
+    "id": "sp-disco-02",
+    "title": "Stayin' Alive",
+    "artist": "Bee Gees",
+    "album": "Saturday Night Fever (The Original Movie Soundtrack)",
+    "year": 1977,
+    "genre": "disco-funk",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/c7/20/ca/c720ca3b-0111-96e3-5055-841a323a842e/075679935984.jpg/600x600bb.jpg",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/6b/87/da/6b87da6a-11c5-ea37-25c7-28d0ee54e1fb/00602557451551.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Bee%20Gees%20Stayin%20Alive",
+    "popularity": 94
+  },
+  {
+    "id": "sp-disco-03",
+    "title": "Le Freak",
+    "artist": "Chic",
+    "album": "C'est Chic",
+    "year": 1978,
+    "genre": "disco-funk",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/da/97/77/da977799-0cb8-3432-4564-dd6f962fb88a/mzaf_4704075704887077514.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/37/d0/55/37d055a1-ea50-6126-7871-33157e3f2832/081227986513.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Chic%20Le%20Freak",
+    "popularity": 90
+  },
+  {
+    "id": "sp-disco-04",
+    "title": "Celebration",
+    "artist": "Kool & The Gang",
+    "album": "Celebrate!",
+    "year": 1980,
+    "genre": "disco-funk",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/ec/3b/b5/ec3bb5b5-773a-4bfe-d5e1-ee2ba1688db6/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/3c/ee/18/3cee1810-6428-fbff-07d0-1c05d0458df8/00602537243955.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Kool%20The%20Gang%20Celebration",
+    "popularity": 91
+  },
+  {
+    "id": "sp-disco-05",
+    "title": "Hot Stuff",
+    "artist": "Donna Summer",
+    "album": "Bad Girls",
+    "year": 1979,
+    "genre": "disco-funk",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/cb/76/97/cb76974d-5bb6-f947-f418-80beea9e8f47/mzaf_15082104576302919932.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/6b/6f/30/6b6f30a9-8f3e-8f55-14f7-fcbf7ff4f1ef/00602537243962.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Donna%20Summer%20Hot%20Stuff",
+    "popularity": 91
+  },
+  {
+    "id": "sp-disco-06",
+    "title": "Give It to Me Baby",
+    "artist": "Rick James",
+    "album": "Street Songs",
+    "year": 1981,
+    "genre": "disco-funk",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/c3/87/1f/c3871f7e-3260-d615-1c66-5fdca2c3a48f/mzaf_10721331211699880949.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a9/91/97/a99197a1-2d79-e58f-d6a0-4c28135c3c04/00602537243979.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Rick%20James%20Give%20It%20To%20Me%20Baby",
+    "popularity": 90
+  },
+
+  // --- Broadway & Musical Theatre ---
+  {
+    "id": "sp-bway-01",
+    "title": "Alexander Hamilton",
+    "artist": "Leslie Odom Jr. & Lin-Manuel Miranda",
+    "album": "Hamilton (Original Broadway Cast Recording)",
+    "year": 2015,
+    "genre": "broadway-musicals",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/5a/08/6c/5a086c02-e25b-01c9-5a63-4ba9a7eb4232/mzaf_6135899981882006764.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/80/75/eb/8075ebf9-81e8-782a-bc95-0e1cbdbdfba5/075679919939.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Leslie%20Odom%20Jr%20Alexander%20Hamilton",
+    "popularity": 94
+  },
+  {
+    "id": "sp-bway-02",
+    "title": "The Phantom of the Opera",
+    "artist": "Sarah Brightman & Michael Crawford",
+    "album": "The Phantom of the Opera (Original Cast Recording)",
+    "year": 1986,
+    "genre": "broadway-musicals",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/b4/2c/3f/b42c3fd2-143d-6ff5-ae53-c90a1811a2f6/mzaf_11303274712071239564.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/fa/69/8f/fa698fa3-7182-3d77-6229-3ffaa364cb01/00731454392822.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Sarah%20Brightman%20The%20Phantom%20of%20the%20Opera",
+    "popularity": 92
+  },
+  {
+    "id": "sp-bway-03",
+    "title": "Defying Gravity",
+    "artist": "Idina Menzel & Kristin Chenoweth",
+    "album": "Wicked (Original Broadway Cast Recording)",
+    "year": 2003,
+    "genre": "broadway-musicals",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/09/f7/60/09f76019-33b9-a417-ea46-e51cfaaa6ea9/mzaf_7009491754094251101.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/ae/2e/0e/ae2e0e01-d0b8-c3bf-f8c0-c3d690a7894a/00602537243986.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Idina%20Menzel%20Defying%20Gravity",
+    "popularity": 93
+  },
+  {
+    "id": "sp-bway-04",
+    "title": "I Dreamed a Dream",
+    "artist": "Patti LuPone",
+    "album": "Les Misérables (Original London Cast)",
+    "year": 1985,
+    "genre": "broadway-musicals",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/31/3b/b7/313bb74f-94d7-1335-cf27-66c507c6f059/mzaf_7875953051410116805.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e5/22/d7/e522d713-39bf-722a-43ee-b4c6aa35a4d9/00042282852422.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Patti%20LuPone%20I%20Dreamed%20a%20Dream",
+    "popularity": 90
+  },
+  {
+    "id": "sp-bway-05",
+    "title": "All That Jazz",
+    "artist": "Chita Rivera",
+    "album": "Chicago (Original Broadway Cast Recording)",
+    "year": 1975,
+    "genre": "broadway-musicals",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/cb/76/97/cb76974d-5bb6-f947-f418-80beea9e8f47/mzaf_15082104576302919932.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f1/b7/a2/f1b7a2d4-31da-2ee4-bba2-cc8211db9395/886443834026.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Chita%20Rivera%20All%20That%20Jazz",
+    "popularity": 90
+  },
+  {
+    "id": "sp-bway-06",
+    "title": "Seasons of Love",
+    "artist": "Rent Cast",
+    "album": "Rent (Original Broadway Cast Recording)",
+    "year": 1996,
+    "genre": "broadway-musicals",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/97/81/b9/9781b9bc-bdf8-6c8a-7848-18e470876127/mzaf_10599661477759882200.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/55/7a/ee/557aeee6-0f77-f232-a3ce-8a50c82fb101/00602537243993.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Rent%20Seasons%20of%20Love",
+    "popularity": 92
+  },
+
+  // --- 90s & 2000s Eurodance / Club ---
+  {
+    "id": "sp-euro-01",
+    "title": "Boom, Boom, Boom, Boom!!",
+    "artist": "Vengaboys",
+    "album": "The Party Album!",
+    "year": 1998,
+    "genre": "dance-eurodance",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/12/73/ca/1273ca46-233a-5331-189b-25ac1d656533/mzaf_976341070785891411.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/95/9b/6e/959b6ea7-2ff4-f027-e818-d784a0d922bb/8718522049872.png/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Vengaboys%20Boom%20Boom%20Boom%20Boom",
+    "popularity": 94
+  },
+  {
+    "id": "sp-euro-02",
+    "title": "Sandstorm",
+    "artist": "Darude",
+    "album": "Before the Storm",
+    "year": 1999,
+    "genre": "dance-eurodance",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/5a/08/6c/5a086c02-e25b-01c9-5a63-4ba9a7eb4232/mzaf_6135899981882006764.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/0d/18/8a/0d188ab6-c3c1-7c91-9491-4cf1f753c153/673794101121.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Darude%20Sandstorm",
+    "popularity": 95
+  },
+  {
+    "id": "sp-euro-03",
+    "title": "Everytime We Touch",
+    "artist": "Cascada",
+    "album": "Everytime We Touch",
+    "year": 2006,
+    "genre": "dance-eurodance",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/b4/2c/3f/b42c3fd2-143d-6ff5-ae53-c90a1811a2f6/mzaf_11303274712071239564.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a4/bc/f8/a4bcf841-3eb2-cbbe-f29e-63ea4b81c4e7/886443834033.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Cascada%20Everytime%20We%20Touch",
+    "popularity": 93
+  },
+  {
+    "id": "sp-euro-04",
+    "title": "What Is Love",
+    "artist": "Haddaway",
+    "album": "The Album",
+    "year": 1993,
+    "genre": "dance-eurodance",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/09/f7/60/09f76019-33b9-a417-ea46-e51cfaaa6ea9/mzaf_7009491754094251101.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/21/5d/4c/215d4c94-f2a1-fae1-7da3-5fb151b14a23/4014235272659.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Haddaway%20What%20Is%20Love",
+    "popularity": 94
+  },
+  {
+    "id": "sp-euro-05",
+    "title": "Better Off Alone",
+    "artist": "Alice Deejay",
+    "album": "Who Needs Guitars Anyway?",
+    "year": 1999,
+    "genre": "dance-eurodance",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/ec/3b/b5/ec3bb5b5-773a-4bfe-d5e1-ee2ba1688db6/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/71/34/ec/7134ecb9-5df1-5262-11c5-7f12330a84e6/8718522049889.png/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Alice%20Deejay%20Better%20Off%20Alone",
+    "popularity": 92
+  },
+  {
+    "id": "sp-euro-06",
+    "title": "Blue (Da Ba Dee)",
+    "artist": "Eiffel 65",
+    "album": "Europop",
+    "year": 1999,
+    "genre": "dance-eurodance",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/cb/76/97/cb76974d-5bb6-f947-f418-80beea9e8f47/mzaf_15082104576302919932.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/df/77/80/df7780fa-40f4-5f50-482a-29e2469a7cf6/8032706850020.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Eiffel%2065%20Blue%20Da%20Ba%20Dee",
+    "popularity": 94
+  },
+
+  // --- Reggae, Ska & Dub ---
+  {
+    "id": "sp-reggae-01",
+    "title": "Three Little Birds",
+    "artist": "Bob Marley & The Wailers",
+    "album": "Exodus",
+    "year": 1977,
+    "genre": "reggae-ska",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/c3/87/1f/c3871f7e-3260-d615-1c66-5fdca2c3a48f/mzaf_10721331211699880949.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/3d/bf/52/3dbf521b-db15-e41c-8b83-a9d0607d7fe5/00602537244006.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Bob%20Marley%20Three%20Little%20Birds",
+    "popularity": 95
+  },
+  {
+    "id": "sp-reggae-02",
+    "title": "Red Red Wine",
+    "artist": "UB40",
+    "album": "Labour of Love",
+    "year": 1983,
+    "genre": "reggae-ska",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/da/97/77/da977799-0cb8-3432-4564-dd6f962fb88a/mzaf_4704075704887077514.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/21/df/b6/21dfb68d-8066-ae38-349f-b76b2c2be9a4/00602537243924.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/UB40%20Red%20Red%20Wine",
+    "popularity": 91
+  },
+  {
+    "id": "sp-reggae-03",
+    "title": "Santeria",
+    "artist": "Sublime",
+    "album": "Sublime",
+    "year": 1996,
+    "genre": "reggae-ska",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/5a/08/6c/5a086c02-e25b-01c9-5a63-4ba9a7eb4232/mzaf_6135899981882006764.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4a/1b/c2/4a1bc2bf-7925-5462-eeeb-d3ee2e03290b/00602537244013.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Sublime%20Santeria",
+    "popularity": 93
+  },
+  {
+    "id": "sp-reggae-04",
+    "title": "The Harder They Come",
+    "artist": "Jimmy Cliff",
+    "album": "The Harder They Come",
+    "year": 1972,
+    "genre": "reggae-ska",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/b4/2c/3f/b42c3fd2-143d-6ff5-ae53-c90a1811a2f6/mzaf_11303274712071239564.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/ea/9b/a8/ea9ba88d-e4d0-4d55-6677-449e25d2b700/00602537244020.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Jimmy%20Cliff%20The%20Harder%20They%20Come",
+    "popularity": 89
+  },
+  {
+    "id": "sp-reggae-05",
+    "title": "Ghost Town",
+    "artist": "The Specials",
+    "album": "Ghost Town EP",
+    "year": 1981,
+    "genre": "reggae-ska",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/09/f7/60/09f76019-33b9-a417-ea46-e51cfaaa6ea9/mzaf_7009491754094251101.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a5/e5/bd/a5e5bd52-040f-7c15-4ba8-9e67ca0835b0/5099908332152.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/The%20Specials%20Ghost%20Town",
+    "popularity": 90
+  },
+  {
+    "id": "sp-reggae-06",
+    "title": "Could You Be Loved",
+    "artist": "Bob Marley & The Wailers",
+    "album": "Uprising",
+    "year": 1980,
+    "genre": "reggae-ska",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/ec/3b/b5/ec3bb5b5-773a-4bfe-d5e1-ee2ba1688db6/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/5a/24/76/5a2476b7-86f2-e22d-cf70-c752ba14a87a/00602537244037.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Bob%20Marley%20Could%20You%20Be%20Loved",
+    "popularity": 94
+  },
+
+  // --- Acoustic & Singer-Songwriter ---
+  {
+    "id": "sp-folk-01",
+    "title": "Blowin' in the Wind",
+    "artist": "Bob Dylan",
+    "album": "The Freewheelin' Bob Dylan",
+    "year": 1963,
+    "genre": "folk-acoustic",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/12/73/ca/1273ca46-233a-5331-189b-25ac1d656533/mzaf_976341070785891411.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/ae/2e/0e/ae2e0e01-d0b8-c3bf-f8c0-c3d690a7894a/00602537243986.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Bob%20Dylan%20Blowin%20in%20the%20Wind",
+    "popularity": 92
+  },
+  {
+    "id": "sp-folk-02",
+    "title": "The Sound of Silence",
+    "artist": "Simon & Garfunkel",
+    "album": "Sounds of Silence",
+    "year": 1966,
+    "genre": "folk-acoustic",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/5a/08/6c/5a086c02-e25b-01c9-5a63-4ba9a7eb4232/mzaf_6135899981882006764.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4a/1b/c2/4a1bc2bf-7925-5462-eeeb-d3ee2e03290b/00602537244013.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Simon%20Garfunkel%20The%20Sound%20of%20Silence",
+    "popularity": 94
+  },
+  {
+    "id": "sp-folk-03",
+    "title": "Fast Car",
+    "artist": "Tracy Chapman",
+    "album": "Tracy Chapman",
+    "year": 1988,
+    "genre": "folk-acoustic",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/b4/2c/3f/b42c3fd2-143d-6ff5-ae53-c90a1811a2f6/mzaf_11303274712071239564.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/37/d0/55/37d055a1-ea50-6126-7871-33157e3f2832/081227986513.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Tracy%20Chapman%20Fast%20Car",
+    "popularity": 95
+  },
+  {
+    "id": "sp-folk-04",
+    "title": "Big Yellow Taxi",
+    "artist": "Joni Mitchell",
+    "album": "Ladies of the Canyon",
+    "year": 1970,
+    "genre": "folk-acoustic",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/09/f7/60/09f76019-33b9-a417-ea46-e51cfaaa6ea9/mzaf_7009491754094251101.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f1/b7/a2/f1b7a2d4-31da-2ee4-bba2-cc8211db9395/886443834026.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Joni%20Mitchell%20Big%20Yellow%20Taxi",
+    "popularity": 90
+  },
+  {
+    "id": "sp-folk-05",
+    "title": "Heart of Gold",
+    "artist": "Neil Young",
+    "album": "Harvest",
+    "year": 1972,
+    "genre": "folk-acoustic",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/ec/3b/b5/ec3bb5b5-773a-4bfe-d5e1-ee2ba1688db6/mzaf_7867623910543781919.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a5/e5/bd/a5e5bd52-040f-7c15-4ba8-9e67ca0835b0/5099908332152.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/Neil%20Young%20Heart%20of%20Gold",
+    "popularity": 92
+  },
+  {
+    "id": "sp-folk-06",
+    "title": "Ho Hey",
+    "artist": "The Lumineers",
+    "album": "The Lumineers",
+    "year": 2012,
+    "genre": "folk-acoustic",
+    "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/cb/76/97/cb76974d-5bb6-f947-f418-80beea9e8f47/mzaf_15082104576302919932.plus.aac.p.m4a",
+    "albumArt": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/ea/9b/a8/ea9ba88d-e4d0-4d55-6677-449e25d2b700/00602537244020.rgb.jpg/600x600bb.jpg",
+    "spotifyUrl": "https://open.spotify.com/search/The%20Lumineers%20Ho%20Hey",
+    "popularity": 92
   }
-]
+];
+
+export const GENRE_DISTRACTORS: Record<string, { artists: string[]; titles: string[]; albums: string[]; }> = {
+  "pop": {
+    "artists": [
+      "Ariana Grande",
+      "Olivia Rodrigo",
+      "Camila Cabello",
+      "Selena Gomez",
+      "Shawn Mendes",
+      "Justin Bieber"
+    ],
+    "titles": [
+      "Don't Start Now",
+      "Watermelon Sugar",
+      "Good 4 U",
+      "positions",
+      "Save Your Tears",
+      "Cruel Summer"
+    ],
+    "albums": [
+      "Sour",
+      "Thank U, Next",
+      "Lover",
+      "Justice",
+      "Romance",
+      "Fine Line"
+    ]
+  },
+  "classic-rock": {
+    "artists": [
+      "The Who",
+      "The Rolling Stones",
+      "Fleetwood Mac",
+      "Deep Purple",
+      "Creedence Clearwater Revival",
+      "The Doors"
+    ],
+    "titles": [
+      "Baba O'Riley",
+      "Paint It Black",
+      "Go Your Own Way",
+      "Smoke on the Water",
+      "Fortunate Son",
+      "Light My Fire"
+    ],
+    "albums": [
+      "Rumours",
+      "Sticky Fingers",
+      "Who's Next",
+      "Machine Head",
+      "Cosmo's Factory",
+      "Morrison Hotel"
+    ]
+  },
+  "grunge-90s": {
+    "artists": [
+      "Alice in Chains",
+      "Stone Temple Pilots",
+      "Smashing Pumpkins",
+      "Blur",
+      "Silverchair",
+      "Bush"
+    ],
+    "titles": [
+      "Rooster",
+      "Plush",
+      "1979",
+      "Song 2",
+      "Tomorrow",
+      "Glycerine"
+    ],
+    "albums": [
+      "Dirt",
+      "Core",
+      "Mellon Collie and the Infinite Sadness",
+      "Parklife",
+      "Frogstomp",
+      "Sixteen Stone"
+    ]
+  },
+  "hip-hop": {
+    "artists": [
+      "J. Cole",
+      "Nas",
+      "Jay-Z",
+      "2Pac",
+      "Future",
+      "Post Malone"
+    ],
+    "titles": [
+      "No Role Modelz",
+      "N.Y. State of Mind",
+      "Empire State of Mind",
+      "California Love",
+      "Mask Off",
+      "Rockstar"
+    ],
+    "albums": [
+      "2014 Forest Hills Drive",
+      "Illmatic",
+      "The Blueprint",
+      "All Eyez on Me",
+      "DS2",
+      "Beerbongs & Bentleys"
+    ]
+  },
+  "electronic-edm": {
+    "artists": [
+      "deadmau5",
+      "Skrillex",
+      "Marshmello",
+      "Swedish House Mafia",
+      "Kygo",
+      "Martin Garrix"
+    ],
+    "titles": [
+      "Ghosts 'n' Stuff",
+      "Bangarang",
+      "Happier",
+      "Don't You Worry Child",
+      "Firestone",
+      "Animals"
+    ],
+    "albums": [
+      "Random Album Title",
+      "Scary Monsters and Nice Sprites",
+      "Until Now",
+      "Cloud Nine",
+      "Sentio",
+      "Stories"
+    ]
+  },
+  "synthpop-80s": {
+    "artists": [
+      "Tears for Fears",
+      "Duran Duran",
+      "Pet Shop Boys",
+      "Orchestral Manoeuvres in the Dark",
+      "Soft Cell",
+      "Talk Talk"
+    ],
+    "titles": [
+      "Everybody Wants to Rule the World",
+      "Rio",
+      "West End Girls",
+      "Enola Gay",
+      "Tainted Love",
+      "It's My Life"
+    ],
+    "albums": [
+      "Songs from the Big Chair",
+      "Rio",
+      "Please",
+      "Architecture & Morality",
+      "Non-Stop Erotic Cabaret",
+      "The Colour of Spring"
+    ]
+  },
+  "alt-indie": {
+    "artists": [
+      "The Strokes",
+      "Vampire Weekend",
+      "Phoenix",
+      "Two Door Cinema Club",
+      "Foster the People",
+      "Florence + The Machine"
+    ],
+    "titles": [
+      "Last Nite",
+      "A-Punk",
+      "1901",
+      "What You Know",
+      "Pumped Up Kicks",
+      "Dog Days Are Over"
+    ],
+    "albums": [
+      "Is This It",
+      "Modern Vampires of the City",
+      "Wolfgang Amadeus Phoenix",
+      "Tourist History",
+      "Torches",
+      "Lungs"
+    ]
+  },
+  "r-and-b": {
+    "artists": [
+      "Frank Ocean",
+      "Daniel Caesar",
+      "H.E.R.",
+      "Alicia Keys",
+      "Usher",
+      "Miguel"
+    ],
+    "titles": [
+      "Thinkin Bout You",
+      "Best Part",
+      "Focus",
+      "Fallin'",
+      "Confessions Part II",
+      "Adorn"
+    ],
+    "albums": [
+      "Channel Orange",
+      "Freudian",
+      "H.E.R.",
+      "Songs in A Minor",
+      "Confessions",
+      "Kaleidoscope Dream"
+    ]
+  },
+  "heavy-metal": {
+    "artists": [
+      "Megadeth",
+      "Judas Priest",
+      "Pantera",
+      "Slayer",
+      "Avenged Sevenfold",
+      "Disturbed"
+    ],
+    "titles": [
+      "Holy Wars... The Punishment Due",
+      "Breaking the Law",
+      "Walk",
+      "Raining Blood",
+      "Bat Country",
+      "Down with the Sickness"
+    ],
+    "albums": [
+      "Rust in Peace",
+      "British Steel",
+      "Vulgar Display of Power",
+      "Reign in Blood",
+      "City of Evil",
+      "The Sickness"
+    ]
+  },
+  "jazz-blues": {
+    "artists": [
+      "John Coltrane",
+      "Billie Holiday",
+      "Ella Fitzgerald",
+      "Louis Armstrong",
+      "B.B. King",
+      "Thelonious Monk"
+    ],
+    "titles": [
+      "A Love Supreme",
+      "Strange Fruit",
+      "Cheek to Cheek",
+      "What a Wonderful World",
+      "The Thrill Is Gone",
+      "Round Midnight"
+    ],
+    "albums": [
+      "Giant Steps",
+      "Lady in Satin",
+      "Ella and Louis",
+      "Live at the Regal",
+      "Monk's Dream",
+      "Blue Train"
+    ]
+  },
+  "classical": {
+    "artists": [
+      "Wolfgang Amadeus Mozart",
+      "Johann Sebastian Bach",
+      "Pyotr Ilyich Tchaikovsky",
+      "Frédéric Chopin",
+      "Johannes Brahms",
+      "Franz Schubert"
+    ],
+    "titles": [
+      "Eine kleine Nachtmusik",
+      "Toccata and Fugue in D minor",
+      "Swan Lake",
+      "Nocturne in E-flat major, Op. 9, No. 2",
+      "Hungarian Dance No. 5",
+      "Ave Maria"
+    ],
+    "albums": [
+      "Mozart: Requiem",
+      "Bach: Brandenburg Concertos",
+      "Tchaikovsky: The Nutcracker",
+      "Chopin: Nocturnes",
+      "Brahms: Hungarian Dances",
+      "Vivaldi: Gloria"
+    ]
+  },
+  "latin-reggaeton": {
+    "artists": [
+      "Rauw Alejandro",
+      "Maluma",
+      "Karol G",
+      "Ozuna",
+      "Anuel AA",
+      "Nicky Jam"
+    ],
+    "titles": [
+      "Todo De Ti",
+      "Hawái",
+      "PROVENZA",
+      "Dákiti",
+      "Se Preparó",
+      "El Perdón"
+    ],
+    "albums": [
+      "Vice Versa",
+      "Papi Juancho",
+      "MAÑANA SERÁ BONITO",
+      "Aura",
+      "Real Hasta La Muerte",
+      "Fénix"
+    ]
+  },
+  "country": {
+    "artists": [
+      "Johnny Cash",
+      "Luke Combs",
+      "Morgan Wallen",
+      "Kacey Musgraves",
+      "Willie Nelson",
+      "Carrie Underwood"
+    ],
+    "titles": [
+      "Ring of Fire",
+      "Beautiful Crazy",
+      "Last Night",
+      "Follow Your Arrow",
+      "On the Road Again",
+      "Before He Cheats"
+    ],
+    "albums": [
+      "At Folsom Prison",
+      "What You See Is What You Get",
+      "One Thing At A Time",
+      "Golden Hour",
+      "Red Headed Stranger",
+      "Some Hearts"
+    ]
+  },
+  "k-pop": {
+    "artists": [
+      "TWICE",
+      "Stray Kids",
+      "EXO",
+      "SEVENTEEN",
+      "ITZY",
+      "IVE"
+    ],
+    "titles": [
+      "Fancy",
+      "God's Menu",
+      "Love Shot",
+      "Super",
+      "WANNABE",
+      "LOVE DIVE"
+    ],
+    "albums": [
+      "Formula of Love",
+      "NOEASY",
+      "Don't Mess Up My Tempo",
+      "FML",
+      "CRAZY IN LOVE",
+      "I've MINE"
+    ]
+  },
+  "pop-punk": {
+    "artists": [
+      "Sum 41",
+      "Simple Plan",
+      "Good Charlotte",
+      "The Offspring",
+      "Jimmy Eat World",
+      "Yellowcard"
+    ],
+    "titles": [
+      "Fat Lip",
+      "I'm Just a Kid",
+      "The Anthem",
+      "The Kids Aren't Alright",
+      "The Middle",
+      "Ocean Avenue"
+    ],
+    "albums": [
+      "All Killer No Filler",
+      "No Pads, No Helmets...Just Balls",
+      "The Young and the Hopeless",
+      "Americana",
+      "Bleed American",
+      "Ocean Avenue"
+    ]
+  },
+  "y2k-2000s": {
+    "artists": [
+      "Christina Aguilera",
+      "Backstreet Boys",
+      "Kelly Clarkson",
+      "Avril Lavigne",
+      "Justin Timberlake",
+      "Nelly Furtado"
+    ],
+    "titles": [
+      "Genie in a Bottle",
+      "I Want It That Way",
+      "Since U Been Gone",
+      "Complicated",
+      "Cry Me a River",
+      "Promiscuous"
+    ],
+    "albums": [
+      "Stripped",
+      "Millennium",
+      "Breakaway",
+      "Let Go",
+      "Justified",
+      "Loose"
+    ]
+  },
+  "tv-themes": {
+    "artists": [
+      "Ramin Djawadi",
+      "The Rembrandts",
+      "Nicholas Britell",
+      "Kyle Dixon & Michael Stein",
+      "Dave Porter",
+      "Bear McCreary",
+      "Howard Goodall"
+    ],
+    "titles": [
+      "Game of Thrones Theme",
+      "I'll Be There for You (Friends)",
+      "Stranger Things Theme",
+      "Succession Main Title",
+      "Breaking Bad Theme",
+      "The Office Theme",
+      "Doctor Who Theme"
+    ],
+    "albums": [
+      "Game of Thrones Soundtrack",
+      "Friends Themes",
+      "Succession Season 1",
+      "Stranger Things Vol 1",
+      "The Wire OST",
+      "Twin Peaks Soundtrack"
+    ]
+  },
+  "movie-themes": {
+    "artists": [
+      "John Williams",
+      "Hans Zimmer",
+      "Howard Shore",
+      "Alan Silvestri",
+      "Ennio Morricone",
+      "Klaus Badelt",
+      "James Horner"
+    ],
+    "titles": [
+      "Star Wars Main Theme",
+      "Jurassic Park Theme",
+      "Hedwig's Theme",
+      "The Raiders March",
+      "He's a Pirate",
+      "My Heart Will Go On",
+      "Time (Inception)"
+    ],
+    "albums": [
+      "Star Wars OST",
+      "Jurassic Park OST",
+      "Harry Potter OST",
+      "Pirates of the Caribbean OST",
+      "Titanic OST",
+      "Inception OST"
+    ]
+  },
+  "disney-pixar": {
+    "artists": [
+      "Alan Menken",
+      "Randy Newman",
+      "Idina Menzel",
+      "Elton John",
+      "Lin-Manuel Miranda",
+      "Auli'i Cravalho",
+      "Michael Giacchino"
+    ],
+    "titles": [
+      "Let It Go",
+      "Circle of Life",
+      "A Whole New World",
+      "You've Got a Friend in Me",
+      "How Far I'll Go",
+      "Remember Me",
+      "Under the Sea",
+      "Married Life"
+    ],
+    "albums": [
+      "Frozen Soundtrack",
+      "The Lion King Soundtrack",
+      "Aladdin Soundtrack",
+      "Toy Story Soundtrack",
+      "Moana Soundtrack",
+      "Coco Soundtrack",
+      "Up Soundtrack"
+    ]
+  },
+  "cartoon-themes": {
+    "artists": [
+      "Jason Paige",
+      "Bowling for Soup",
+      "The Rembrandts",
+      "Haim Saban",
+      "Danny Jacob",
+      "Brad Breeck",
+      "Jeff Pescetto"
+    ],
+    "titles": [
+      "Pokémon Theme",
+      "SpongeBob SquarePants Theme",
+      "Scooby-Doo, Where Are You?",
+      "DuckTales Theme",
+      "Teenage Mutant Ninja Turtles",
+      "Phineas and Ferb Theme",
+      "Gravity Falls Theme"
+    ],
+    "albums": [
+      "Pokémon 2.B.A. Master",
+      "SpongeBob Theme Highlights",
+      "Disney Afternoon Hits",
+      "Cartoon Network Classics",
+      "Gravity Falls OST"
+    ]
+  },
+  "video-game": {
+    "artists": [
+      "Koji Kondo",
+      "Martin O'Donnell",
+      "Jeremy Soule",
+      "Nobuo Uematsu",
+      "Toby Fox",
+      "Mick Gordon",
+      "Austin Wintory",
+      "Grant Kirkhope"
+    ],
+    "titles": [
+      "Super Mario Bros. Main Theme",
+      "Zelda's Lullaby",
+      "Halo Theme (Mjolnir Mix)",
+      "Dragonborn (Skyrim Theme)",
+      "One-Winged Angel",
+      "Megalovania",
+      "Sweden",
+      "BFG Division",
+      "Gerudo Valley",
+      "Green Hill Zone"
+    ],
+    "albums": [
+      "Super Mario Bros. OST",
+      "Ocarina of Time Soundtrack",
+      "Halo 2 OST",
+      "Skyrim Original Soundtrack",
+      "Final Fantasy VII OST",
+      "UNDERTALE Soundtrack",
+      "DOOM (2016) OST"
+    ]
+  },
+  "anime-ost": {
+    "artists": [
+      "Yoko Takahashi",
+      "Linked Horizon",
+      "KANA-BOON",
+      "The Seatbelts",
+      "LiSA",
+      "Joe Hisaishi",
+      "FLOW",
+      "Asian Kung-Fu Generation",
+      "RADWIMPS"
+    ],
+    "titles": [
+      "A Cruel Angel's Thesis",
+      "Guren no Yumiya (Attack on Titan)",
+      "Silhouette",
+      "Tank!",
+      "Gurenge",
+      "One Summer's Day",
+      "Unravel (Tokyo Ghoul)",
+      "GO!!! (Fighting Dreamers)",
+      "Zenzenzense"
+    ],
+    "albums": [
+      "Neon Genesis Evangelion OST",
+      "Shingeki no Kyojin Soundtrack",
+      "Cowboy Bebop OST",
+      "Spirited Away OST",
+      "Demon Slayer Highlights",
+      "Your Name OST"
+    ]
+  },
+  "motown-soul": {
+    "artists": [
+      "Stevie Wonder",
+      "Marvin Gaye",
+      "Aretha Franklin",
+      "The Temptations",
+      "The Jackson 5",
+      "Otis Redding",
+      "Al Green",
+      "The Supremes",
+      "Smokey Robinson"
+    ],
+    "titles": [
+      "Superstition",
+      "What's Going On",
+      "Respect",
+      "My Girl",
+      "I Want You Back",
+      "Ain't No Mountain High Enough",
+      "(Sittin' On) The Dock of the Bay",
+      "Let's Stay Together",
+      "Baby Love"
+    ],
+    "albums": [
+      "Talking Book",
+      "What's Going On",
+      "I Never Loved a Man",
+      "The Temptations Sing Smokey",
+      "Diana Ross Presents The Jackson 5",
+      "Let's Stay Together"
+    ]
+  },
+  "disco-funk": {
+    "artists": [
+      "Earth, Wind & Fire",
+      "Bee Gees",
+      "Chic",
+      "Kool & The Gang",
+      "Donna Summer",
+      "Rick James",
+      "ABBA",
+      "KC & The Sunshine Band",
+      "Village People"
+    ],
+    "titles": [
+      "September",
+      "Stayin' Alive",
+      "Le Freak",
+      "Celebration",
+      "Hot Stuff",
+      "Give It to Me Baby",
+      "Dancing Queen",
+      "That's the Way (I Like It)",
+      "Y.M.C.A."
+    ],
+    "albums": [
+      "The Best of Earth, Wind & Fire",
+      "Saturday Night Fever OST",
+      "C'est Chic",
+      "Celebrate!",
+      "Bad Girls",
+      "Street Songs",
+      "Arrival"
+    ]
+  },
+  "broadway-musicals": {
+    "artists": [
+      "Lin-Manuel Miranda",
+      "Sarah Brightman",
+      "Idina Menzel",
+      "Patti LuPone",
+      "Chita Rivera",
+      "Leslie Odom Jr.",
+      "Andrew Lloyd Webber",
+      "Stephen Sondheim",
+      "Kristin Chenoweth"
+    ],
+    "titles": [
+      "Alexander Hamilton",
+      "The Phantom of the Opera",
+      "Defying Gravity",
+      "I Dreamed a Dream",
+      "All That Jazz",
+      "Seasons of Love",
+      "You Can't Stop the Beat",
+      "Don't Cry for Me Argentina",
+      "The Music of the Night"
+    ],
+    "albums": [
+      "Hamilton Original Cast",
+      "The Phantom of the Opera OST",
+      "Wicked Broadway Recording",
+      "Les Misérables Original Cast",
+      "Chicago Broadway Recording",
+      "Rent Original Cast"
+    ]
+  },
+  "dance-eurodance": {
+    "artists": [
+      "Vengaboys",
+      "Darude",
+      "Cascada",
+      "Haddaway",
+      "Alice Deejay",
+      "Eiffel 65",
+      "Snap!",
+      "Aqua",
+      "Corona",
+      "Scatman John"
+    ],
+    "titles": [
+      "Boom, Boom, Boom, Boom!!",
+      "Sandstorm",
+      "Everytime We Touch",
+      "What Is Love",
+      "Better Off Alone",
+      "Blue (Da Ba Dee)",
+      "Rhythm Is a Dancer",
+      "Barbie Girl",
+      "The Rhythm of the Night"
+    ],
+    "albums": [
+      "The Party Album!",
+      "Before the Storm",
+      "Everytime We Touch",
+      "The Album",
+      "Who Needs Guitars Anyway?",
+      "Europop",
+      "Aquarium"
+    ]
+  },
+  "reggae-ska": {
+    "artists": [
+      "Bob Marley & The Wailers",
+      "UB40",
+      "Sublime",
+      "Jimmy Cliff",
+      "The Specials",
+      "Toots and the Maytals",
+      "Peter Tosh",
+      "Madness",
+      "Gregory Isaacs"
+    ],
+    "titles": [
+      "Three Little Birds",
+      "Red Red Wine",
+      "Santeria",
+      "The Harder They Come",
+      "Ghost Town",
+      "Could You Be Loved",
+      "Pressure Drop",
+      "One Love / People Get Ready",
+      "Our House"
+    ],
+    "albums": [
+      "Exodus",
+      "Labour of Love",
+      "Sublime",
+      "The Harder They Come OST",
+      "Ghost Town EP",
+      "Uprising",
+      "Legend"
+    ]
+  },
+  "folk-acoustic": {
+    "artists": [
+      "Bob Dylan",
+      "Simon & Garfunkel",
+      "Tracy Chapman",
+      "Joni Mitchell",
+      "Neil Young",
+      "The Lumineers",
+      "Mumford & Sons",
+      "Fleetwood Mac",
+      "Cat Stevens"
+    ],
+    "titles": [
+      "Blowin' in the Wind",
+      "The Sound of Silence",
+      "Fast Car",
+      "Big Yellow Taxi",
+      "Heart of Gold",
+      "Ho Hey",
+      "Landslide",
+      "Wild World",
+      "The Boxer"
+    ],
+    "albums": [
+      "The Freewheelin' Bob Dylan",
+      "Sounds of Silence",
+      "Tracy Chapman",
+      "Ladies of the Canyon",
+      "Harvest",
+      "The Lumineers",
+      "Tea for the Tillerman"
+    ]
+  }
+};
