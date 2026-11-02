@@ -369,11 +369,28 @@
         <!-- TAB 5: LOBBY & QR -->
         <div id="lobby" class="tab-content">
             <div class="card" style="text-align: center;">
-                <h3>Lobby Screen & Venue Details</h3>
+                <h3>Lobby Screen & Customizer</h3>
+                
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Projector Screen Welcome Header (Replaces "Welcome to TriviaMania!"):</label>
+                    <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!" oninput="saveWelcomeHeader()">
+                </div>
+
                 <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
                     <label>Custom Venue / Event Details (Shown above QR on big screen):</label>
-                    <textarea id="venueDetailsInput" rows="3" placeholder="Welcome to The Crown Pub! Quiz Night Tuesdays. Free WiFi: CrownPub_Guest" oninput="saveVenueDetails()"></textarea>
+                    <textarea id="venueDetailsInput" rows="2" placeholder="Welcome to The Crown Pub! Quiz Night Tuesdays." oninput="saveVenueDetails()"></textarea>
                 </div>
+
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Mobile Device Waiting Message (Replaces "Waiting for host to start game..."):</label>
+                    <input type="text" id="mobileWaitingInput" placeholder="Waiting for host to start game..." oninput="saveMobileWaiting()">
+                </div>
+
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Live Mobile Emojis (Comma separated):</label>
+                    <input type="text" id="customEmojisInput" value="🔥, 🍻, 👏, 😂, 🎉, 💡" oninput="saveCustomEmojis()">
+                </div>
+
                 <p style="color: var(--text-muted); margin-bottom: 1rem;">Player Mobile Join QR Code:</p>
                 <div id="qr-container"></div>
                 <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
@@ -515,13 +532,41 @@
         const venueInput = document.getElementById('venueDetailsInput');
         venueInput.value = localStorage.getItem('triviamania_venue_details') || '';
 
+        const welcomeHeaderInput = document.getElementById('welcomeHeaderInput');
+        welcomeHeaderInput.value = localStorage.getItem('triviamania_welcome_header') || 'Welcome to TriviaMania!';
+
+        const mobileWaitingInput = document.getElementById('mobileWaitingInput');
+        mobileWaitingInput.value = localStorage.getItem('triviamania_mobile_waiting') || 'Waiting for host to start game...';
+
+        const customEmojisInput = document.getElementById('customEmojisInput');
+        customEmojisInput.value = localStorage.getItem('triviamania_custom_emojis') || '🔥, 🍻, 👏, 😂, 🎉, 💡';
+
         function saveVenueDetails() {
             localStorage.setItem('triviamania_venue_details', venueInput.value);
             socket.emit('update-venue-details', venueInput.value);
         }
 
+        function saveWelcomeHeader() {
+            localStorage.setItem('triviamania_welcome_header', welcomeHeaderInput.value);
+            socket.emit('update-welcome-header', welcomeHeaderInput.value);
+        }
+
+        function saveMobileWaiting() {
+            localStorage.setItem('triviamania_mobile_waiting', mobileWaitingInput.value);
+            socket.emit('update-mobile-waiting', mobileWaitingInput.value);
+        }
+
+        function saveCustomEmojis() {
+            localStorage.setItem('triviamania_custom_emojis', customEmojisInput.value);
+            const emojis = customEmojisInput.value.split(',').map(e => e.trim()).filter(Boolean);
+            socket.emit('update-custom-emojis', emojis);
+        }
+
         socket.on('connect', () => {
             if (venueInput.value) socket.emit('update-venue-details', venueInput.value);
+            if (welcomeHeaderInput.value) socket.emit('update-welcome-header', welcomeHeaderInput.value);
+            if (mobileWaitingInput.value) socket.emit('update-mobile-waiting', mobileWaitingInput.value);
+            if (customEmojisInput.value) socket.emit('update-custom-emojis', customEmojisInput.value.split(',').map(e => e.trim()));
         });
 
         function copyPlayerLink() {
@@ -575,7 +620,6 @@
                     return;
                 }
 
-                // Filter by selected genre ID, fallback to all tracks if needed
                 let genreTracks = allTracks.filter(t => t.genre === genre);
                 let trackPool = genreTracks.length >= count ? genreTracks : allTracks;
                 const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, count);
