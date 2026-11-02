@@ -1,0 +1,6 @@
+{
+  "name": "BeatIQ - Spotify Music Quiz & Question Generator",
+  "description": "Interactive Spotify music trivia quiz and question generator. Generate plausible ABCD multiple-choice questions across 15+ genres, play with audio previews, and export datasets for your GitHub quiz app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
