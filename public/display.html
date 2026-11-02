@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriviaMania - Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -14,13 +15,13 @@
             --text-muted: #94a3b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 2rem; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 2rem; position: relative; overflow-x: hidden; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 1rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 1rem; z-index: 2; }
         .venue-title { font-size: 1.5rem; color: var(--accent); font-weight: bold; }
         .timer-box { font-size: 2.5rem; font-weight: bold; background: var(--panel-bg); padding: 0.5rem 1.5rem; border-radius: 12px; border: 2px solid #475569; }
         
-        .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; }
+        .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; z-index: 2; }
         .question-text { font-size: 2.5rem; margin-bottom: 2rem; line-height: 1.3; max-width: 900px; }
         
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%; max-width: 900px; }
@@ -29,11 +30,25 @@
         .leaderboard-table { width: 100%; max-width: 800px; margin: 0 auto; border-collapse: collapse; background: var(--panel-bg); border-radius: 12px; overflow: hidden; border: 2px solid #475569; }
         .leaderboard-table th, .leaderboard-table td { padding: 1rem; text-align: center; font-size: 1.2rem; border-bottom: 1px solid #334155; }
         .leaderboard-table th { background: #0f172a; color: var(--accent); }
+
+        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; }
+        
+        /* Advert & Emoji overlays */
+        #advertOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.98); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; text-align: center; }
+        #advertOverlay img { max-width: 600px; max-height: 500px; border-radius: 12px; margin-top: 1.5rem; border: 3px solid var(--accent); }
+
+        .floating-emoji { position: fixed; bottom: -50px; font-size: 3rem; animation: floatUp 3s linear forwards; z-index: 1000; pointer-events: none; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-100vh) scale(1.5); opacity: 0; } }
     </style>
 </head>
 <body>
 
     <audio id="projectorAudioPlayer" preload="auto"></audio>
+
+    <div id="advertOverlay">
+        <h2 id="adOverlayTitle" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></h2>
+        <div id="adOverlayImageContainer"></div>
+    </div>
 
     <div class="header">
         <div id="venueDisplay" class="venue-title">Welcome to Trivia Night!</div>
@@ -41,12 +56,23 @@
     </div>
 
     <div class="main-stage" id="mainStage">
-        <h2>Waiting for host to start the game...</h2>
+        <h1>Welcome to TriviaMania!</h1>
+        <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code below on your phone to join!</p>
+        <div id="qr-container"></div>
+        <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--text-muted);"></p>
     </div>
 
     <script>
         const socket = io();
         let lastPlayedQKey = null;
+
+        const playerUrl = window.location.origin + '/player.html';
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("qr-container"), {
+            text: playerUrl,
+            width: 220,
+            height: 220
+        });
 
         // Instantly kill audio when stop or reset is triggered by host
         socket.on('stop-audio', () => {
@@ -60,17 +86,51 @@
             document.getElementById('timerDisplay').innerText = timeLeft;
         });
 
+        socket.on('player-emoji', (data) => {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = data.emoji;
+            el.style.left = (20 + Math.random() * 60) + 'vw';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        });
+
         socket.on('state-update', (state) => {
             if (state.venueDetails) {
                 document.getElementById('venueDisplay').innerText = state.venueDetails;
             }
 
+            // Screen Adverts handling
+            const adOverlay = document.getElementById('advertOverlay');
+            if (state.activeScreenAdvert) {
+                adOverlay.style.display = 'flex';
+                document.getElementById('adOverlayTitle').innerText = state.activeScreenAdvert.title;
+                const imgContainer = document.getElementById('adOverlayImageContainer');
+                if (state.activeScreenAdvert.image) {
+                    imgContainer.innerHTML = `<img src="${state.activeScreenAdvert.image}" />`;
+                } else {
+                    imgContainer.innerHTML = '';
+                }
+            } else {
+                adOverlay.style.display = 'none';
+            }
+
             const stage = document.getElementById('mainStage');
             const timerBox = document.getElementById('timerDisplay');
 
-            if (state.status === 'IDLE') {
+            if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 timerBox.innerText = '--';
-                stage.innerHTML = `<h1>Welcome to TriviaMania!</h1><p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Waiting for host to launch the game...</p>`;
+                stage.innerHTML = `
+                    <h1>Welcome to TriviaMania!</h1>
+                    <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code below on your phone to join!</p>
+                    <div id="qr-container"></div>
+                    <p style="margin-top: 1rem; font-family: monospace; color: var(--text-muted);">${playerUrl}</p>
+                `;
+                new QRCode(document.getElementById("qr-container"), {
+                    text: playerUrl,
+                    width: 220,
+                    height: 220
+                });
             } else if (state.status === 'QUESTION') {
                 timerBox.innerText = state.timer;
                 const round = state.playlist[state.currentRoundIndex];
