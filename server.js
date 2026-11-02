@@ -50,10 +50,10 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Endpoint to load BeatIQ music tracks & genres safely
+// Bulletproof endpoint for loading BeatIQ tracks
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
-        const filePath = path.join(__dirname, 'data', 'curatedTracks.json');
+        const filePath = path.resolve(__dirname, 'data', 'curatedTracks.json');
         if (fs.existsSync(filePath)) {
             const rawData = fs.readFileSync(filePath, 'utf8');
             const data = JSON.parse(rawData);
@@ -174,10 +174,25 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Add BeatIQ Music round into main playlist
+    // Add BeatIQ Music round into main playlist with strict genre filtering
     socket.on('add-beatiq-round', (roundConfig) => {
-        const selectedTracks = roundConfig.tracks || [];
-        const allArtists = selectedTracks.map(t => t.artist);
+        const filePath = path.resolve(__dirname, 'data', 'curatedTracks.json');
+        let allTracks = [];
+        try {
+            if (fs.existsSync(filePath)) {
+                allTracks = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            }
+        } catch (err) {
+            console.error('Error reading tracks for round:', err);
+        }
+
+        const targetGenre = roundConfig.genre;
+        const genreFilteredTracks = allTracks.filter(t => t.genre === targetGenre);
+
+        const trackPool = genreFilteredTracks.length >= 3 ? genreFilteredTracks : allTracks;
+        const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
+        
+        const allArtists = allTracks.map(t => t.artist);
 
         const questions = selectedTracks.map((t) => {
             const wrongArtists = allArtists.filter(a => a !== t.artist).sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -198,7 +213,7 @@ io.on('connection', (socket) => {
 
         gameState.playlist.push({
             name: `🎵 Music: ${roundConfig.name}`,
-            genre: 'BeatIQ Music',
+            genre: `BeatIQ (${targetGenre})`,
             timer: 20,
             questions: questions
         });
