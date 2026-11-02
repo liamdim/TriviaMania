@@ -568,7 +568,6 @@
         function sendAnnouncement() {
             const text = document.getElementById('announcementInput').value.trim();
             socket.emit('update-announcement', { active: true, text });
-            alert('Announcement broadcasted to all mobile screens!');
         }
 
         function clearAnnouncement() {
@@ -729,15 +728,6 @@
                     alert('Error: No tracks loaded. Check curatedTracks.json.');
                     return;
                 }
-                let genreTracks = allTracks.filter(t => t.genre === genre);
-                let trackPool = genreTracks.length >= count ? genreTracks : allTracks;
-                const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, count);
-
-                if (selectedTracks.length === 0) {
-                    alert('No tracks found for this genre.');
-                    return;
-                }
-
                 socket.emit('add-beatiq-round', { genre, name, questionCount: count });
                 alert('Successfully added "' + name + '" to your main playlist queue!');
                 switchTab('controls');
