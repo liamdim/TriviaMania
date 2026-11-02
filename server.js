@@ -13,13 +13,15 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let gameState = {
-    status: 'IDLE', // IDLE, LOBBY, QUESTION, LEADERBOARD, PAUSED
+    status: 'IDLE',
     currentRoundIndex: 0,
     playlist: [],
     currentQuestionIndex: 0,
     timer: 0,
     timerMax: 15,
     scores: {},
+    mutedPlayers: {}, // socketId -> boolean
+    chatEnabled: true, // Master chat toggle
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
@@ -36,6 +38,18 @@ let gameState = {
 
 let timerInterval = null;
 let leaderboardTimeout = null;
+
+// Simple profanity filter
+const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass'];
+function sanitizeText(text) {
+    if (!text) return '';
+    let clean = text.trim();
+    badWords.forEach(word => {
+        const regex = new RegExp(word, 'gi');
+        clean = clean.replace(regex, '****');
+    });
+    return clean;
+}
 
 app.get('/api/categories', (req, res) => {
     const categoriesDir = path.join(__dirname, 'categories');
@@ -133,7 +147,7 @@ io.on('connection', (socket) => {
     socket.emit('announcement-update', gameState.announcement);
 
     socket.on('player-join', (playerName) => {
-        const cleanName = playerName ? playerName.trim() : 'Anonymous';
+        const cleanName = sanitizeText(playerName) || 'Anonymous';
         gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
         io.emit('state-update', gameState);
     });
@@ -288,17 +302,17 @@ io.on('connection', (socket) => {
     });
 
     socket.on('update-venue-details', (details) => {
-        gameState.venueDetails = details;
+        gameState.venueDetails = sanitizeText(details);
         io.emit('state-update', gameState);
     });
 
     socket.on('update-welcome-header', (headerText) => {
-        gameState.welcomeHeader = headerText;
+        gameState.welcomeHeader = sanitizeText(headerText);
         io.emit('state-update', gameState);
     });
 
     socket.on('update-mobile-waiting', (waitingText) => {
-        gameState.mobileWaitingText = waitingText;
+        gameState.mobileWaitingText = sanitizeText(waitingText);
         io.emit('state-update', gameState);
     });
 
@@ -307,12 +321,27 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('toggle-chat', (enabled) => {
+        gameState.chatEnabled = enabled;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('toggle-mute-player', (socketId) => {
+        gameState.mutedPlayers[socketId] = !gameState.mutedPlayers[socketId];
+        io.emit('state-update', gameState);
+    });
+
     socket.on('update-announcement', (announcementData) => {
-        gameState.announcement = announcementData;
+        gameState.announcement = {
+            active: announcementData.active,
+            text: sanitizeText(announcementData.text)
+        };
         io.emit('announcement-update', gameState.announcement);
     });
 
     socket.on('send-emoji', (emoji) => {
+        if (!gameState.chatEnabled) return; // Ignore if global chat is disabled
+        if (gameState.mutedPlayers[socket.id]) return; // Ignore if player is muted
         io.emit('player-emoji', { id: socket.id, emoji });
     });
 
@@ -353,6 +382,7 @@ io.on('connection', (socket) => {
         gameState.activeScreenAdvert = null;
         gameState.activeMobileAdvert = null;
         gameState.scores = {};
+        gameState.mutedPlayers = {};
         io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
@@ -379,6 +409,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         delete gameState.scores[socket.id];
+        delete gameState.mutedPlayers[socket.id];
         io.emit('state-update', gameState);
     });
 });
