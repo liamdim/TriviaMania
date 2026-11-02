@@ -122,6 +122,8 @@
         });
 
         socket.on('chat-message', (data) => {
+            // Ignore echoes of your own message
+            if (data.name === (myName || 'You')) return;
             appendChatMessage(data.name, data.text);
         });
 
@@ -156,6 +158,11 @@
             const input = document.getElementById('playerChatInput');
             const message = input.value.trim();
             if (!message) return;
+
+            // Instantly display your own message on your mobile screen
+            appendChatMessage(myName || 'You', message);
+
+            // Send to server to broadcast to all other players
             socket.emit('player-chat', message);
             input.value = '';
         }
