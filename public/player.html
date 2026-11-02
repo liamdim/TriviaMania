@@ -96,7 +96,6 @@
         let myName = '';
         let answeredCurrent = false;
 
-        // Client-side instant profanity filter (add any extra words here!)
         const badWords = [
             'damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 
             'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'
@@ -162,7 +161,7 @@
             socket.emit('player-join', myName);
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'flex';
-            document.getElementById('playerDisplayName', myName).innerText = myName;
+            document.getElementById('playerDisplayName').innerText = myName;
         }
 
         function sendEmoji(emoji) {
@@ -174,11 +173,9 @@
             const message = input.value.trim();
             if (!message) return;
 
-            // Instantly filter and display your own message immediately
             const cleanMessage = sanitizeText(message);
             appendChatMessage(myName || 'You', cleanMessage);
 
-            // Send clean message to server
             socket.emit('player-chat', cleanMessage);
             input.value = '';
         }
@@ -250,12 +247,22 @@
                         stage.innerHTML = `<h3>Answer Locked In! ✔</h3><p style="color: var(--text-muted); margin-top: 1rem;">Waiting for timer to expire...</p>`;
                     } else {
                         answeredCurrent = false;
-                        stage.innerHTML = `
-                            <p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">${q.question}</p>
-                            <div class="options-stack">
-                                ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}
-                            </div>
-                        `;
+                        if (q.gameType === 'lingo') {
+                            stage.innerHTML = `
+                                <p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold;">${q.question}</p>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <input type="text" id="lingoInput" placeholder="ENTER 5-LETTER WORD" maxlength="5" style="text-transform: uppercase; font-size: 1.5rem; letter-spacing: 4px; margin-bottom: 1rem;">
+                                    <button class="success" onclick="submitLingoAnswer()">Submit Guess 🎯</button>
+                                </div>
+                            `;
+                        } else {
+                            stage.innerHTML = `
+                                <p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">${q.question}</p>
+                                <div class="options-stack">
+                                    ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}
+                                </div>
+                            `;
+                        }
                     }
                 }
             } else if (state.status === 'LEADERBOARD') {
@@ -274,6 +281,16 @@
             answeredCurrent = true;
             socket.emit('submit-answer', { answer, timeRemaining: 15 });
             document.getElementById('gameStage').innerHTML = `<h3>Answer Submitted! 🎯</h3><p style="color: var(--text-muted); margin-top: 1rem;">Waiting for results...</p>`;
+        }
+
+        function submitLingoAnswer() {
+            const input = document.getElementById('lingoInput');
+            const val = input ? input.value.trim().toUpperCase() : '';
+            if (val.length !== 5) {
+                alert('Please enter a 5-letter word!');
+                return;
+            }
+            submitAnswer(val);
         }
     </script>
 </body>
