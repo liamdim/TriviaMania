@@ -9,6 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Initialize Gemini AI (uses process.env.GEMINI_API_KEY)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(express.json({ limit: '50mb' }));
@@ -41,7 +42,7 @@ let gameState = {
 };
 
 let timerInterval = null;
-let disconnectedPlayers = {};
+let disconnectedPlayers = {}; // 10-second grace window buffer for phone calls / app switches
 
 const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
 
