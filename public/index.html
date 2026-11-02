@@ -58,7 +58,7 @@
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 8px; width: fit-content; margin: 1rem auto; }
-        .player-badge { display: inline-block; background: #0f172a; border: 1px solid #334155; padding: 0.5rem 1rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
+        .player-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: #0f172a; border: 1px solid #334155; padding: 0.4rem 0.8rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
         .ad-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid #334155; }
         .quick-ad-box { background: #0f172a; border: 1px solid #334155; padding: 0.8rem; border-radius: 6px; flex: 1; min-width: 260px; }
     </style>
@@ -98,7 +98,7 @@
             </div>
 
             <div class="card" style="border: 2px solid var(--accent); background: #172033;">
-                <h3>📢 Live Mobile Ticker & Audio Controls</h3>
+                <h3>📢 Live Ticker & Chat Moderation</h3>
                 <div class="form-group">
                     <label>Broadcast Message to All Mobile Screens:</label>
                     <div class="flex-row" style="gap: 0.5rem;">
@@ -107,9 +107,12 @@
                         <button class="danger small" onclick="clearAnnouncement()">Clear</button>
                     </div>
                 </div>
-                <div class="flex-row" style="margin-top: 1rem; gap: 2rem;">
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem; flex-wrap: wrap;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
                         <input type="checkbox" id="countdownSoundToggle" checked onchange="updateSettings()" style="width: auto; margin-bottom: 0;"> Enable 5-Second Countdown Chime
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text);">
+                        <input type="checkbox" id="globalChatToggle" checked onchange="toggleGlobalChat()" style="width: auto; margin-bottom: 0;"> Enable Player Emoji Reactions / Chat
                     </label>
                 </div>
             </div>
@@ -401,6 +404,11 @@
 
     <script>
         const socket = io();
+
+        function toggleGlobalChat() {
+            const enabled = document.getElementById('globalChatToggle').checked;
+            socket.emit('toggle-chat', enabled);
+        }
 
         function playSound(type) {
             try {
@@ -757,6 +765,10 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
             
+            if (state.chatEnabled !== undefined) {
+                document.getElementById('globalChatToggle').checked = state.chatEnabled;
+            }
+
             if (state.settings && state.settings.countdownSound !== undefined) {
                 document.getElementById('countdownSoundToggle').checked = state.settings.countdownSound;
             }
@@ -796,16 +808,26 @@
                 `).join('');
             }
 
-            const players = Object.values(state.scores || {});
+            const players = Object.entries(state.scores || {});
             document.getElementById('playerCount').innerText = players.length;
             const playersListDiv = document.getElementById('joinedPlayersList');
             if (players.length === 0) {
                 playersListDiv.innerHTML = `<span style="color: var(--text-muted);">Waiting for players to join...</span>`;
             } else {
-                playersListDiv.innerHTML = players.map(p => `<span class="player-badge">👤 ${p.name} (${p.score} pts • 🔥x${p.streak || 0})</span>`).join('');
+                playersListDiv.innerHTML = players.map(([id, p]) => {
+                    const isMuted = state.mutedPlayers && state.mutedPlayers[id];
+                    return `
+                        <span class="player-badge">
+                            👤 ${p.name} (${p.score} pts)
+                            <button class="small ${isMuted ? 'success' : 'warning'}" style="padding: 0.1rem 0.4rem; margin-left: 0.4rem;" onclick="socket.emit('toggle-mute-player', '${id}')">
+                                ${isMuted ? 'Unmute' : 'Mute'}
+                            </button>
+                        </span>
+                    `;
+                }).join('');
             }
 
-            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
             const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
             if (sortedPlayers.length === 0) {
                 lbTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>`;
