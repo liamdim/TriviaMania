@@ -50,33 +50,39 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Robust endpoint loading directly from your uploaded beats-main folder
+// Bulletproof auto-discovery endpoint for loading BeatIQ tracks from any folder
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
-        // Check potential paths inside the beats-main folder structure
-        const possiblePaths = [
-            path.resolve(__dirname, 'beats-main', 'data', 'curatedTracks.json'),
-            path.resolve(__dirname, 'beats-main', 'curatedTracks.json')
-        ];
-
-        let filePath = null;
-        for (const p of possiblePaths) {
-            if (fs.existsSync(p)) {
-                filePath = p;
-                break;
+        function findFile(dir, filename) {
+            if (!fs.existsSync(dir)) return null;
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                const fullPath = path.join(dir, file);
+                try {
+                    const stat = fs.statSync(fullPath);
+                    if (stat.isDirectory()) {
+                        if (file === 'node_modules' || file === '.git') continue;
+                        const found = findFile(fullPath, filename);
+                        if (found) return found;
+                    } else if (file === filename) {
+                        return fullPath;
+                    }
+                } catch (e) {}
             }
+            return null;
         }
 
-        if (filePath) {
-            const rawData = fs.readFileSync(filePath, 'utf8');
+        const foundPath = findFile(__dirname, 'curatedTracks.json');
+        if (foundPath) {
+            const rawData = fs.readFileSync(foundPath, 'utf8');
             const data = JSON.parse(rawData);
             return res.json(data);
         }
 
-        console.warn('Warning: curatedTracks.json not found inside beats-main folder.');
+        console.warn('Warning: curatedTracks.json could not be found anywhere in the repository.');
         return res.json([]);
     } catch (err) {
-        console.error('Error reading beats-main tracks:', err.message);
+        console.error('Error auto-discovering tracks:', err.message);
         return res.json([]);
     }
 });
@@ -188,20 +194,35 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Add BeatIQ Music round pulling from beats-main folder
+    // Add BeatIQ Music round pulling auto-discovered tracks
     socket.on('add-beatiq-round', (roundConfig) => {
         let allTracks = [];
         try {
-            const possiblePaths = [
-                path.resolve(__dirname, 'beats-main', 'data', 'curatedTracks.json'),
-                path.resolve(__dirname, 'beats-main', 'curatedTracks.json')
-            ];
-            let filePath = possiblePaths.find(p => fs.existsSync(p));
-            if (filePath) {
-                allTracks = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            function findFile(dir, filename) {
+                if (!fs.existsSync(dir)) return null;
+                const files = fs.readdirSync(dir);
+                for (const file of files) {
+                    const fullPath = path.join(dir, file);
+                    try {
+                        const stat = fs.statSync(fullPath);
+                        if (stat.isDirectory()) {
+                            if (file === 'node_modules' || file === '.git') continue;
+                            const found = findFile(fullPath, filename);
+                            if (found) return found;
+                        } else if (file === filename) {
+                            return fullPath;
+                        }
+                    } catch (e) {}
+                }
+                return null;
+            }
+
+            const foundPath = findFile(__dirname, 'curatedTracks.json');
+            if (foundPath) {
+                allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
             }
         } catch (err) {
-            console.error('Error reading beats-main tracks for round:', err);
+            console.error('Error reading tracks for round:', err);
         }
 
         const targetGenre = roundConfig.genre;
