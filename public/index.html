@@ -131,7 +131,8 @@
                     <button class="success" onclick="playSound('success'); socket.emit('start-round')">▶ Start Game / First Question</button>
                     <button onclick="playSound('tick'); socket.emit('next-question')">Next Question ⏭</button>
                     <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
-                    <button class="danger" onclick="socket.emit('stop-reset')">🔄 Restart / Full Reset</button>
+                    <button class="warning" onclick="socket.emit('restart-game')">🔄 Restart Game (Keep Players)</button>
+                    <button class="danger" onclick="if(confirm('Are you sure you want to completely reset and disconnect all players?')) socket.emit('stop-reset')">⚠️ Full Reset</button>
                 </div>
 
                 <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid #334155; padding-top: 1rem; align-items: flex-start;">
