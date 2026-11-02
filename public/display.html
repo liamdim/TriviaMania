@@ -38,6 +38,8 @@
 
         .floating-emoji { position: fixed; bottom: -50px; font-size: 3rem; animation: floatUp 3s linear forwards; z-index: 1000; pointer-events: none; }
         @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-100vh) scale(1.5); opacity: 0; } }
+
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
     </style>
 </head>
 <body>
@@ -91,6 +93,14 @@
             el.style.left = (20 + Math.random() * 60) + 'vw';
             document.body.appendChild(el);
             setTimeout(() => el.remove(), 3000);
+        });
+
+        socket.on('chat-message', (data) => {
+            const bubble = document.createElement('div');
+            bubble.style.cssText = 'position: fixed; bottom: 30px; right: 30px; background: rgba(30,41,59,0.95); border: 2px solid var(--accent); color: white; padding: 0.9rem 1.4rem; border-radius: 12px; font-size: 1.2rem; z-index: 1001; animation: fadeInOut 4s ease forwards; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);';
+            bubble.innerHTML = `💬 <strong>${data.name}:</strong> ${data.text}`;
+            document.body.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 4000);
         });
 
         socket.on('state-update', (state) => {
