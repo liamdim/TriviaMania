@@ -75,7 +75,7 @@
         <div class="header-links">
             <span id="connectionStatus" style="color: var(--neon-green); text-shadow: 0 0 8px rgba(0,255,102,0.5);">● ONLINE</span>
             <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
-            <a href="/display.html" target="_blank">Projector Display ↗</a>
+            <a href="/display.html?v=2" target="_blank">Projector Display ↗</a>
         </div>
     </header>
 
@@ -456,7 +456,13 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 500
+        });
+
         let isPreviewHidden = false;
 
         function toggleQuestionPreview() {
