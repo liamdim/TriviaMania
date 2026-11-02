@@ -353,13 +353,43 @@ io.on('connection', (socket) => {
                 options: item.options,
                 fastestPlayerId: null
             }));
+        } else if (config.type === 'tenable') {
+            const tenableItems = [
+                { category: 'Top 5 Most Populous Countries in the World', answer: 'China', options: ['China', 'Brazil', 'Canada', 'Australia'] },
+                { category: 'Top 5 Largest US States by Area', answer: 'Alaska', options: ['Alaska', 'Texas', 'California', 'Florida'] },
+                { category: 'Top 5 Most Watched Sports Globally', answer: 'Football (Soccer)', options: ['Football (Soccer)', 'Rugby', 'Golf', 'Badminton'] },
+                { category: 'Top 5 Best-Selling Music Artists of All Time', answer: 'The Beatles', options: ['The Beatles', 'Adele', 'Ed Sheeran', 'Justin Bieber'] }
+            ];
+            const selected = [...tenableItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            questions = selected.map(item => ({
+                gameType: 'tenable',
+                question: '🔟 TENABLE: Name a top entry in this category: ' + item.category,
+                answer: item.answer,
+                options: item.options.sort(() => 0.5 - Math.random()),
+                fastestPlayerId: null
+            }));
+        } else if (config.type === 'one-percent') {
+            const opItems = [
+                { q: 'What single word can go before "shoes", "case", and "string"?', answer: 'Suit', options: ['Suit', 'Boot', 'Bag', 'Coat'] },
+                { q: 'If you have a square with sides of 4cm, what is its total area in cm²?', answer: '16', options: ['16', '8', '12', '20'] },
+                { q: 'Which of these numbers is the odd one out: 27, 64, 125, 144, 216?', answer: '144', options: ['144', '27', '64', '125'] },
+                { q: 'What comes next in the sequence: O, T, T, F, F, S, S, E...?', answer: 'N', options: ['N', 'T', 'E', 'O'] }
+            ];
+            const selected = [...opItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            questions = selected.map(item => ({
+                gameType: 'one-percent',
+                question: '🧠 THE 1% CLUB BRAINTEASER: ' + item.q,
+                answer: item.answer,
+                options: item.options.sort(() => 0.5 - Math.random()),
+                fastestPlayerId: null
+            }));
         }
 
         if (questions.length > 0) {
             gameState.playlist.push({
-                name: config.name || '🎮 Mini-Game: ' + config.type.toUpperCase(),
+                name: config.name || '🎮 Game Show: ' + config.type.toUpperCase(),
                 genre: 'Mini-Game (' + config.type + ')',
-                timer: 20,
+                timer: 25,
                 questions: questions
             });
             io.emit('state-update', gameState);
