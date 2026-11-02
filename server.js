@@ -280,7 +280,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // MINI-GAME ROUND GENERATORS
+    // MINI-GAME ROUND GENERATORS (With Unique Scramble Options)
     socket.on('add-minigame-round', (config) => {
         let questions = [];
         if (config.type === 'lingo') {
@@ -302,7 +302,7 @@ io.on('connection', (socket) => {
                 { word: 'DANCE', hint: 'Move rhythmically to music' },
                 { word: 'STAGE', hint: 'Platform where performers stand' }
             ];
-            const selected = lingoWords.sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            const selected = [...lingoWords].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
             questions = selected.map(item => ({
                 gameType: 'lingo',
                 question: `🔤 LINGO ROUND: Guess the 5-letter word! Hint: ${item.hint}`,
@@ -325,9 +325,10 @@ io.on('connection', (socket) => {
                 { word: 'FOOTBALL', scrambled: 'L B A L T O O F' },
                 { word: 'DIAMOND', scrambled: 'N O M D A I D' }
             ];
-            const selected = scrambleItems.sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            const selected = [...scrambleItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
             questions = selected.map(item => {
-                const wrongOpts = scrambleItems.filter(i => i.word !== item.word).map(i => i.word).slice(0, 3);
+                const wrongPool = scrambleItems.filter(i => i.word !== item.word).map(i => i.word);
+                const wrongOpts = wrongPool.sort(() => 0.5 - Math.random()).slice(0, 3);
                 const options = [item.word, ...wrongOpts].sort(() => 0.5 - Math.random());
                 return {
                     gameType: 'scramble',
@@ -346,7 +347,7 @@ io.on('connection', (socket) => {
                 { fact: 'Number of squares on a chessboard (64)', options: ['Higher', 'Lower'], answer: '64' },
                 { fact: 'Average runtime of a feature film in minutes (~120)', options: ['Higher', 'Lower'], answer: '120' }
             ];
-            const selected = hlItems.sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            const selected = [...hlItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
             questions = selected.map(item => ({
                 gameType: 'higher-lower',
                 question: `⬆️ HIGHER OR LOWER: ${item.fact}`,
@@ -489,6 +490,23 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Soft Restart (Resets game loop to beginning without kicking players or wiping scores)
+    socket.on('restart-game', () => {
+        if (timerInterval) clearInterval(timerInterval);
+        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
+        gameState.status = 'IDLE';
+        gameState.currentRoundIndex = 0;
+        gameState.currentQuestionIndex = 0;
+        Object.values(gameState.scores).forEach(p => {
+            p.score = 0;
+            p.streak = 0;
+            p.hasAnsweredCurrent = false;
+        });
+        io.emit('stop-audio');
+        io.emit('state-update', gameState);
+    });
+
+    // Full Reset (Wipes everything including players and playlist)
     socket.on('stop-reset', () => {
         if (timerInterval) clearInterval(timerInterval);
         if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
