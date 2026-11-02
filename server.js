@@ -270,7 +270,6 @@ io.on('connection', (socket) => {
         const targetGenre = roundConfig.genre;
         const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
         
-        // Filter specifically for the selected genre, fallback to all tracks only if genre pool is empty
         let genreFilteredTracks = allTracks.filter(t => t.genre && t.genre.toLowerCase() === targetGenre.toLowerCase());
         let trackPool = genreFilteredTracks.length >= 3 ? genreFilteredTracks : allTracks;
         
