@@ -12,15 +12,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Game State
 let gameState = {
-    status: 'IDLE', // IDLE, LOBBY, QUESTION, LEADERBOARD, PAUSED
+    status: 'IDLE',
     currentRoundIndex: 0,
     playlist: [],
     currentQuestionIndex: 0,
     timer: 0,
     timerMax: 15,
-    scores: {}, // socketId -> { name, score, streak }
+    scores: {},
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
@@ -35,7 +34,6 @@ let gameState = {
 let timerInterval = null;
 let leaderboardTimeout = null;
 
-// Endpoint to fetch categories dynamically
 app.get('/api/categories', (req, res) => {
     const categoriesDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(categoriesDir)) return res.json([]);
@@ -50,7 +48,6 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Bulletproof auto-discovery endpoint for loading BeatIQ tracks from any folder
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
         function findFile(dir, filename) {
@@ -78,11 +75,8 @@ app.get('/api/beatiq/tracks', (req, res) => {
             const data = JSON.parse(rawData);
             return res.json(data);
         }
-
-        console.warn('Warning: curatedTracks.json could not be found anywhere in the repository.');
         return res.json([]);
     } catch (err) {
-        console.error('Error auto-discovering tracks:', err.message);
         return res.json([]);
     }
 });
@@ -194,7 +188,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Add BeatIQ Music round pulling auto-discovered tracks
     socket.on('add-beatiq-round', (roundConfig) => {
         let allTracks = [];
         try {
@@ -221,9 +214,7 @@ io.on('connection', (socket) => {
             if (foundPath) {
                 allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
             }
-        } catch (err) {
-            console.error('Error reading tracks for round:', err);
-        }
+        } catch (err) {}
 
         const targetGenre = roundConfig.genre;
         const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
@@ -331,6 +322,7 @@ io.on('connection', (socket) => {
         if (timerInterval) clearInterval(timerInterval);
         if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
         gameState.status = 'PAUSED';
+        io.emit('stop-audio'); // Broadcast stop audio command to all clients
         io.emit('state-update', gameState);
     });
 
@@ -343,6 +335,7 @@ io.on('connection', (socket) => {
         gameState.activeScreenAdvert = null;
         gameState.activeMobileAdvert = null;
         gameState.scores = {};
+        io.emit('stop-audio'); // Broadcast stop audio command to all clients
         io.emit('state-update', gameState);
     });
 
@@ -397,6 +390,7 @@ function triggerLeaderboardAndAutoAdvance() {
                            gameState.currentRoundIndex + 1 >= gameState.playlist.length;
 
     gameState.status = 'LEADERBOARD';
+    io.emit('stop-audio'); // Stop audio during leaderboard intermission
     io.emit('state-update', gameState);
 
     if (isLastQuestion) return;
@@ -424,6 +418,7 @@ function advanceToNextQuestion() {
             gameState.currentQuestionIndex = 0;
         } else {
             gameState.status = 'LEADERBOARD';
+            io.emit('stop-audio');
             io.emit('state-update', gameState);
             return;
         }
