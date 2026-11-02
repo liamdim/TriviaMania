@@ -49,7 +49,6 @@
 </head>
 <body>
 
-    <!-- Projector Audio Player for BeatIQ Music Snippets -->
     <audio id="displayAudioPlayer" preload="auto"></audio>
 
     <div id="advertOverlay">
@@ -79,7 +78,7 @@
         });
 
         socket.on('connect', () => {
-            console.log("Projector display connected to server with ID:", socket.id);
+            console.log("Projector display connected!");
         });
 
         socket.on('stop-audio', () => {
@@ -112,15 +111,12 @@
         });
 
         socket.on('state-update', (state) => {
-            console.log("Projector received state-update. activeScreenAdvert:", state.activeScreenAdvert);
-
             if (state.venueDetails) document.getElementById('displayVenueDetails').innerText = state.venueDetails;
             if (state.welcomeHeader) {
                 document.getElementById('headerVenueTitle').innerText = state.welcomeHeader;
                 document.getElementById('displayWelcomeHeader').innerText = state.welcomeHeader;
             }
 
-            // Instant Projector Advert Toggle Check
             const adOverlay = document.getElementById('advertOverlay');
             if (state.activeScreenAdvert) {
                 adOverlay.style.display = 'flex';
