@@ -1,12 +1,16 @@
 const express = require('express');
-const http = require('http');
+const http = http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
+const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// Initialize Gemini AI (uses process.env.GEMINI_API_KEY)
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -139,6 +143,41 @@ function parseCategoryFile(filename) {
     return questions;
 }
 
+async function generateAIQuestions(type, count) {
+    let prompt = '';
+    if (type === 'lingo') {
+        prompt = `Generate exactly ${count} unique 5-letter English words for a Lingo/Wordle style pub game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (a short clever clue). No markdown formatting or extra text.`;
+    } else if (type === 'scramble') {
+        prompt = `Generate exactly ${count} famous words or names (like bands, cities, movies) for a word scramble game. Return ONLY a valid JSON array of objects with keys "word" (the uppercase answer) and "scrambled" (the letters spaced out with spaces, e.g. "S E T A E B L"). No markdown or extra text.`;
+    } else if (type === 'higher-lower') {
+        prompt = `Generate exactly ${count} interesting trivia statistics questions where the answer is Higher or Lower or a number. Return ONLY a valid JSON array of objects with keys "fact" (the trivia statement), "options" (array containing exactly ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown or extra text.`;
+    } else if (type === 'tenable') {
+        prompt = `Generate exactly ${count} Tenable-style top list challenges (e.g., Top 5 most populous countries, top 5 highest grossing movies). Return ONLY a valid JSON array of objects with keys "category" (the list description) and "answer" (one correct top item from that list). No markdown or extra text.`;
+    } else if (type === 'one-percent') {
+        prompt = `Generate exactly ${count} lateral thinking brainteasers or clever math/word puzzles for a 1% Club style game show. Return ONLY a valid JSON array of objects with keys "q" (the puzzle question), "answer" (the correct short answer), and "options" (an array of 4 possible choices including the correct answer). No markdown or extra text.`;
+    }
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        let text = response.text.trim();
+        if (text.startsWith('```json')) {
+            text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+        } else if (text.startsWith('```')) {
+            text = text.replace(/^```/, '').replace(/```$/, '').trim();
+        }
+
+        const parsed = JSON.parse(text);
+        return parsed;
+    } catch (err) {
+        console.error('AI Generation Error:', err);
+        return [];
+    }
+}
+
 function getCurrentRoundTimer() {
     const round = gameState.playlist[gameState.currentRoundIndex];
     if (round && round.timer) return round.timer;
@@ -171,14 +210,11 @@ io.on('connection', (socket) => {
         let isCorrect = false;
         if (currentQ.gameType === 'lingo') {
             isCorrect = answer.trim().toUpperCase() === currentQ.answer.trim().toUpperCase();
-        } else if (currentQ.gameType === 'higher-lower') {
-            isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
         } else {
             isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
         }
 
         let pointsEarned = 0;
-
         if (isCorrect) {
             if (!currentQ.fastestPlayerId) {
                 currentQ.fastestPlayerId = socket.id;
@@ -198,7 +234,6 @@ io.on('connection', (socket) => {
         }
 
         player.hasAnsweredCurrent = true;
-
         socket.emit('answer-result', { correct: isCorrect, points: pointsEarned, streak: player.streak, isFastest: currentQ.fastestPlayerId === socket.id });
         io.emit('state-update', gameState);
     });
@@ -279,116 +314,72 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    socket.on('add-minigame-round', (config) => {
+    socket.on('add-minigame-round', async (config) => {
+        const count = parseInt(config.count || 5);
+        const rawItems = await generateAIQuestions(config.type, count);
         let questions = [];
+
         if (config.type === 'lingo') {
-            const lingoWords = [
-                { word: 'SHARK', hint: 'Ocean predator with a dorsal fin' },
-                { word: 'MUSIC', hint: 'Organized sound and melody' },
-                { word: 'HOUSE', hint: 'A building for human habitation' },
-                { word: 'PLANT', hint: 'Living organism that produces oxygen' },
-                { word: 'TRAIN', hint: 'Railway transport vehicle' },
-                { word: 'BEACH', hint: 'Sandy shore by the ocean' },
-                { word: 'LIGHT', hint: 'Electromagnetic radiation visible to the eye' },
-                { word: 'SPACE', hint: 'The boundless three-dimensional extent' },
-                { word: 'PIZZA', hint: 'Popular Italian baked flatbread dish' },
-                { word: 'MONEY', hint: 'Medium of exchange for goods and services' },
-                { word: 'WATER', hint: 'Essential clear liquid for all living things' },
-                { word: 'DRINK', hint: 'Liquid refreshment ordered at a pub' },
-                { word: 'QUEEN', hint: 'Royal female monarch or legendary rock band' },
-                { word: 'PARTY', hint: 'A social gathering for celebration' },
-                { word: 'DANCE', hint: 'Move rhythmically to music' },
-                { word: 'STAGE', hint: 'Platform where performers stand' }
-            ];
-            const selected = [...lingoWords].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
-            questions = selected.map(item => ({
+            questions = rawItems.map(item => ({
                 gameType: 'lingo',
-                question: '🔤 LINGO ROUND: Guess the 5-letter word! Hint: ' + item.hint,
-                answer: item.word,
+                question: '🔤 LINGO: Guess the 5-letter word! Hint: ' + (item.hint || 'Mystery word'),
+                answer: (item.word || 'SHARK').toUpperCase(),
                 options: [],
                 fastestPlayerId: null
             }));
         } else if (config.type === 'scramble') {
-            const scrambleItems = [
-                { word: 'BEATLES', scrambled: 'S E T A E B L' },
-                { word: 'QUEEN', scrambled: 'E E N Q U' },
-                { word: 'LONDON', scrambled: 'D O N N O L' },
-                { word: 'GUITAR', scrambled: 'R T I A U G' },
-                { word: 'KARAOKE', scrambled: 'K O R A A E K' },
-                { word: 'TRIVIA', scrambled: 'I V A I R T' },
-                { word: 'CHELSEA', scrambled: 'E H S E L A C' },
-                { word: 'WHISKEY', scrambled: 'E Y K I S H W' },
-                { word: 'RADIOHEAD', scrambled: 'H A D O R E I A D' },
-                { word: 'PYRAMID', scrambled: 'M I D A R Y P' },
-                { word: 'FOOTBALL', scrambled: 'L B A L T O O F' },
-                { word: 'DIAMOND', scrambled: 'N O M D A I D' }
-            ];
-            const selected = [...scrambleItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
-            questions = selected.map(item => {
-                const wrongPool = scrambleItems.filter(i => i.word !== item.word).map(i => i.word);
-                const wrongOpts = wrongPool.sort(() => 0.5 - Math.random()).slice(0, 3);
-                const options = [item.word, ...wrongOpts].sort(() => 0.5 - Math.random());
+            questions = rawItems.map(item => {
+                const ans = (item.word || 'BEATLES').toUpperCase();
+                const scrambled = item.scrambled || ans.split('').join(' ');
+                const wrongOpts = [ans, 'MUSIC', 'BAND', 'STAGE'].filter(w => w !== ans).slice(0, 3);
+                const options = [ans, ...wrongOpts].sort(() => 0.5 - Math.random());
                 return {
                     gameType: 'scramble',
-                    question: '🔀 WORD SCRAMBLE: Unscramble these letters: [ ' + item.scrambled + ' ]',
-                    answer: item.word,
+                    question: '🔀 WORD SCRAMBLE: Unscramble letters: [ ' + scrambled + ' ]',
+                    answer: ans,
                     options: options,
                     fastestPlayerId: null
                 };
             });
         } else if (config.type === 'higher-lower') {
-            const hlItems = [
-                { fact: 'Average population of London (Millions)', options: ['Higher', 'Lower'], answer: 'Higher' },
-                { fact: 'Number of keys on a standard piano (88)', options: ['Higher', 'Lower'], answer: '88' },
-                { fact: 'Year the first iPhone was released (2007)', options: ['Higher', 'Lower'], answer: '2007' },
-                { fact: 'Boiling point of water in Celsius (100°C)', options: ['Higher', 'Lower'], answer: '100' },
-                { fact: 'Number of squares on a chessboard (64)', options: ['Higher', 'Lower'], answer: '64' },
-                { fact: 'Average runtime of a feature film in minutes (~120)', options: ['Higher', 'Lower'], answer: '120' }
-            ];
-            const selected = [...hlItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
-            questions = selected.map(item => ({
+            questions = rawItems.map(item => ({
                 gameType: 'higher-lower',
-                question: '⬆️ HIGHER OR LOWER: ' + item.fact,
-                answer: item.answer,
-                options: item.options,
+                question: '⬆️ HIGHER OR LOWER: ' + (item.fact || 'Statistic prediction'),
+                answer: item.answer || 'Higher',
+                options: ['Higher', 'Lower'],
                 fastestPlayerId: null
             }));
         } else if (config.type === 'tenable') {
-            const tenableItems = [
-                { category: 'Top 5 Most Populous Countries in the World', answer: 'China', options: ['China', 'Brazil', 'Canada', 'Australia'] },
-                { category: 'Top 5 Largest US States by Area', answer: 'Alaska', options: ['Alaska', 'Texas', 'California', 'Florida'] },
-                { category: 'Top 5 Most Watched Sports Globally', answer: 'Football (Soccer)', options: ['Football (Soccer)', 'Rugby', 'Golf', 'Badminton'] },
-                { category: 'Top 5 Best-Selling Music Artists of All Time', answer: 'The Beatles', options: ['The Beatles', 'Adele', 'Ed Sheeran', 'Justin Bieber'] }
-            ];
-            const selected = [...tenableItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
-            questions = selected.map(item => ({
-                gameType: 'tenable',
-                question: '🔟 TENABLE: Name a top entry in this category: ' + item.category,
-                answer: item.answer,
-                options: item.options.sort(() => 0.5 - Math.random()),
-                fastestPlayerId: null
-            }));
+            questions = rawItems.map(item => {
+                const ans = item.answer || 'Top Choice';
+                const options = [ans, 'Alternative A', 'Alternative B', 'Alternative C'].sort(() => 0.5 - Math.random());
+                return {
+                    gameType: 'tenable',
+                    question: '🔟 TENABLE: ' + (item.category || 'Name an entry in this top list'),
+                    answer: ans,
+                    options: options,
+                    fastestPlayerId: null
+                };
+            });
         } else if (config.type === 'one-percent') {
-            const opItems = [
-                { q: 'What single word can go before "shoes", "case", and "string"?', answer: 'Suit', options: ['Suit', 'Boot', 'Bag', 'Coat'] },
-                { q: 'If you have a square with sides of 4cm, what is its total area in cm²?', answer: '16', options: ['16', '8', '12', '20'] },
-                { q: 'Which of these numbers is the odd one out: 27, 64, 125, 144, 216?', answer: '144', options: ['144', '27', '64', '125'] },
-                { q: 'What comes next in the sequence: O, T, T, F, F, S, S, E...?', answer: 'N', options: ['N', 'T', 'E', 'O'] }
-            ];
-            const selected = [...opItems].sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
-            questions = selected.map(item => ({
-                gameType: 'one-percent',
-                question: '🧠 THE 1% CLUB BRAINTEASER: ' + item.q,
-                answer: item.answer,
-                options: item.options.sort(() => 0.5 - Math.random()),
-                fastestPlayerId: null
-            }));
+            questions = rawItems.map(item => {
+                const ans = item.answer || 'Solution';
+                const opts = item.options ? [...item.options] : [ans, 'Wrong 1', 'Wrong 2', 'Wrong 3'];
+                if (!opts.includes(ans)) opts[0] = ans;
+                return {
+                    gameType: 'one-percent',
+                    question: '🧠 THE 1% CLUB: ' + (item.q || 'Brainteaser puzzle'),
+                    answer: ans,
+                    options: opts.sort(() => 0.5 - Math.random()),
+                    fastestPlayerId: null
+                };
+            });
         }
 
         if (questions.length > 0) {
             gameState.playlist.push({
-                name: config.name || '🎮 Game Show: ' + config.type.toUpperCase(),
-                genre: 'Mini-Game (' + config.type + ')',
+                name: config.name || '🎮 AI Game Show: ' + config.type.toUpperCase(),
+                genre: 'AI Gen (' + config.type + ')',
                 timer: 25,
                 questions: questions
             });
