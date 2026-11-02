@@ -96,6 +96,22 @@
         let myName = '';
         let answeredCurrent = false;
 
+        // Client-side instant profanity filter (add any extra words here!)
+        const badWords = [
+            'damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 
+            'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'
+        ];
+
+        function sanitizeText(text) {
+            if (!text) return '';
+            let clean = text.trim();
+            badWords.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                clean = clean.replace(regex, '****');
+            });
+            return clean;
+        }
+
         socket.on('stop-audio', () => {
             const audio = document.getElementById('mobileAudioPlayer');
             audio.pause();
@@ -122,9 +138,8 @@
         });
 
         socket.on('chat-message', (data) => {
-            // Ignore echoes of your own message
             if (data.name === (myName || 'You')) return;
-            appendChatMessage(data.name, data.text);
+            appendChatMessage(data.name, sanitizeText(data.text));
         });
 
         function appendChatMessage(name, text) {
@@ -134,7 +149,7 @@
                     chatLog.innerHTML = '';
                 }
                 const msgEl = document.createElement('div');
-                msgEl.innerHTML = `<span style="color: var(--accent); font-weight: bold;">${name}:</span> ${text}`;
+                msgEl.innerHTML = `<span style="color: var(--accent); font-weight: bold;">${name}:</span> ${sanitizeText(text)}`;
                 chatLog.appendChild(msgEl);
                 chatLog.scrollTop = chatLog.scrollHeight;
             }
@@ -143,11 +158,11 @@
         function joinGame() {
             const name = document.getElementById('playerNameInput').value.trim();
             if (!name) { alert('Please enter a nickname!'); return; }
-            myName = name;
-            socket.emit('player-join', name);
+            myName = sanitizeText(name);
+            socket.emit('player-join', myName);
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'flex';
-            document.getElementById('playerDisplayName').innerText = name;
+            document.getElementById('playerDisplayName', myName).innerText = myName;
         }
 
         function sendEmoji(emoji) {
@@ -159,11 +174,12 @@
             const message = input.value.trim();
             if (!message) return;
 
-            // Instantly display your own message on your mobile screen
-            appendChatMessage(myName || 'You', message);
+            // Instantly filter and display your own message immediately
+            const cleanMessage = sanitizeText(message);
+            appendChatMessage(myName || 'You', cleanMessage);
 
-            // Send to server to broadcast to all other players
-            socket.emit('player-chat', message);
+            // Send clean message to server
+            socket.emit('player-chat', cleanMessage);
             input.value = '';
         }
 
@@ -190,7 +206,7 @@
                 const chatLog = document.getElementById('mobileChatLog');
                 if (chatLog && chatLog.children.length <= 1) {
                     chatLog.innerHTML = state.chatHistory.map(msg => 
-                        `<div><span style="color: var(--accent); font-weight: bold;">${msg.name}:</span> ${msg.text}</div>`
+                        `<div><span style="color: var(--accent); font-weight: bold;">${msg.name}:</span> ${sanitizeText(msg.text)}</div>`
                     ).join('');
                     chatLog.scrollTop = chatLog.scrollHeight;
                 }
@@ -249,7 +265,7 @@
             } else if (state.status === 'PAUSED') {
                 const audio = document.getElementById('mobileAudioPlayer');
                 audio.pause();
-                stage.innerHTML = `<h3>Game Paused by Host</h3><p style="color: var(--text-muted); margin-top: 1rem;">Stand by...</p>`;
+                stage.innerHTML = `<h1>Game Paused by Host</h1><p style="color: var(--text-muted); margin-top: 1rem;">Stand by...</p>`;
             }
         });
 
