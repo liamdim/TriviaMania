@@ -16,7 +16,7 @@
             --text-muted: #94a3b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; position: relative; overflow-x: hidden; }
         
         .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #334155; text-align: center; }
         input, button { width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; border: none; margin-bottom: 1rem; font-weight: bold; }
@@ -34,6 +34,9 @@
         #announcementBanner { background: var(--accent); color: white; padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; display: none; text-align: center; }
         #mobileAdModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.98); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
         #mobileAdModal img { max-width: 100%; max-height: 350px; border-radius: 8px; margin-top: 1rem; border: 2px solid var(--accent); }
+
+        .floating-emoji { position: fixed; bottom: -50px; font-size: 2.5rem; animation: floatUp 3s linear forwards; z-index: 1000; pointer-events: none; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-100vh) scale(1.5); opacity: 0; } }
     </style>
 </head>
 <body>
@@ -64,7 +67,7 @@
             <h3>Waiting for host to start game...</h3>
         </div>
 
-        <div class="emoji-bar">
+        <div class="emoji-bar" id="emojiBarContainer">
             <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
             <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
             <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
@@ -95,6 +98,15 @@
             }
         });
 
+        socket.on('player-emoji', (data) => {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = data.emoji;
+            el.style.left = (10 + Math.random() * 80) + 'vw';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        });
+
         function joinGame() {
             const name = document.getElementById('playerNameInput').value.trim();
             if (!name) { alert('Please enter a nickname!'); return; }
@@ -115,9 +127,13 @@
                 document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
             }
 
-            if (state.customEmojis) {
-                const emojiBar = document.querySelector('.emoji-bar');
-                if (emojiBar) {
+            // Hide or show emoji bar based on global chat toggle
+            const emojiBar = document.getElementById('emojiBarContainer');
+            if (state.chatEnabled === false) {
+                emojiBar.style.display = 'none';
+            } else {
+                emojiBar.style.display = 'flex';
+                if (state.customEmojis) {
                     emojiBar.innerHTML = state.customEmojis.map(emoji => 
                         `<button class="emoji-btn" onclick="sendEmoji('${emoji}')">${emoji}</button>`
                     ).join('');
