@@ -3,40 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
     <title>TriviaMania - Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --panel-bg: #1e293b;
-            --accent: #3b82f6;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-color: #05050a;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffee00;
+            --text: #ffffff;
+            --text-muted: #8b9bb4;
+            --border-glow: 0 0 25px rgba(0, 243, 255, 0.3);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 2rem; position: relative; overflow-x: hidden; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 2rem; position: relative; overflow-x: hidden; background-image: radial-gradient(circle at 50% 50%, #1a103c 0%, #05050a 80%); }
         
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 1rem; z-index: 2; }
-        .venue-title { font-size: 1.5rem; color: var(--accent); font-weight: bold; }
-        .timer-box { font-size: 2.5rem; font-weight: bold; background: var(--panel-bg); padding: 0.5rem 1.5rem; border-radius: 12px; border: 2px solid #475569; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(0, 243, 255, 0.3); padding-bottom: 1rem; z-index: 2; }
+        .venue-title { font-size: 1.8rem; color: var(--neon-blue); font-weight: bold; text-shadow: 0 0 10px rgba(0,243,255,0.5); }
+        .timer-box { font-size: 3rem; font-weight: bold; background: var(--panel-bg); padding: 0.5rem 2rem; border-radius: 16px; border: 2px solid var(--neon-blue); box-shadow: var(--border-glow); color: var(--neon-yellow); text-shadow: 0 0 10px rgba(255,238,0,0.5); }
         
         .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; z-index: 2; }
-        .question-text { font-size: 2.5rem; margin-bottom: 2rem; line-height: 1.3; max-width: 900px; }
+        .question-text { font-size: 3rem; margin-bottom: 2.5rem; line-height: 1.3; max-width: 1000px; text-shadow: 0 0 15px rgba(255,255,255,0.2); }
         
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%; max-width: 900px; }
-        .option-card { background: var(--panel-bg); border: 2px solid #475569; padding: 1.5rem; border-radius: 12px; font-size: 1.5rem; font-weight: 600; color: white; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; max-width: 1000px; }
+        .option-card { background: var(--panel-bg); backdrop-filter: blur(15px); border: 2px solid rgba(0, 243, 255, 0.4); padding: 2rem; border-radius: 16px; font-size: 1.8rem; font-weight: 600; color: white; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         
-        .leaderboard-table { width: 100%; max-width: 800px; margin: 0 auto; border-collapse: collapse; background: var(--panel-bg); border-radius: 12px; overflow: hidden; border: 2px solid #475569; }
-        .leaderboard-table th, .leaderboard-table td { padding: 1rem; text-align: center; font-size: 1.2rem; border-bottom: 1px solid #334155; }
-        .leaderboard-table th { background: #0f172a; color: var(--accent); }
+        .leaderboard-table { width: 100%; max-width: 900px; margin: 0 auto; border-collapse: collapse; background: var(--panel-bg); backdrop-filter: blur(15px); border-radius: 16px; overflow: hidden; border: 2px solid var(--neon-blue); box-shadow: var(--border-glow); }
+        .leaderboard-table th, .leaderboard-table td { padding: 1.2rem; text-align: center; font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .leaderboard-table th { background: rgba(5, 10, 20, 0.9); color: var(--neon-blue); text-shadow: 0 0 8px rgba(0,243,255,0.4); }
 
-        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; }
+        #qr-container { display: flex; justify-content: center; padding: 1.5rem; background: white; border-radius: 16px; width: fit-content; margin: 1.5rem auto; box-shadow: 0 0 35px rgba(0,243,255,0.4); }
         
-        #advertOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.98); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; text-align: center; }
-        #advertOverlay img { max-width: 600px; max-height: 500px; border-radius: 12px; margin-top: 1.5rem; border: 3px solid var(--accent); }
+        #advertOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.98); backdrop-filter: blur(20px); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; text-align: center; }
+        #advertOverlay img { max-width: 600px; max-height: 500px; border-radius: 16px; margin-top: 1.5rem; border: 3px solid var(--neon-blue); box-shadow: var(--border-glow); }
 
-        .floating-emoji { position: fixed; bottom: -50px; font-size: 3rem; animation: floatUp 3s linear forwards; z-index: 1000; pointer-events: none; }
+        .floating-emoji { position: fixed; bottom: -50px; font-size: 3.5rem; animation: floatUp 3s linear forwards; z-index: 1000; pointer-events: none; }
         @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-100vh) scale(1.5); opacity: 0; } }
 
         @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
@@ -47,7 +52,7 @@
     <audio id="projectorAudioPlayer" preload="auto"></audio>
 
     <div id="advertOverlay">
-        <h2 id="adOverlayTitle" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></h2>
+        <h2 id="adOverlayTitle" style="font-size: 3.5rem; color: var(--neon-blue); margin-bottom: 1rem; text-shadow: 0 0 15px rgba(0,243,255,0.5);"></h2>
         <div id="adOverlayImageContainer"></div>
     </div>
 
@@ -57,10 +62,10 @@
     </div>
 
     <div class="main-stage" id="mainStage">
-        <h1 id="welcomeHeaderDisplay">Welcome to TriviaMania!</h1>
-        <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code below on your phone to join!</p>
+        <h1 id="welcomeHeaderDisplay" style="font-size: 3.5rem; color: var(--neon-yellow); text-shadow: 0 0 15px rgba(255,238,0,0.4);">Welcome to TriviaMania!</h1>
+        <p style="color: var(--text-muted); font-size: 1.8rem; margin-top: 1.5rem;">Scan the QR code below on your phone to join!</p>
         <div id="qr-container"></div>
-        <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--text-muted);"></p>
+        <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--text-muted); font-size: 1.2rem;"></p>
     </div>
 
     <script>
@@ -71,8 +76,8 @@
         document.getElementById('playerJoinUrl').innerText = playerUrl;
         new QRCode(document.getElementById("qr-container"), {
             text: playerUrl,
-            width: 220,
-            height: 220
+            width: 240,
+            height: 240
         });
 
         socket.on('stop-audio', () => {
@@ -97,8 +102,8 @@
 
         socket.on('chat-message', (data) => {
             const bubble = document.createElement('div');
-            bubble.style.cssText = 'position: fixed; bottom: 30px; right: 30px; background: rgba(30,41,59,0.95); border: 2px solid var(--accent); color: white; padding: 0.9rem 1.4rem; border-radius: 12px; font-size: 1.2rem; z-index: 1001; animation: fadeInOut 4s ease forwards; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);';
-            bubble.innerHTML = `💬 <strong>${data.name}:</strong> ${data.text}`;
+            bubble.style.cssText = 'position: fixed; bottom: 40px; right: 40px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); border: 2px solid var(--neon-blue); color: white; padding: 1.2rem 1.8rem; border-radius: 16px; font-size: 1.4rem; z-index: 1001; animation: fadeInOut 4s ease forwards; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 20px rgba(0,243,255,0.3);';
+            bubble.innerHTML = '💬 <strong style="color: var(--neon-blue);">' + data.name + ':</strong> ' + data.text;
             document.body.appendChild(bubble);
             setTimeout(() => bubble.remove(), 4000);
         });
@@ -116,7 +121,7 @@
                 document.getElementById('adOverlayTitle').innerText = state.activeScreenAdvert.title;
                 const imgContainer = document.getElementById('adOverlayImageContainer');
                 if (state.activeScreenAdvert.image) {
-                    imgContainer.innerHTML = `<img src="${state.activeScreenAdvert.image}" />`;
+                    imgContainer.innerHTML = '<img src="' + state.activeScreenAdvert.image + '" />';
                 } else {
                     imgContainer.innerHTML = '';
                 }
@@ -129,16 +134,15 @@
 
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 timerBox.innerText = '--';
-                stage.innerHTML = `
-                    <h1>${headerText}</h1>
-                    <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code below on your phone to join!</p>
-                    <div id="qr-container"></div>
-                    <p style="margin-top: 1rem; font-family: monospace; color: var(--text-muted);">${playerUrl}</p>
-                `;
+                stage.innerHTML = 
+                    '<h1 style="font-size: 3.5rem; color: var(--neon-yellow); text-shadow: 0 0 15px rgba(255,238,0,0.4);">' + headerText + '</h1>' +
+                    '<p style="color: var(--text-muted); font-size: 1.8rem; margin-top: 1.5rem;">Scan the QR code below on your phone to join!</p>' +
+                    '<div id="qr-container"></div>' +
+                    '<p style="margin-top: 1rem; font-family: monospace; color: var(--text-muted); font-size: 1.2rem;">' + playerUrl + '</p>';
                 new QRCode(document.getElementById("qr-container"), {
                     text: playerUrl,
-                    width: 220,
-                    height: 220
+                    width: 240,
+                    height: 240
                 });
             } else if (state.status === 'QUESTION') {
                 timerBox.innerText = state.timer;
@@ -148,7 +152,7 @@
                 if (q) {
                     if (q.audioPreviewUrl) {
                         const audio = document.getElementById('projectorAudioPlayer');
-                        const uniqueKey = `${state.currentRoundIndex}-${state.currentQuestionIndex}`;
+                        const uniqueKey = state.currentRoundIndex + '-' + state.currentQuestionIndex;
                         
                         if (lastPlayedQKey !== uniqueKey) {
                             lastPlayedQKey = uniqueKey;
@@ -158,12 +162,11 @@
                         }
                     }
 
-                    stage.innerHTML = `
-                        <div class="question-text">${q.question}</div>
-                        <div class="options-grid">
-                            ${q.options.map(opt => `<div class="option-card">${opt}</div>`).join('')}
-                        </div>
-                    `;
+                    stage.innerHTML = 
+                        '<div class="question-text">' + q.question + '</div>' +
+                        '<div class="options-grid">' +
+                            q.options.map(opt => '<div class="option-card">' + opt + '</div>').join('') +
+                        '</div>';
                 }
             } else if (state.status === 'LEADERBOARD') {
                 timerBox.innerText = '☕';
@@ -171,21 +174,20 @@
                 audio.pause();
 
                 const players = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
-                stage.innerHTML = `
-                    <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--accent);">🏆 Leaderboard Standings</h2>
-                    <table class="leaderboard-table">
-                        <thead><tr><th>Rank</th><th>Player</th><th>Streak</th><th>Score</th></tr></thead>
-                        <tbody>
-                            ${players.length === 0 ? '<tr><td colspan="4">No scores yet</td></tr>' : 
-                                players.map((p, idx) => `<tr><td>${idx+1}</td><td>${p.name}</td><td>🔥 x${p.streak || 0}</td><td><strong>${p.score}</strong></td></tr>`).join('')}
-                        </tbody>
-                    </table>
-                `;
+                stage.innerHTML = 
+                    '<h2 style="font-size: 3rem; margin-bottom: 2rem; color: var(--neon-blue); text-shadow: 0 0 15px rgba(0,243,255,0.4);">🏆 Leaderboard Standings</h2>' +
+                    '<table class="leaderboard-table">' +
+                        '<thead><tr><th>Rank</th><th>Player</th><th>Streak</th><th>Score</th></tr></thead>' +
+                        '<tbody>' +
+                            (players.length === 0 ? '<tr><td colspan="4">No scores yet</td></tr>' : 
+                                players.map((p, idx) => '<tr><td>' + (idx+1) + '</td><td>' + p.name + '</td><td>🔥 x' + (p.streak || 0) + '</td><td><strong>' + p.score + '</strong></td></tr>').join('')) +
+                        '</tbody>' +
+                    '</table>';
             } else if (state.status === 'PAUSED') {
                 timerBox.innerText = '⏸';
                 const audio = document.getElementById('projectorAudioPlayer');
                 audio.pause();
-                stage.innerHTML = `<h1>Game Paused by Host</h1>`;
+                stage.innerHTML = '<h1 style="font-size: 3.5rem; color: var(--neon-pink); text-shadow: 0 0 15px rgba(255,0,85,0.5);">Game Paused by Host</h1>';
             }
         });
     </script>
