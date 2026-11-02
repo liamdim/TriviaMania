@@ -22,7 +22,7 @@ let gameState = {
     scores: {},
     mutedPlayers: {}, // socketId -> boolean
     chatEnabled: true, // Master chat toggle
-    chatHistory: [], // Recent chat messages log
+    chatHistory: [], // Recent chat messages log for lobby/joining players
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
@@ -40,13 +40,18 @@ let gameState = {
 let timerInterval = null;
 let leaderboardTimeout = null;
 
-// Simple profanity filter
-const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass'];
+// Expanded profanity filter with whole-word boundary matching (\b)
+const badWords = [
+    'damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 
+    'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'
+];
+
 function sanitizeText(text) {
     if (!text) return '';
     let clean = text.trim();
     badWords.forEach(word => {
-        const regex = new RegExp(word, 'gi');
+        // \b ensures whole-word matching (e.g., blocks "ass", but leaves "class" alone)
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
         clean = clean.replace(regex, '****');
     });
     return clean;
