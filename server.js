@@ -41,6 +41,7 @@ let gameState = {
 };
 
 let timerInterval = null;
+let disconnectedPlayers = {}; // 10-second grace window buffer for phone calls / app switches
 
 const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
 
@@ -81,19 +82,15 @@ app.get('/api/beatiq/tracks', (req, res) => {
                         if (file === 'node_modules' || file === '.git') continue;
                         const found = findFile(fullPath, filename);
                         if (found) return found;
-                    } else if (file === filename) {
-                        return fullPath;
-                    }
+                    } else if (file === filename) return fullPath;
                 } catch (e) {}
             }
             return null;
         }
-
         const foundPath = findFile(__dirname, 'curatedTracks.json');
         if (foundPath) {
             const rawData = fs.readFileSync(foundPath, 'utf8');
-            const data = JSON.parse(rawData);
-            return res.json(data);
+            return res.json(JSON.parse(rawData));
         }
         return res.json([]);
     } catch (err) {
@@ -104,9 +101,7 @@ app.get('/api/beatiq/tracks', (req, res) => {
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
-    if (!fs.existsSync(filePath)) {
-        filePath = path.join(categoriesDir, filename + '.txt');
-    }
+    if (!fs.existsSync(filePath)) filePath = path.join(categoriesDir, filename + '.txt');
     if (!fs.existsSync(filePath)) return [];
 
     const fileContent = fs.readFileSync(filePath, 'utf8');
@@ -142,15 +137,15 @@ function parseCategoryFile(filename) {
 async function generateAIQuestions(type, count) {
     let prompt = '';
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} unique, completely fresh 5-letter English words for a Lingo game. Ensure they are varied and randomized. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (a short clever clue). No markdown.`;
+        prompt = `Generate exactly ${count} unique, completely fresh 5-letter English words for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clue). No markdown.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely fresh and randomized famous words, bands, or cities for a word scramble game. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
+        prompt = `Generate exactly ${count} completely fresh and randomized famous words, bands, or cities for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized trivia statistics questions. Return ONLY a valid JSON array of objects with keys "fact" (trivia statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
+        prompt = `Generate exactly ${count} randomized trivia statistics questions. Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
     } else if (type === 'tenable') {
-        prompt = `Generate exactly ${count} completely randomized Tenable top list challenges. Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
+        prompt = `Generate exactly ${count} randomized Tenable top list challenges. Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
     } else if (type === 'one-percent') {
-        prompt = `Generate exactly ${count} completely randomized 1% Club logic brainteasers or math/word puzzles. Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
+        prompt = `Generate exactly ${count} randomized 1% Club logic brainteasers. Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
     }
 
     try {
@@ -181,7 +176,15 @@ io.on('connection', (socket) => {
 
     socket.on('player-join', (playerName) => {
         const cleanName = sanitizeText(playerName) || 'Anonymous';
-        gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
+        
+        // Check if player is rejoining within the 10-second grace period
+        if (disconnectedPlayers[cleanName]) {
+            clearTimeout(disconnectedPlayers[cleanName].timeout);
+            gameState.scores[socket.id] = disconnectedPlayers[cleanName].playerData;
+            delete disconnectedPlayers[cleanName];
+        } else {
+            gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
+        }
         io.emit('state-update', gameState);
     });
 
@@ -430,12 +433,27 @@ io.on('connection', (socket) => {
         gameState.currentQuestionIndex = 0;
         gameState.scores = {};
         gameState.mutedPlayers = {};
+        disconnectedPlayers = {};
         io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
 
     socket.on('disconnect', () => {
-        delete gameState.scores[socket.id];
+        const player = gameState.scores[socket.id];
+        if (player) {
+            const playerName = player.name;
+            // Hold their spot for 10 seconds in case they are on a phone call or switching apps
+            disconnectedPlayers[playerName] = {
+                playerData: player,
+                timeout: setTimeout(() => {
+                    delete gameState.scores[socket.id];
+                    delete gameState.mutedPlayers[socket.id];
+                    delete disconnectedPlayers[playerName];
+                    io.emit('state-update', gameState);
+                }, 10000)
+            };
+            delete gameState.scores[socket.id];
+        }
         delete gameState.mutedPlayers[socket.id];
         io.emit('state-update', gameState);
     });
