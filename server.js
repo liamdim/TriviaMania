@@ -1,438 +1,182 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const fs = require('fs');
-const path = require('path');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-let gameState = {
-    status: 'IDLE',
-    currentRoundIndex: 0,
-    playlist: [],
-    currentQuestionIndex: 0,
-    timer: 0,
-    timerMax: 15,
-    scores: {},
-    activeScreenAdvert: null,
-    activeMobileAdvert: null,
-    venueDetails: 'Welcome to Trivia Night!',
-    announcement: { active: false, text: '' },
-    settings: { 
-        questionTime: 15,
-        intermissionTime: 5,
-        countdownSound: true 
-    }
-};
-
-let timerInterval = null;
-let leaderboardTimeout = null;
-
-app.get('/api/categories', (req, res) => {
-    const categoriesDir = path.join(__dirname, 'categories');
-    if (!fs.existsSync(categoriesDir)) return res.json([]);
-    try {
-        const files = fs.readdirSync(categoriesDir);
-        const categories = files
-            .filter(file => fs.statSync(path.join(categoriesDir, file)).isFile())
-            .map(file => file.replace(/\.[^/.]+$/, ''));
-        res.json(categories);
-    } catch (err) {
-        res.json([]);
-    }
-});
-
-app.get('/api/beatiq/tracks', (req, res) => {
-    try {
-        function findFile(dir, filename) {
-            if (!fs.existsSync(dir)) return null;
-            const files = fs.readdirSync(dir);
-            for (const file of files) {
-                const fullPath = path.join(dir, file);
-                try {
-                    const stat = fs.statSync(fullPath);
-                    if (stat.isDirectory()) {
-                        if (file === 'node_modules' || file === '.git') continue;
-                        const found = findFile(fullPath, filename);
-                        if (found) return found;
-                    } else if (file === filename) {
-                        return fullPath;
-                    }
-                } catch (e) {}
-            }
-            return null;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TriviaMania - Player Controller</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
         }
-
-        const foundPath = findFile(__dirname, 'curatedTracks.json');
-        if (foundPath) {
-            const rawData = fs.readFileSync(foundPath, 'utf8');
-            const data = JSON.parse(rawData);
-            return res.json(data);
-        }
-        return res.json([]);
-    } catch (err) {
-        return res.json([]);
-    }
-});
-
-function parseCategoryFile(filename) {
-    const categoriesDir = path.join(__dirname, 'categories');
-    let filePath = path.join(categoriesDir, filename);
-    if (!fs.existsSync(filePath)) {
-        filePath = path.join(categoriesDir, filename + '.txt');
-    }
-    if (!fs.existsSync(filePath)) return [];
-
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    const lines = fileContent.split(/\r?\n/);
-    const questions = [];
-    let currentQ = null;
-
-    for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
-        if (line.startsWith('#Q')) {
-            if (currentQ) {
-                currentQ.options.sort(() => 0.5 - Math.random());
-                questions.push(currentQ);
-            }
-            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '', fastestPlayerId: null };
-        } else if (line.startsWith('^')) {
-            if (currentQ) currentQ.answer = line.replace('^', '').trim();
-        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
-            if (currentQ) {
-                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
-                currentQ.options.push(optText);
-            }
-        }
-    }
-    if (currentQ) {
-        currentQ.options.sort(() => 0.5 - Math.random());
-        questions.push(currentQ);
-    }
-    return questions;
-}
-
-function getCurrentRoundTimer() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (round && round.timer) return round.timer;
-    return gameState.settings.questionTime || 15;
-}
-
-io.on('connection', (socket) => {
-    socket.emit('state-update', gameState);
-    socket.emit('announcement-update', gameState.announcement);
-
-    socket.on('player-join', (playerName) => {
-        const cleanName = playerName ? playerName.trim() : 'Anonymous';
-        gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('submit-answer', ({ answer, timeRemaining }) => {
-        if (gameState.status !== 'QUESTION') return;
-        const player = gameState.scores[socket.id];
-        if (!player) return;
-
-        const currentRound = gameState.playlist[gameState.currentRoundIndex];
-        if (!currentRound || !currentRound.questions) return;
-
-        const currentQ = currentRound.questions[gameState.currentQuestionIndex];
-        if (!currentQ) return;
-
-        if (player.hasAnsweredCurrent) return;
-
-        const isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
-        let pointsEarned = 0;
-
-        if (isCorrect) {
-            if (!currentQ.fastestPlayerId) {
-                currentQ.fastestPlayerId = socket.id;
-            }
-            const isFastest = currentQ.fastestPlayerId === socket.id;
-
-            player.streak = (player.streak || 0) + 1;
-            const streakMultiplier = player.streak >= 3 ? 1.5 : (player.streak >= 2 ? 1.25 : 1.0);
-            
-            const timeBonus = Math.floor((timeRemaining / gameState.timerMax) * 40);
-            const speedBonus = isFastest ? 25 : 0;
-            
-            pointsEarned = Math.round((50 + Math.max(0, timeBonus) + speedBonus) * streakMultiplier);
-            player.score += pointsEarned;
-        } else {
-            player.streak = 0;
-        }
-
-        player.hasAnsweredCurrent = true;
-
-        socket.emit('answer-result', { correct: isCorrect, points: pointsEarned, streak: player.streak, isFastest: currentQ.fastestPlayerId === socket.id });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('add-round', (roundConfig) => {
-        const questions = parseCategoryFile(roundConfig.genre);
-        const selectedQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, roundConfig.count || 10);
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; }
         
-        gameState.playlist.push({
-            name: roundConfig.name || roundConfig.genre,
-            genre: roundConfig.genre,
-            timer: roundConfig.timer ? parseInt(roundConfig.timer) : null,
-            questions: selectedQuestions
-        });
-        io.emit('state-update', gameState);
-    });
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #334155; text-align: center; }
+        input, button { width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; border: none; margin-bottom: 1rem; font-weight: bold; }
+        input { background: #0f172a; border: 1px solid #475569; color: white; text-align: center; }
+        button { background: var(--accent); color: white; cursor: pointer; }
+        button:active { transform: scale(0.98); }
+        
+        .options-stack { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+        .option-btn { background: #334155; color: white; font-size: 1.2rem; padding: 1.2rem; border-radius: 10px; border: 2px solid #475569; }
+        .option-btn.selected { background: var(--accent); border-color: white; }
 
-    socket.on('add-beatiq-round', (roundConfig) => {
-        let allTracks = [];
-        try {
-            function findFile(dir, filename) {
-                if (!fs.existsSync(dir)) return null;
-                const files = fs.readdirSync(dir);
-                for (const file of files) {
-                    const fullPath = path.join(dir, file);
-                    try {
-                        const stat = fs.statSync(fullPath);
-                        if (stat.isDirectory()) {
-                            if (file === 'node_modules' || file === '.git') continue;
-                            const found = findFile(fullPath, filename);
-                            if (found) return found;
-                        } else if (file === filename) {
-                            return fullPath;
-                        }
-                    } catch (e) {}
+        .emoji-bar { display: flex; justify-content: space-around; background: #0f172a; padding: 0.5rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #334155; }
+        .emoji-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.2rem; width: auto; margin-bottom: 0; }
+        
+        #announcementBanner { background: var(--accent); color: white; padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; display: none; text-align: center; }
+        #mobileAdModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.98); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
+        #mobileAdModal img { max-width: 100%; max-height: 350px; border-radius: 8px; margin-top: 1rem; border: 2px solid var(--accent); }
+    </style>
+</head>
+<body>
+
+    <audio id="mobileAudioPlayer" preload="auto"></audio>
+
+    <div id="mobileAdModal">
+        <h3 id="mobileAdTitle" style="color: var(--accent); font-size: 1.8rem; margin-bottom: 0.5rem;"></h3>
+        <div id="mobileAdImageContainer"></div>
+    </div>
+
+    <div id="announcementBanner"></div>
+
+    <div id="joinScreen" class="card" style="margin-top: auto; margin-bottom: auto;">
+        <h2>Enter Quiz Arena</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Choose your player nickname</p>
+        <input type="text" id="playerNameInput" placeholder="Your Nickname" maxlength="15">
+        <button onclick="joinGame()">Join Game 🚀</button>
+    </div>
+
+    <div id="gameScreen" style="display: none; flex: 1; display: flex; flex-direction: column;">
+        <div class="card" style="padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+            <span id="playerDisplayName" style="font-weight: bold; color: var(--accent);">Player</span>
+            <span id="playerScoreDisplay" style="font-weight: bold; color: var(--success);">0 pts</span>
+        </div>
+
+        <div id="gameStage" class="card" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            <h3>Waiting for next round...</h3>
+        </div>
+
+        <div class="emoji-bar">
+            <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
+            <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
+            <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
+            <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
+            <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
+            <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let myName = '';
+        let answeredCurrent = false;
+
+        socket.on('stop-audio', () => {
+            const audio = document.getElementById('mobileAudioPlayer');
+            audio.pause();
+            audio.currentTime = 0;
+        });
+
+        socket.on('announcement-update', (announcement) => {
+            const banner = document.getElementById('announcementBanner');
+            if (announcement.active && announcement.text) {
+                banner.style.display = 'block';
+                banner.innerText = '📢 ' + announcement.text;
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+
+        function joinGame() {
+            const name = document.getElementById('playerNameInput').value.trim();
+            if (!name) { alert('Please enter a nickname!'); return; }
+            myName = name;
+            socket.emit('player-join', name);
+            document.getElementById('joinScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
+            document.getElementById('playerDisplayName').innerText = name;
+        }
+
+        function sendEmoji(emoji) {
+            socket.emit('send-emoji', emoji);
+        }
+
+        socket.on('state-update', (state) => {
+            const player = state.scores[socket.id];
+            if (player) {
+                document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
+            }
+
+            // Mobile Advert handling
+            const adModal = document.getElementById('mobileAdModal');
+            if (state.activeMobileAdvert) {
+                adModal.style.display = 'flex';
+                document.getElementById('mobileAdTitle').innerText = state.activeMobileAdvert.title;
+                const imgContainer = document.getElementById('mobileAdImageContainer');
+                if (state.activeMobileAdvert.image) {
+                    imgContainer.innerHTML = `<img src="${state.activeMobileAdvert.image}" />`;
+                } else {
+                    imgContainer.innerHTML = '';
                 }
-                return null;
+            } else {
+                adModal.style.display = 'none';
             }
 
-            const foundPath = findFile(__dirname, 'curatedTracks.json');
-            if (foundPath) {
-                allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
+            const stage = document.getElementById('gameStage');
+
+            if (state.status === 'IDLE' || state.status === 'LOBBY') {
+                stage.innerHTML = `<h3>Waiting for host to start game...</h3><p style="color: var(--text-muted); margin-top: 1rem;">Get ready!</p>`;
+            } else if (state.status === 'QUESTION') {
+                const round = state.playlist[state.currentRoundIndex];
+                const q = round ? round.questions[state.currentQuestionIndex] : null;
+
+                if (q) {
+                    if (q.audioPreviewUrl) {
+                        const audio = document.getElementById('mobileAudioPlayer');
+                        if (audio.src !== q.audioPreviewUrl) {
+                            audio.src = q.audioPreviewUrl;
+                            audio.load();
+                            audio.play().catch(e => console.log("Mobile autoplay restricted"));
+                        }
+                    }
+
+                    if (player && player.hasAnsweredCurrent) {
+                        stage.innerHTML = `<h3>Answer Locked In! ✔</h3><p style="color: var(--text-muted); margin-top: 1rem;">Waiting for timer to expire...</p>`;
+                    } else {
+                        answeredCurrent = false;
+                        stage.innerHTML = `
+                            <p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">${q.question}</p>
+                            <div class="options-stack">
+                                ${q.options.map(opt => `<button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}
+                            </div>
+                        `;
+                    }
+                }
+            } else if (state.status === 'LEADERBOARD') {
+                const audio = document.getElementById('mobileAudioPlayer');
+                audio.pause();
+                stage.innerHTML = `<h3>☕ Intermission / Leaderboard</h3><p style="color: var(--text-muted); margin-top: 1rem;">Check the big screen for standings!</p>`;
+            } else if (state.status === 'PAUSED') {
+                const audio = document.getElementById('mobileAudioPlayer');
+                audio.pause();
+                stage.innerHTML = `<h3>Game Paused by Host</h3><p style="color: var(--text-muted); margin-top: 1rem;">Stand by...</p>`;
             }
-        } catch (err) {}
-
-        const targetGenre = roundConfig.genre;
-        const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
-        
-        let genreFilteredTracks = allTracks.filter(t => t.genre === targetGenre);
-        let trackPool = genreFilteredTracks.length >= requestedCount ? genreFilteredTracks : allTracks;
-        
-        const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, requestedCount);
-        const allArtists = allTracks.map(t => t.artist);
-
-        const questions = selectedTracks.map((t) => {
-            const wrongArtists = allArtists.filter(a => a !== t.artist).sort(() => 0.5 - Math.random()).slice(0, 3);
-            while (wrongArtists.length < 3) {
-                wrongArtists.push('Alternative Artist ' + (wrongArtists.length + 1));
-            }
-            const options = [t.artist, ...wrongArtists].sort(() => 0.5 - Math.random());
-
-            return {
-                question: `🎧 Listen to the snippet: Which artist or band performed "${t.title}"?`,
-                options: options,
-                answer: t.artist,
-                fastestPlayerId: null,
-                audioPreviewUrl: t.previewUrl || null,
-                spotifyUrl: t.spotifyUrl || null
-            };
         });
 
-        gameState.playlist.push({
-            name: `🎵 Music: ${roundConfig.name}`,
-            genre: `BeatIQ (${targetGenre})`,
-            timer: 20,
-            questions: questions
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('move-round', ({ index, direction }) => {
-        if (direction === 'up' && index > 0) {
-            const temp = gameState.playlist[index];
-            gameState.playlist[index] = gameState.playlist[index - 1];
-            gameState.playlist[index - 1] = temp;
-        } else if (direction === 'down' && index < gameState.playlist.length - 1) {
-            const temp = gameState.playlist[index];
-            gameState.playlist[index] = gameState.playlist[index + 1];
-            gameState.playlist[index + 1] = temp;
+        function submitAnswer(answer) {
+            if (answeredCurrent) return;
+            answeredCurrent = true;
+            socket.emit('submit-answer', { answer, timeRemaining: 15 });
+            document.getElementById('gameStage').innerHTML = `<h3>Answer Submitted! 🎯</h3><p style="color: var(--text-muted); margin-top: 1rem;">Waiting for results...</p>`;
         }
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('delete-round', (index) => {
-        gameState.playlist.splice(index, 1);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('clear-playlist', () => {
-        gameState.playlist = [];
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.status = 'IDLE';
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-settings', (newSettings) => {
-        if (newSettings.questionTime) gameState.settings.questionTime = parseInt(newSettings.questionTime);
-        if (newSettings.intermissionTime) gameState.settings.intermissionTime = parseInt(newSettings.intermissionTime);
-        if (newSettings.countdownSound !== undefined) gameState.settings.countdownSound = newSettings.countdownSound;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-venue-details', (details) => {
-        gameState.venueDetails = details;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-announcement', (announcementData) => {
-        gameState.announcement = announcementData;
-        io.emit('announcement-update', gameState.announcement);
-    });
-
-    socket.on('send-emoji', (emoji) => {
-        io.emit('player-emoji', { id: socket.id, emoji });
-    });
-
-    socket.on('start-round', () => {
-        if (gameState.playlist.length === 0) return;
-        if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
-
-        gameState.status = 'QUESTION';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.timerMax = getCurrentRoundTimer();
-        gameState.timer = gameState.timerMax;
-        
-        Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-        io.emit('state-update', gameState);
-        startQuestionTimer();
-    });
-
-    socket.on('next-question', () => {
-        advanceToNextQuestion();
-    });
-
-    socket.on('stop-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
-        gameState.status = 'PAUSED';
-        io.emit('stop-audio'); // Broadcast stop audio command to all clients
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('stop-reset', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.activeScreenAdvert = null;
-        gameState.activeMobileAdvert = null;
-        gameState.scores = {};
-        io.emit('stop-audio'); // Broadcast stop audio command to all clients
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('broadcast-advert-screen', (adData) => {
-        gameState.activeScreenAdvert = adData;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-screen', () => {
-        gameState.activeScreenAdvert = null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('broadcast-advert-mobile', (adData) => {
-        gameState.activeMobileAdvert = adData;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-mobile', () => {
-        gameState.activeMobileAdvert = null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('disconnect', () => {
-        delete gameState.scores[socket.id];
-        io.emit('state-update', gameState);
-    });
-});
-
-function startQuestionTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
-
-    timerInterval = setInterval(() => {
-        if (gameState.status === 'QUESTION') {
-            gameState.timer--;
-            io.emit('timer-tick', gameState.timer);
-
-            if (gameState.timer <= 0) {
-                clearInterval(timerInterval);
-                triggerLeaderboardAndAutoAdvance();
-            }
-        }
-    }, 1000);
-}
-
-function triggerLeaderboardAndAutoAdvance() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (!round) return;
-
-    const isLastQuestion = gameState.currentQuestionIndex + 1 >= round.questions.length && 
-                           gameState.currentRoundIndex + 1 >= gameState.playlist.length;
-
-    gameState.status = 'LEADERBOARD';
-    io.emit('stop-audio'); // Stop audio during leaderboard intermission
-    io.emit('state-update', gameState);
-
-    if (isLastQuestion) return;
-
-    const intermissionMs = (gameState.settings.intermissionTime || 5) * 1000;
-    leaderboardTimeout = setTimeout(() => {
-        advanceToNextQuestion();
-    }, intermissionMs);
-}
-
-function advanceToNextQuestion() {
-    if (timerInterval) clearInterval(timerInterval);
-    if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
-
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (!round || !round.questions) return;
-
-    Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-
-    gameState.currentQuestionIndex++;
-
-    if (gameState.currentQuestionIndex >= round.questions.length) {
-        if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
-            gameState.currentRoundIndex++;
-            gameState.currentQuestionIndex = 0;
-        } else {
-            gameState.status = 'LEADERBOARD';
-            io.emit('stop-audio');
-            io.emit('state-update', gameState);
-            return;
-        }
-    }
-
-    gameState.status = 'QUESTION';
-    gameState.timerMax = getCurrentRoundTimer();
-    gameState.timer = gameState.timerMax;
-    
-    io.emit('state-update', gameState);
-    startQuestionTimer();
-}
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`TriviaMania server running on http://localhost:${PORT}`);
-});
+    </script>
+</body>
+</html>
