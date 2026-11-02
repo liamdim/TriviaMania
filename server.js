@@ -170,8 +170,10 @@ io.on('connection', (socket) => {
         if (player.hasAnsweredCurrent) return;
 
         let isCorrect = false;
-        if (currentQ.type === 'lingo') {
-            isCorrect = answer.trim().toUpperCase() === currentQ.answer.toUpperCase();
+        if (currentQ.gameType === 'lingo') {
+            isCorrect = answer.trim().toUpperCase() === currentQ.answer.trim().toUpperCase();
+        } else if (currentQ.gameType === 'higher-lower') {
+            isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
         } else {
             isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
         }
@@ -278,66 +280,91 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // MINI-GAME BUILDER SOCKET HANDLER
+    // MINI-GAME ROUND GENERATORS
     socket.on('add-minigame-round', (config) => {
         let questions = [];
-        let roundName = config.name || 'Mini-Game Round';
-        let timer = 20;
-
         if (config.type === 'lingo') {
-            const words = ['SHARK', 'MUSIC', 'HOUSE', 'BEACH', 'PARTY', 'TRAIN', 'LIGHT', 'PIANO', 'RADIO', 'QUEEN', 'DANCE', 'SMILE'];
-            const selectedWord = words[Math.floor(Math.random() * words.length)];
-            questions = [{
-                type: 'lingo',
-                question: `🔤 Lingo Round: Guess the 5-letter target word!`,
-                answer: selectedWord,
-                options: [],
-                fastestPlayerId: null
-            }];
-            roundName = `🔤 Lingo: ${selectedWord}`;
-            timer = 30;
-        } else if (config.type === 'scramble') {
-            const items = [
-                { word: 'BEATLES', clue: 'Legendary British rock band' },
-                { word: 'KARAFUN', clue: 'Popular karaoke software system' },
-                { word: 'TRIVIAMANIA', clue: 'This ultimate pub quiz platform' },
-                { word: 'GUITAR', `clue`: 'Six-string acoustic or electric instrument' },
-                { word: 'POPULAR', clue: 'Liked or admired by many people' }
+            const lingoWords = [
+                { word: 'SHARK', hint: 'Ocean predator with a dorsal fin' },
+                { word: 'MUSIC', hint: 'Organized sound and melody' },
+                { word: 'HOUSE', hint: 'A building for human habitation' },
+                { word: 'PLANT', hint: 'Living organism that produces oxygen' },
+                { word: 'TRAIN', hint: 'Railway transport vehicle' },
+                { word: 'BEACH', hint: 'Sandy shore by the ocean' },
+                { word: 'LIGHT', hint: 'Electromagnetic radiation visible to the eye' },
+                { word: 'SPACE', hint: 'The boundless three-dimensional extent' },
+                { word: 'PIZZA', hint: 'Popular Italian baked flatbread dish' },
+                { word: 'MONEY', hint: 'Medium of exchange for goods and services' },
+                { word: 'WATER', hint: 'Essential clear liquid for all living things' },
+                { word: 'DRINK', hint: 'Liquid refreshment ordered at a pub' },
+                { word: 'QUEEN', hint: 'Royal female monarch or legendary rock band' },
+                { word: 'PARTY', hint: 'A social gathering for celebration' },
+                { word: 'DANCE', hint: 'Move rhythmically to music' },
+                { word: 'STAGE', hint: 'Platform where performers stand' }
             ];
-            const item = items[Math.floor(Math.random() * items.length)];
-            const scrambled = item.word.split('').sort(() => 0.5 - Math.random()).join(' ');
-            questions = [{
-                type: 'scramble',
-                question: `🔀 Word Scramble (${item.clue}): Unscramble the letters: "${scrambled}"`,
+            const selected = lingoWords.sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            questions = selected.map(item => ({
+                gameType: 'lingo',
+                question: `🔤 LINGO ROUND: Guess the 5-letter word! Hint: ${item.hint}`,
                 answer: item.word,
                 options: [],
                 fastestPlayerId: null
-            }];
-            roundName = `🔀 Word Scramble Round`;
-            timer = 20;
-        } else if (config.type === 'higherlower') {
-            const facts = [
-                { q: 'Average UK rainfall in January (mm)', answer: 'Higher', options: ['Higher', 'Lower'] },
-                { q: 'Number of keys on a standard piano', answer: '88', options: ['76', '88', '92', '104'] }
+            }));
+        } else if (config.type === 'scramble') {
+            const scrambleItems = [
+                { word: 'BEATLES', scrambled: 'S E T A E B L' },
+                { word: 'QUEEN', scrambled: 'E E N Q U' },
+                { word: 'LONDON', scrambled: 'D O N N O L' },
+                { word: 'GUITAR', scrambled: 'R T I A U G' },
+                { word: 'KARAOKE', scrambled: 'K O R A A E K' },
+                { word: 'TRIVIA', scrambled: 'I V A I R T' },
+                { word: 'CHELSEA', scrambled: 'E H S E L A C' },
+                { word: 'WHISKEY', scrambled: 'E Y K I S H W' },
+                { word: 'RADIOHEAD', scrambled: 'H A D O R E I A D' },
+                { word: 'PYRAMID', scrambled: 'M I D A R Y P' },
+                { word: 'FOOTBALL', scrambled: 'L B A L T O O F' },
+                { word: 'DIAMOND', scrambled: 'N O M D A I D' }
             ];
-            questions = facts.map(f => ({
-                type: 'higherlower',
-                question: `⬆️ Higher or Lower: ${f.q}`,
-                answer: f.answer,
-                options: f.options,
+            const selected = scrambleItems.sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            questions = selected.map(item => {
+                const wrongOpts = scrambleItems.filter(i => i.word !== item.word).map(i => i.word).slice(0, 3);
+                const options = [item.word, ...wrongOpts].sort(() => 0.5 - Math.random());
+                return {
+                    gameType: 'scramble',
+                    question: `🔀 WORD SCRAMBLE: Unscramble these letters: [ ${item.scrambled} ]`,
+                    answer: item.word,
+                    options: options,
+                    fastestPlayerId: null
+                };
+            });
+        } else if (config.type === 'higher-lower') {
+            const hlItems = [
+                { fact: 'Average population of London (Millions)', options: ['Higher', 'Lower'], answer: 'Higher' },
+                { fact: 'Number of keys on a standard piano (88)', options: ['Higher', 'Lower'], answer: '88' },
+                { fact: 'Year the first iPhone was released (2007)', options: ['Higher', 'Lower'], answer: '2007' },
+                { fact: 'Boiling point of water in Celsius (100°C)', options: ['Higher', 'Lower'], answer: '100' },
+                { fact: 'Number of squares on a chessboard (64)', options: ['Higher', 'Lower'], answer: '64' },
+                { fact: 'Average runtime of a feature film in minutes (~120)', options: ['Higher', 'Lower'], answer: '120' }
+            ];
+            const selected = hlItems.sort(() => 0.5 - Math.random()).slice(0, config.count || 5);
+            questions = selected.map(item => ({
+                gameType: 'higher-lower',
+                question: `⬆️ HIGHER OR LOWER: ${item.fact}`,
+                answer: item.answer,
+                options: item.options,
                 fastestPlayerId: null
             }));
-            roundName = `⬆️ Higher or Lower Round`;
-            timer = 15;
         }
 
-        gameState.playlist.push({
-            name: roundName,
-            genre: `Mini-Game (${config.type})`,
-            timer: timer,
-            questions: questions
-        });
-        io.emit('state-update', gameState);
+        if (questions.length > 0) {
+            gameState.playlist.push({
+                name: config.name || `🎮 Mini-Game: ${config.type.toUpperCase()}`,
+                genre: `Mini-Game (${config.type})`,
+                timer: 20,
+                questions: questions
+            });
+            io.emit('state-update', gameState);
+        }
     });
 
     socket.on('move-round', ({ index, direction }) => {
