@@ -571,18 +571,21 @@
                 
                 const allTracks = await res.json();
                 if (!Array.isArray(allTracks) || allTracks.length === 0) {
-                    alert('Error: No tracks loaded. Check if data/curatedTracks.json exists and is valid JSON.');
+                    alert('Error: No tracks loaded. Check if curatedTracks.json exists inside your beats-main folder.');
                     return;
                 }
 
-                const genreTracks = allTracks.filter(t => t.genre === genre).sort(() => 0.5 - Math.random()).slice(0, count);
+                // Filter by selected genre ID, fallback to all tracks if needed
+                let genreTracks = allTracks.filter(t => t.genre === genre);
+                let trackPool = genreTracks.length >= count ? genreTracks : allTracks;
+                const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, count);
 
-                if (genreTracks.length === 0) {
-                    alert(`No tracks found for genre: "${genre}". Try selecting a different genre.`);
+                if (selectedTracks.length === 0) {
+                    alert(`No tracks found. Try selecting a different genre.`);
                     return;
                 }
 
-                socket.emit('add-beatiq-round', { genre, name, tracks: genreTracks });
+                socket.emit('add-beatiq-round', { genre, name, questionCount: count });
                 alert(`Successfully added "${name}" to your main playlist queue!`);
                 switchTab('controls');
             } catch (err) {
