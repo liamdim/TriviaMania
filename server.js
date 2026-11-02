@@ -340,9 +340,22 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send-emoji', (emoji) => {
-        if (!gameState.chatEnabled) return; // Ignore if global chat is disabled
-        if (gameState.mutedPlayers[socket.id]) return; // Ignore if player is muted
+        if (!gameState.chatEnabled) return;
+        if (gameState.mutedPlayers[socket.id]) return;
         io.emit('player-emoji', { id: socket.id, emoji });
+    });
+
+    socket.on('player-chat', (message) => {
+        if (!gameState.chatEnabled) return;
+        if (gameState.mutedPlayers[socket.id]) return;
+        
+        const cleanMsg = sanitizeText(message);
+        if (!cleanMsg) return;
+
+        const player = gameState.scores[socket.id];
+        const playerName = player ? player.name : 'Anonymous';
+
+        io.emit('chat-message', { name: playerName, text: cleanMsg });
     });
 
     socket.on('start-round', () => {
