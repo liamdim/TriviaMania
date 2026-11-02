@@ -19,7 +19,7 @@
             --border-glow: 0 0 15px rgba(0, 243, 255, 0.25);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); position: relative; overflow-x: hidden; }
         
         .card { background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); text-align: center; }
         
@@ -30,7 +30,6 @@
         button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); transition: 0.2s; }
         button:active { transform: scale(0.98); }
         button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
-        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055); color: #fff; box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3); }
         
         .options-stack { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
         .option-btn { background: rgba(255, 255, 255, 0.05); color: white; font-size: 1.1rem; padding: 1rem; border-radius: 10px; border: 1px solid rgba(0, 243, 255, 0.3); transition: 0.2s; text-align: left; margin-bottom: 0; }
@@ -41,15 +40,16 @@
         
         #announcementBanner { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; display: none; text-align: center; box-shadow: 0 0 15px rgba(255, 238, 0, 0.4); }
         
-        .mobile-lb-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
-        .mobile-lb-table th, .mobile-lb-table td { padding: 0.5rem; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
-        .mobile-lb-table th { color: var(--neon-blue); }
+        .floating-emoji { position: fixed; bottom: 80px; font-size: 2.5rem; animation: floatUp 1.5s ease-out forwards; pointer-events: none; z-index: 9999; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
     <audio id="mobileAudioPlayer" preload="auto"></audio>
-
     <div id="announcementBanner"></div>
 
     <div id="joinScreen" class="card" style="margin-top: auto; margin-bottom: auto;">
@@ -83,7 +83,8 @@
                 </div>
             </div>
 
-            <div class="emoji-bar" id="emojiBarContainer">
+            <!-- Dynamic Emoji Bar -->
+            <div class="emoji-bar" id="mobileEmojiBar">
                 <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
                 <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
                 <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
@@ -99,82 +100,23 @@
         let myName = '';
         let answeredCurrent = false;
 
-        const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
-
-        function sanitizeText(text) {
-            if (!text) return '';
-            let clean = text.trim();
-            badWords.forEach(word => {
-                const regex = new RegExp('\\b' + word + '\\b', 'gi');
-                clean = clean.replace(regex, '****');
-            });
-            return clean;
-        }
-
-        function playBeep() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                if (ctx.state === 'suspended') ctx.resume();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.frequency.setValueAtTime(800, ctx.currentTime);
-                gain.gain.setValueAtTime(0.05, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.1);
-            } catch(e) {}
-        }
-
-        socket.on('stop-audio', () => {
-            const audio = document.getElementById('mobileAudioPlayer');
-            audio.pause();
-            audio.currentTime = 0;
+        socket.on('player-emoji', (data) => {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = data.emoji;
+            el.style.left = (20 + Math.random() * 60) + '%';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
         });
 
         socket.on('timer-tick', (timeLeft) => {
             document.getElementById('mobileTimerDisplay').innerText = '⏱ ' + timeLeft + 's';
-            if (timeLeft <= 5 && timeLeft > 0) playBeep();
         });
-
-        socket.on('announcement-update', (announcement) => {
-            const banner = document.getElementById('announcementBanner');
-            if (announcement.active && announcement.text) {
-                banner.style.display = 'block';
-                banner.innerText = '📢 ' + announcement.text;
-            } else {
-                banner.style.display = 'none';
-            }
-        });
-
-        socket.on('chat-message', (data) => {
-            if (data.name === (myName || 'You')) return;
-            appendChatMessage(data.name, sanitizeText(data.text));
-        });
-
-        function appendChatMessage(name, text) {
-            const chatLog = document.getElementById('mobileChatLog');
-            if (chatLog) {
-                if (chatLog.children.length === 1 && chatLog.children[0].style.fontStyle === 'italic') {
-                    chatLog.innerHTML = '';
-                }
-                const msgEl = document.createElement('div');
-                msgEl.innerHTML = '<span style="color: var(--neon-blue); font-weight: bold;">' + name + ':</span> ' + sanitizeText(text);
-                chatLog.appendChild(msgEl);
-                chatLog.scrollTop = chatLog.scrollHeight;
-            }
-        }
 
         function joinGame() {
             const name = document.getElementById('playerNameInput').value.trim();
             if (!name) { alert('Please enter a nickname!'); return; }
-            myName = sanitizeText(name);
-
-            const audio = document.getElementById('mobileAudioPlayer');
-            audio.play().catch(() => {});
-            audio.pause();
-
+            myName = name;
             socket.emit('player-join', myName);
             document.getElementById('joinScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'flex';
@@ -189,91 +131,41 @@
             const input = document.getElementById('playerChatInput');
             const message = input.value.trim();
             if (!message) return;
-            const cleanMessage = sanitizeText(message);
-            appendChatMessage(myName || 'You', cleanMessage);
-            socket.emit('player-chat', cleanMessage);
+            socket.emit('player-chat', message);
             input.value = '';
         }
 
         socket.on('answer-result', (data) => {
             const stage = document.getElementById('gameStage');
             if (data.correct) {
-                stage.innerHTML = 
-                    '<h3 style="color: var(--neon-green); font-size: 1.5rem;">CORRECT! ✔</h3>' +
-                    '<p style="color: var(--neon-green); font-size: 1.2rem; margin-top: 0.5rem;">+' + data.points + ' pts</p>' +
-                    '<p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Streak: 🔥 x' + data.streak + '</p>';
+                stage.innerHTML = '<h3 style="color: var(--neon-green); font-size: 1.5rem;">CORRECT! ✔</h3><p style="color: var(--neon-green); font-size: 1.2rem; margin-top: 0.5rem;">+' + data.points + ' pts</p>';
             } else {
-                stage.innerHTML = 
-                    '<h3 style="color: var(--neon-pink); font-size: 1.5rem;">INCORRECT ❌</h3>' +
-                    '<p style="color: var(--text-muted); margin-top: 0.5rem;">Correct Answer was:</p>' +
-                    '<p style="color: var(--neon-green); font-size: 1.2rem; font-weight: bold; margin-top: 0.2rem;">' + data.correctAnswer + '</p>';
+                stage.innerHTML = '<h3 style="color: var(--neon-pink); font-size: 1.5rem;">INCORRECT ❌</h3><p style="color: var(--text-muted); margin-top: 0.5rem;">Correct Answer:</p><p style="color: var(--neon-green); font-size: 1.2rem; font-weight: bold;">' + data.correctAnswer + '</p>';
             }
         });
 
         socket.on('state-update', (state) => {
             const player = state.scores[socket.id];
-            if (player) {
-                document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
+            if (player) document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
+
+            // Update mobile emoji bar dynamically if custom emojis are set
+            if (state.customEmojis && state.customEmojis.length > 0) {
+                const bar = document.getElementById('mobileEmojiBar');
+                bar.innerHTML = state.customEmojis.map(e => '<button class="emoji-btn" onclick="sendEmoji(\'' + e + '\')">' + e + '</button>').join('');
             }
 
             const stage = document.getElementById('gameStage');
-
-            if (state.status === 'IDLE' || state.status === 'LOBBY') {
-                document.getElementById('mobileTimerDisplay').innerText = '⏱ --';
-                document.getElementById('mobileQuestionCounter').innerText = 'Q --';
-                stage.innerHTML = '<h3 style="color: var(--neon-yellow);">' + (state.mobileWaitingText || 'Waiting for host...') + '</h3>';
-            } else if (state.status === 'QUESTION') {
+            if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
-
                 if (round && q) {
                     document.getElementById('mobileQuestionCounter').innerText = 'Q ' + (state.currentQuestionIndex + 1) + '/' + round.questions.length;
-
-                    if (q.audioPreviewUrl) {
-                        const audio = document.getElementById('mobileAudioPlayer');
-                        if (audio.src !== q.audioPreviewUrl) {
-                            audio.src = q.audioPreviewUrl;
-                            audio.load();
-                            audio.play().catch(e => {});
-                        }
-                    }
-
-                    if (player && player.hasAnsweredCurrent) {
-                        // Keep current answer screen active or waiting
-                    } else {
-                        answeredCurrent = false;
-                        if (q.gameType === 'lingo') {
-                            stage.innerHTML = 
-                                '<p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold;">' + q.question + '</p>' +
-                                '<div style="margin-top: 1rem;">' +
-                                    '<input type="text" id="lingoInput" placeholder="5-LETTER WORD" maxlength="5" style="text-transform: uppercase; font-size: 1.4rem; letter-spacing: 3px; margin-bottom: 1rem;">' +
-                                    '<button class="success" onclick="submitLingoAnswer()">Submit Guess 🎯</button>' +
-                                '</div>';
-                        } else {
-                            stage.innerHTML = 
-                                '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p>' +
-                                '<div class="options-stack">' +
-                                    q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\')">' + opt + '</button>').join('') +
-                                '</div>';
-                        }
+                    if (!player || !player.hasAnsweredCurrent) {
+                        stage.innerHTML = '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p><div class="options-stack">' + q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\')">' + opt + '</button>').join('') + '</div>';
                     }
                 }
             } else if (state.status === 'LEADERBOARD') {
-                document.getElementById('mobileTimerDisplay').innerText = '⏱ ☕';
-                document.getElementById('mobileQuestionCounter').innerText = 'Leaderboard';
-                const audio = document.getElementById('mobileAudioPlayer');
-                audio.pause();
-
-                const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
-                stage.innerHTML = 
-                    '<h3 style="color: var(--neon-blue); margin-bottom: 0.5rem;">🏆 Standings</h3>' +
-                    '<table class="mobile-lb-table">' +
-                        '<thead><tr><th>Rank</th><th>Name</th><th>Score</th></tr></thead>' +
-                        '<tbody>' +
-                            (sortedPlayers.length === 0 ? '<tr><td colspan="3">No scores yet</td></tr>' : 
-                                sortedPlayers.map((p, idx) => '<tr><td>' + (idx+1) + '</td><td>' + p.name + '</td><td><strong>' + p.score + '</strong></td></tr>').join('')) +
-                        '</tbody>' +
-                    '</table>';
+                stage.innerHTML = '<h3 style="color: var(--neon-blue);">🏆 Standings</h3>';
             }
         });
 
@@ -282,13 +174,6 @@
             answeredCurrent = true;
             socket.emit('submit-answer', { answer, timeRemaining: 15 });
             document.getElementById('gameStage').innerHTML = '<h3 style="color: var(--neon-yellow);">Answer Locked In! 🔒</h3>';
-        }
-
-        function submitLingoAnswer() {
-            const input = document.getElementById('lingoInput');
-            const val = input ? input.value.trim().toUpperCase() : '';
-            if (val.length !== 5) { alert('Please enter a 5-letter word!'); return; }
-            submitAnswer(val);
         }
     </script>
 </body>
