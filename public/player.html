@@ -67,7 +67,6 @@
             <h3>Waiting for host to start game...</h3>
         </div>
 
-        <!-- Mobile Chat Room & Shoutout Box -->
         <div id="chatControlsWrapper">
             <div class="card" style="padding: 0.75rem; margin-bottom: 0.5rem; text-align: left;">
                 <div style="font-size: 0.85rem; color: var(--accent); font-weight: bold; margin-bottom: 0.4rem;">💬 Live Room Chat</div>
@@ -111,10 +110,32 @@
             return clean;
         }
 
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            } catch(e) {}
+        }
+
         socket.on('stop-audio', () => {
             const audio = document.getElementById('mobileAudioPlayer');
             audio.pause();
             audio.currentTime = 0;
+        });
+
+        socket.on('timer-tick', (timeLeft) => {
+            if (timeLeft <= 5 && timeLeft > 0) {
+                playBeep();
+            }
         });
 
         socket.on('announcement-update', (announcement) => {
