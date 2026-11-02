@@ -28,7 +28,7 @@
         .option-btn { background: #334155; color: white; font-size: 1.2rem; padding: 1.2rem; border-radius: 10px; border: 2px solid #475569; }
         .option-btn.selected { background: var(--accent); border-color: white; }
 
-        .emoji-bar { display: flex; justify-content: space-around; background: #0f172a; padding: 0.5rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #334155; }
+        .emoji-bar { display: flex; justify-content: space-around; background: #0f172a; padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem; border: 1px solid #334155; }
         .emoji-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.2rem; width: auto; margin-bottom: 0; }
         
         #announcementBanner { background: var(--accent); color: white; padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; display: none; text-align: center; }
@@ -57,7 +57,7 @@
         <button onclick="joinGame()">Join Game 🚀</button>
     </div>
 
-    <div id="gameScreen" style="display: none; flex: 1; display: flex; flex-direction: column;">
+    <div id="gameScreen" style="display: none; flex: 1; flex-direction: column;">
         <div class="card" style="padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
             <span id="playerDisplayName" style="font-weight: bold; color: var(--accent);">Player</span>
             <span id="playerScoreDisplay" style="font-weight: bold; color: var(--success);">0 pts</span>
@@ -67,13 +67,21 @@
             <h3>Waiting for host to start game...</h3>
         </div>
 
-        <div class="emoji-bar" id="emojiBarContainer">
-            <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
-            <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
-            <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
-            <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
-            <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
-            <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
+        <!-- Chat / Shoutout Text Bar -->
+        <div id="chatControlsWrapper">
+            <div id="chatBarContainer" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="text" id="playerChatInput" placeholder="Type a shoutout or taunt..." maxlength="60" style="margin-bottom: 0; flex: 1; padding: 0.7rem; font-size: 0.95rem;">
+                <button onclick="sendPlayerChat()" style="width: auto; margin-bottom: 0; padding: 0.7rem 1.2rem; font-size: 0.95rem;">Send 💬</button>
+            </div>
+
+            <div class="emoji-bar" id="emojiBarContainer">
+                <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
+                <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
+                <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
+                <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
+                <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
+                <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
+            </div>
         </div>
     </div>
 
@@ -121,19 +129,27 @@
             socket.emit('send-emoji', emoji);
         }
 
+        function sendPlayerChat() {
+            const input = document.getElementById('playerChatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            socket.emit('player-chat', message);
+            input.value = '';
+        }
+
         socket.on('state-update', (state) => {
             const player = state.scores[socket.id];
             if (player) {
                 document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
             }
 
-            // Hide or show emoji bar based on global chat toggle
-            const emojiBar = document.getElementById('emojiBarContainer');
+            const chatWrapper = document.getElementById('chatControlsWrapper');
             if (state.chatEnabled === false) {
-                emojiBar.style.display = 'none';
+                chatWrapper.style.display = 'none';
             } else {
-                emojiBar.style.display = 'flex';
+                chatWrapper.style.display = 'block';
                 if (state.customEmojis) {
+                    const emojiBar = document.getElementById('emojiBarContainer');
                     emojiBar.innerHTML = state.customEmojis.map(emoji => 
                         `<button class="emoji-btn" onclick="sendEmoji('${emoji}')">${emoji}</button>`
                     ).join('');
