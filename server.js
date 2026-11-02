@@ -20,9 +20,9 @@ let gameState = {
     timer: 0,
     timerMax: 15,
     scores: {},
-    mutedPlayers: {}, // socketId -> boolean
-    chatEnabled: true, // Master chat toggle
-    chatHistory: [], // Recent chat messages log for lobby/joining players
+    mutedPlayers: {},
+    chatEnabled: true,
+    chatHistory: [],
     activeScreenAdvert: null,
     activeMobileAdvert: null,
     venueDetails: 'Welcome to Trivia Night!',
@@ -40,7 +40,6 @@ let gameState = {
 let timerInterval = null;
 let leaderboardTimeout = null;
 
-// Expanded profanity filter with whole-word boundary matching (\b)
 const badWords = [
     'damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 
     'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'
@@ -50,7 +49,6 @@ function sanitizeText(text) {
     if (!text) return '';
     let clean = text.trim();
     badWords.forEach(word => {
-        // \b ensures whole-word matching (e.g., blocks "ass", but leaves "class" alone)
         const regex = new RegExp(`\\b${word}\\b`, 'gi');
         clean = clean.replace(regex, '****');
     });
@@ -171,7 +169,13 @@ io.on('connection', (socket) => {
 
         if (player.hasAnsweredCurrent) return;
 
-        const isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
+        let isCorrect = false;
+        if (currentQ.type === 'lingo') {
+            isCorrect = answer.trim().toUpperCase() === currentQ.answer.toUpperCase();
+        } else {
+            isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
+        }
+
         let pointsEarned = 0;
 
         if (isCorrect) {
@@ -269,6 +273,68 @@ io.on('connection', (socket) => {
             name: `🎵 Music: ${roundConfig.name}`,
             genre: `BeatIQ (${targetGenre})`,
             timer: 20,
+            questions: questions
+        });
+        io.emit('state-update', gameState);
+    });
+
+    // MINI-GAME BUILDER SOCKET HANDLER
+    socket.on('add-minigame-round', (config) => {
+        let questions = [];
+        let roundName = config.name || 'Mini-Game Round';
+        let timer = 20;
+
+        if (config.type === 'lingo') {
+            const words = ['SHARK', 'MUSIC', 'HOUSE', 'BEACH', 'PARTY', 'TRAIN', 'LIGHT', 'PIANO', 'RADIO', 'QUEEN', 'DANCE', 'SMILE'];
+            const selectedWord = words[Math.floor(Math.random() * words.length)];
+            questions = [{
+                type: 'lingo',
+                question: `🔤 Lingo Round: Guess the 5-letter target word!`,
+                answer: selectedWord,
+                options: [],
+                fastestPlayerId: null
+            }];
+            roundName = `🔤 Lingo: ${selectedWord}`;
+            timer = 30;
+        } else if (config.type === 'scramble') {
+            const items = [
+                { word: 'BEATLES', clue: 'Legendary British rock band' },
+                { word: 'KARAFUN', clue: 'Popular karaoke software system' },
+                { word: 'TRIVIAMANIA', clue: 'This ultimate pub quiz platform' },
+                { word: 'GUITAR', `clue`: 'Six-string acoustic or electric instrument' },
+                { word: 'POPULAR', clue: 'Liked or admired by many people' }
+            ];
+            const item = items[Math.floor(Math.random() * items.length)];
+            const scrambled = item.word.split('').sort(() => 0.5 - Math.random()).join(' ');
+            questions = [{
+                type: 'scramble',
+                question: `🔀 Word Scramble (${item.clue}): Unscramble the letters: "${scrambled}"`,
+                answer: item.word,
+                options: [],
+                fastestPlayerId: null
+            }];
+            roundName = `🔀 Word Scramble Round`;
+            timer = 20;
+        } else if (config.type === 'higherlower') {
+            const facts = [
+                { q: 'Average UK rainfall in January (mm)', answer: 'Higher', options: ['Higher', 'Lower'] },
+                { q: 'Number of keys on a standard piano', answer: '88', options: ['76', '88', '92', '104'] }
+            ];
+            questions = facts.map(f => ({
+                type: 'higherlower',
+                question: `⬆️ Higher or Lower: ${f.q}`,
+                answer: f.answer,
+                options: f.options,
+                fastestPlayerId: null
+            }));
+            roundName = `⬆️ Higher or Lower Round`;
+            timer = 15;
+        }
+
+        gameState.playlist.push({
+            name: roundName,
+            genre: `Mini-Game (${config.type})`,
+            timer: timer,
             questions: questions
         });
         io.emit('state-update', gameState);
