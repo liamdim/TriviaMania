@@ -29,7 +29,8 @@
         
         button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); transition: 0.2s; }
         button:active { transform: scale(0.98); }
-        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
+        button.success { background: linear-gradient(135deg, #00aa44, #00ff66) !important; color: #000 !important; }
+        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055) !important; color: #fff !important; }
         
         .options-stack { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
         .option-btn { background: rgba(255, 255, 255, 0.05); color: white; font-size: 1.1rem; padding: 1rem; border-radius: 10px; border: 1px solid rgba(0, 243, 255, 0.3); transition: 0.2s; text-align: left; margin-bottom: 0; }
@@ -98,11 +99,10 @@
         const socket = io();
         let myName = '';
         let answeredCurrent = false;
+        let lastQuestionIndex = -1;
 
         socket.on('connect', () => {
-            if (myName) {
-                socket.emit('player-join', myName);
-            }
+            if (myName) socket.emit('player-join', myName);
         });
 
         socket.on('player-emoji', (data) => {
@@ -145,9 +145,7 @@
             document.getElementById('playerDisplayName').innerText = myName;
         }
 
-        function sendEmoji(emoji) {
-            socket.emit('send-emoji', emoji);
-        }
+        function sendEmoji(emoji) { socket.emit('send-emoji', emoji); }
 
         function sendPlayerChat() {
             const input = document.getElementById('playerChatInput');
@@ -161,9 +159,13 @@
         socket.on('answer-result', (data) => {
             const stage = document.getElementById('gameStage');
             if (data.correct) {
-                stage.innerHTML = '<h3 style="color: var(--neon-green); font-size: 1.5rem;">CORRECT! ✔</h3><p style="color: var(--neon-green); font-size: 1.2rem; margin-top: 0.5rem;">+' + data.points + ' pts</p>';
+                stage.innerHTML = '<h3 style="color: var(--neon-green); font-size: 1.5rem;">CORRECT! ✔</h3>' +
+                    '<p style="color: var(--neon-green); font-size: 1.2rem; margin-top: 0.5rem;">+' + data.points + ' pts</p>' +
+                    '<p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Streak: 🔥 x' + data.streak + '</p>';
             } else {
-                stage.innerHTML = '<h3 style="color: var(--neon-pink); font-size: 1.5rem;">INCORRECT ❌</h3><p style="color: var(--text-muted); margin-top: 0.5rem;">Correct Answer:</p><p style="color: var(--neon-green); font-size: 1.2rem; font-weight: bold;">' + data.correctAnswer + '</p>';
+                stage.innerHTML = '<h3 style="color: var(--neon-pink); font-size: 1.5rem;">INCORRECT ❌</h3>' +
+                    '<p style="color: var(--text-muted); margin-top: 0.5rem;">Correct Answer was:</p>' +
+                    '<p style="color: var(--neon-green); font-size: 1.2rem; font-weight: bold; margin-top: 0.2rem;">' + data.correctAnswer + '</p>';
             }
         });
 
@@ -180,10 +182,32 @@
             if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
+
+                if (state.currentQuestionIndex !== lastQuestionIndex) {
+                    lastQuestionIndex = state.currentQuestionIndex;
+                    answeredCurrent = false; // Reset lock state for new question
+                }
+
                 if (round && q) {
                     document.getElementById('mobileQuestionCounter').innerText = 'Q ' + (state.currentQuestionIndex + 1) + '/' + round.questions.length;
-                    if (!player || !player.hasAnsweredCurrent) {
-                        stage.innerHTML = '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p><div class="options-stack">' + q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\')">' + opt + '</button>').join('') + '</div>';
+                    
+                    if (player && player.hasAnsweredCurrent) {
+                        // Keep locked message displayed
+                    } else if (!answeredCurrent) {
+                        if (q.gameType === 'lingo') {
+                            stage.innerHTML = 
+                                '<p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold;">' + q.question + '</p>' +
+                                '<div style="margin-top: 1rem;">' +
+                                    '<input type="text" id="lingoInput" placeholder="5-LETTER WORD" maxlength="5" style="text-transform: uppercase; font-size: 1.4rem; letter-spacing: 3px; margin-bottom: 1rem;">' +
+                                    '<button class="success" onclick="submitLingoAnswer()">Submit Guess 🎯</button>' +
+                                '</div>';
+                        } else {
+                            stage.innerHTML = 
+                                '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p>' +
+                                '<div class="options-stack">' +
+                                    q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\', this)">' + opt + '</button>').join('') +
+                                '</div>';
+                        }
                     }
                 }
             } else if (state.status === 'LEADERBOARD') {
@@ -191,11 +215,21 @@
             }
         });
 
-        function submitAnswer(answer) {
+        function submitAnswer(answer, btnElement) {
             if (answeredCurrent) return;
             answeredCurrent = true;
+            if (btnElement) {
+                btnElement.classList.add('success');
+            }
             socket.emit('submit-answer', { answer, timeRemaining: 15 });
             document.getElementById('gameStage').innerHTML = '<h3 style="color: var(--neon-yellow);">Answer Locked In! 🔒</h3>';
+        }
+
+        function submitLingoAnswer() {
+            const input = document.getElementById('lingoInput');
+            const val = input ? input.value.trim().toUpperCase() : '';
+            if (val.length !== 5) { alert('Please enter a 5-letter word!'); return; }
+            submitAnswer(val, null);
         }
     </script>
 </body>
