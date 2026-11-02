@@ -33,7 +33,6 @@
 
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; }
         
-        /* Advert & Emoji overlays */
         #advertOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.98); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; text-align: center; }
         #advertOverlay img { max-width: 600px; max-height: 500px; border-radius: 12px; margin-top: 1.5rem; border: 3px solid var(--accent); }
 
@@ -56,7 +55,7 @@
     </div>
 
     <div class="main-stage" id="mainStage">
-        <h1>Welcome to TriviaMania!</h1>
+        <h1 id="welcomeHeaderDisplay">Welcome to TriviaMania!</h1>
         <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code below on your phone to join!</p>
         <div id="qr-container"></div>
         <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--text-muted);"></p>
@@ -74,7 +73,6 @@
             height: 220
         });
 
-        // Instantly kill audio when stop or reset is triggered by host
         socket.on('stop-audio', () => {
             const audio = document.getElementById('projectorAudioPlayer');
             audio.pause();
@@ -100,7 +98,8 @@
                 document.getElementById('venueDisplay').innerText = state.venueDetails;
             }
 
-            // Screen Adverts handling
+            const headerText = state.welcomeHeader || 'Welcome to TriviaMania!';
+
             const adOverlay = document.getElementById('advertOverlay');
             if (state.activeScreenAdvert) {
                 adOverlay.style.display = 'flex';
@@ -121,7 +120,7 @@
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
                 timerBox.innerText = '--';
                 stage.innerHTML = `
-                    <h1>Welcome to TriviaMania!</h1>
+                    <h1>${headerText}</h1>
                     <p style="color: var(--text-muted); font-size: 1.5rem; margin-top: 1rem;">Scan the QR code below on your phone to join!</p>
                     <div id="qr-container"></div>
                     <p style="margin-top: 1rem; font-family: monospace; color: var(--text-muted);">${playerUrl}</p>
