@@ -566,7 +566,7 @@
                     chatLog.innerHTML = '';
                 }
                 const msgEl = document.createElement('div');
-                msgEl.innerHTML = `<span style="color: var(--accent); font-weight: bold;">${name}:</span> ${text}`;
+                msgEl.innerHTML = '<span style="color: var(--accent); font-weight: bold;">' + name + ':</span> ' + text;
                 chatLog.appendChild(msgEl);
                 chatLog.scrollTop = chatLog.scrollHeight;
             }
@@ -583,7 +583,7 @@
             if (element) {
                 element.classList.add('active');
             } else {
-                const btn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+                const btn = document.querySelector('.tab-btn[onclick*="' + tabId + '"]');
                 if (btn) btn.classList.add('active');
             }
         }
@@ -598,21 +598,21 @@
 
         function openPrintableQR() {
             const win = window.open('', '_blank');
-            win.document.write(`
-                <html>
-                <head><title>Printable QR - TriviaMania</title></head>
-                <body style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; text-align:center;">
-                    <h1>SCAN TO PLAY TRIVIAMANIA</h1>
-                    <div id="printqr" style="margin: 2rem;"></div>
-                    <p style="font-size:1.5rem; font-family:monospace;">${playerUrl}</p>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-                    <script>
-                        new QRCode(document.getElementById("printqr"), { text: "${playerUrl}", width: 300, height: 300 });
-                        window.onload = () => setTimeout(() => window.print(), 500);
-                    </script>
-                </body>
-                </html>
-            `);
+            win.document.write(
+                '<html>' +
+                '<head><title>Printable QR - TriviaMania</title></head>' +
+                '<body style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; text-align:center;">' +
+                '<h1>SCAN TO PLAY TRIVIAMANIA</h1>' +
+                '<div id="printqr" style="margin: 2rem;"></div>' +
+                '<p style="font-size:1.5rem; font-family:monospace;">' + playerUrl + '</p>' +
+                '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' +
+                '<script>' +
+                'new QRCode(document.getElementById("printqr"), { text: "' + playerUrl + '", width: 300, height: 300 });' +
+                'window.onload = () => setTimeout(() => window.print(), 500);' +
+                '<\/script>' +
+                '</body>' +
+                '</html>'
+            );
         }
 
         const venueInput = document.getElementById('venueDetailsInput');
@@ -667,7 +667,7 @@
                 const select = document.getElementById('triviaGenreSelect');
                 if (categories.length > 0) {
                     select.innerHTML = categories.map(cat => 
-                        `<option value="${cat}">${cat.replace(/-/g, ' ').toUpperCase()}</option>`
+                        '<option value="' + cat + '">' + cat.replace(/-/g, ' ').toUpperCase() + '</option>'
                     ).join('');
                 }
             } catch (err) {}
@@ -709,12 +709,12 @@
                 const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, count);
 
                 if (selectedTracks.length === 0) {
-                    alert(`No tracks found for this genre.`);
+                    alert('No tracks found for this genre.');
                     return;
                 }
 
                 socket.emit('add-beatiq-round', { genre, name, questionCount: count });
-                alert(`Successfully added "${name}" to your main playlist queue!`);
+                alert('Successfully added "' + name + '" to your main playlist queue!');
                 switchTab('controls');
             } catch (err) {
                 alert('Failed to connect to server or load BeatIQ tracks.');
@@ -735,7 +735,7 @@
             const count = parseInt(document.getElementById('miniGameCount').value);
 
             socket.emit('add-minigame-round', { type, name, count });
-            alert(`Successfully added "${name}" to your main playlist queue!`);
+            alert('Successfully added "' + name + '" to your main playlist queue!');
             switchTab('controls');
         }
 
@@ -803,7 +803,7 @@
             const quickMobileSelect = document.getElementById('quickMobileAdSelect');
 
             const dropdownOptions = '<option value="">-- Choose Advert --</option>' + 
-                savedAds.map((ad, idx) => `<option value="${idx}">${ad.title}</option>`).join('');
+                savedAds.map((ad, idx) => '<option value="' + idx + '">' + ad.title + '</option>').join('');
 
             screenSelect.innerHTML = dropdownOptions;
             mobileSelect.innerHTML = dropdownOptions;
@@ -811,16 +811,16 @@
             quickMobileSelect.innerHTML = dropdownOptions;
 
             if (savedAds.length === 0) {
-                listDiv.innerHTML = `<p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>`;
+                listDiv.innerHTML = '<p style="color: var(--text-muted);">No saved adverts yet. Create one above!</p>';
                 return;
             }
 
-            listDiv.innerHTML = savedAds.map((ad, idx) => `
-                <div class="ad-item">
-                    <div><strong>${ad.title}</strong> ${ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : ''}</div>
-                    <div><button class="small danger" onclick="deleteSavedAd(${idx})">🗑 Delete</button></div>
-                </div>
-            `).join('');
+            listDiv.innerHTML = savedAds.map((ad, idx) => 
+                '<div class="ad-item">' +
+                    '<div><strong>' + ad.title + '</strong> ' + (ad.image ? '<span style="color: var(--success); font-size: 0.8rem;">(Has Image)</span>' : '') + '</div>' +
+                    '<div><button class="small danger" onclick="deleteSavedAd(' + idx + ')">🗑 Delete</button></div>' +
+                '</div>'
+            ).join('');
         }
 
         function launchScreenAd() {
@@ -872,67 +872,64 @@
                 const nextQIndex = state.status === 'QUESTION' ? state.currentQuestionIndex + 1 : state.currentQuestionIndex;
                 const nextQ = currentRound.questions[nextQIndex];
                 if (nextQ) {
-                    previewBox.innerHTML = `
-                        <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text);">Q${nextQIndex + 1} (${currentRound.name}): ${nextQ.question}</p>
-                        <p style="color: var(--success); font-size: 0.95rem;">Correct Answer: <strong>${nextQ.answer}</strong></p>
-                    `;
+                    previewBox.innerHTML = 
+                        '<p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text);">Q' + (nextQIndex + 1) + ' (' + currentRound.name + '): ' + nextQ.question + '</p>' +
+                        '<p style="color: var(--success); font-size: 0.95rem;">Correct Answer: <strong>' + nextQ.answer + '</strong></p>';
                 } else {
-                    previewBox.innerHTML = `<p style="color: var(--warning);">End of current round reached!</p>`;
+                    previewBox.innerHTML = '<p style="color: var(--warning);">End of current round reached!</p>';
                 }
             } else {
-                previewBox.innerHTML = `<p style="color: var(--text-muted);">No active rounds in playlist.</p>`;
+                previewBox.innerHTML = '<p style="color: var(--text-muted);">No active rounds in playlist.</p>';
             }
 
             const tbody = document.querySelector('#playlistTable tbody');
             if (state.playlist.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>`;
+                tbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>';
             } else {
-                tbody.innerHTML = state.playlist.map((r, idx) => `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td>${r.name}</td>
-                        <td>${r.genre} (${r.questions.length} Qs ${r.timer ? '• ' + r.timer + 's' : ''})</td>
-                        <td>
-                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'up' })">⬆</button>
-                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'down' })">⬇</button>
-                            <button class="small danger" onclick="socket.emit('delete-round', ${idx})">❌</button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = state.playlist.map((r, idx) => 
+                    '<tr>' +
+                        '<td>' + (idx + 1) + '</td>' +
+                        '<td>' + r.name + '</td>' +
+                        '<td>' + r.genre + ' (' + r.questions.length + ' Qs ' + (r.timer ? '• ' + r.timer + 's' : '') + ')</td>' +
+                        '<td>' +
+                            '<button class="small" onclick="socket.emit(\'move-round\', { index: ' + idx + ', direction: \'up\' })">⬆</button>' +
+                            '<button class="small" onclick="socket.emit(\'move-round\', { index: ' + idx + ', direction: \'down\' })">⬇</button>' +
+                            '<button class="small danger" onclick="socket.emit(\'delete-round\', ' + idx + ')">❌</button>' +
+                        '</td>' +
+                    '</tr>'
+                ).join('');
             }
 
             const players = Object.entries(state.scores || {});
             document.getElementById('playerCount').innerText = players.length;
             const playersListDiv = document.getElementById('joinedPlayersList');
             if (players.length === 0) {
-                playersListDiv.innerHTML = `<span style="color: var(--text-muted);">Waiting for players to join...</span>`;
+                playersListDiv.innerHTML = '<span style="color: var(--text-muted);">Waiting for players to join...</span>';
             } else {
                 playersListDiv.innerHTML = players.map(([id, p]) => {
                     const isMuted = state.mutedPlayers && state.mutedPlayers[id];
-                    return `
-                        <span class="player-badge">
-                            👤 ${p.name} (${p.score} pts)
-                            <button class="small ${isMuted ? 'success' : 'warning'}" style="padding: 0.1rem 0.4rem; margin-left: 0.4rem;" onclick="socket.emit('toggle-mute-player', '${id}')">
-                                ${isMuted ? 'Unmute' : 'Mute'}
-                            </button>
-                        </span>
-                    `;
+                    return '<span class="player-badge">' +
+                        '👤 ' + p.name + ' (' + p.score + ' pts)' +
+                        '<button class="small ' + (isMuted ? 'success' : 'warning') + '" style="padding: 0.1rem 0.4rem; margin-left: 0.4rem;" onclick="socket.emit(\'toggle-mute-player\', \'' + id + '\')">' +
+                            (isMuted ? 'Unmute' : 'Mute') +
+                        '</button>' +
+                    '</span>';
                 }).join('');
             }
 
             const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
             const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
             if (sortedPlayers.length === 0) {
-                lbTbody.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>`;
+                lbTbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>';
             } else {
-                lbTbody.innerHTML = sortedPlayers.map((p, idx) => `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td>${p.name}</td>
-                        <td>🔥 x${p.streak || 0}</td>
-                        <td><strong>${p.score}</strong></td>
-                    </tr>
-                `).join('');
+                lbTbody.innerHTML = sortedPlayers.map((p, idx) => 
+                    '<tr>' +
+                        '<td>' + (idx + 1) + '</td>' +
+                        '<td>' + p.name + '</td>' +
+                        '<td>🔥 x' + (p.streak || 0) + '</td>' +
+                        '<td><strong>' + p.score + '</strong></td>' +
+                    '</tr>'
+                ).join('');
             }
         });
     </script>
