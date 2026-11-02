@@ -83,7 +83,7 @@
         <button class="tab-btn active" onclick="switchTab('controls', this)">⚡ Live Controls & Game</button>
         <button class="tab-btn" onclick="switchTab('playlist', this)">📂 Playlist Builder</button>
         <button class="tab-btn" onclick="switchTab('beatiq', this)" style="color: var(--neon-green);">🎵 BeatIQ Music Studio</button>
-        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: var(--neon-pink);">🎮 Mini-Games Studio</button>
+        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games</button>
         <button class="tab-btn" onclick="switchTab('adverts', this)">📢 Adverts & Sponsors</button>
         <button class="tab-btn" onclick="switchTab('lobby', this)">🌐 Lobby & QR</button>
     </div>
@@ -224,7 +224,7 @@
                             <tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder, BeatIQ, or Mini-Games.</td></tr>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder, BeatIQ, or Game Shows.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -338,23 +338,23 @@
             </div>
         </div>
 
-        <!-- TAB 4: MINI-GAMES STUDIO -->
+        <!-- TAB 4: MINI-GAMES & GAME SHOWS STUDIO -->
         <div id="minigames" class="tab-content">
             <div class="card" style="border: 2px solid var(--neon-pink); background: rgba(255, 0, 85, 0.03);">
-                <h3 style="color: var(--neon-pink);">🎮 Mini-Games Studio (Lingo, Word Scramble & Higher/Lower)</h3>
+                <h3 style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games Studio</h3>
                 <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
-                    Inject high-energy interactive mini-games directly into your main event playlist queue!
+                    Inject high-energy TV game show rounds and mini-games directly into your main playlist queue!
                 </p>
-               <div class="form-group">
-    <label>Select Game Show Mode:</label>
-    <select id="miniGameTypeSelect" onchange="updateMiniGameLabels()">
-        <option value="lingo">🔤 Lingo (Wordle-style 5-letter guessing game)</option>
-        <option value="scramble">🔀 Word Scramble (Anagram speed race)</option>
-        <option value="higher-lower">⬆️ Higher or Lower (Statistics prediction game)</option>
-        <option value="tenable">🔟 Tenable (Top 10 list challenge)</option>
-        <option value="one-percent">🧠 The 1% Club (Logic & brainteasers)</option>
-    </select>
-</div>
+                <div class="form-group">
+                    <label>Select Game Mode:</label>
+                    <select id="miniGameTypeSelect" onchange="updateMiniGameLabels()">
+                        <option value="lingo">🔤 Lingo (Wordle-style 5-letter guessing game)</option>
+                        <option value="scramble">🔀 Word Scramble (Anagram speed race)</option>
+                        <option value="higher-lower">⬆️ Higher or Lower (Statistics prediction game)</option>
+                        <option value="tenable">🔟 Tenable (Top 10 list challenge)</option>
+                        <option value="one-percent">🧠 The 1% Club (Logic & brainteasers)</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>Round Name:</label>
                     <input type="text" id="miniGameRoundName" value="Lingo Word Game Round">
@@ -367,7 +367,7 @@
                         <option value="8">8 Puzzles</option>
                     </select>
                 </div>
-                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Mini-Game Round to Main Playlist</button>
+                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Round to Main Playlist</button>
             </div>
         </div>
 
@@ -758,6 +758,8 @@
             if (type === 'lingo') nameInput.value = 'Lingo Word Game Round';
             else if (type === 'scramble') nameInput.value = 'Word Scramble Anagram Round';
             else if (type === 'higher-lower') nameInput.value = 'Higher or Lower Prediction Round';
+            else if (type === 'tenable') nameInput.value = 'Tenable List Challenge Round';
+            else if (type === 'one-percent') nameInput.value = 'The 1% Club Brainteaser Round';
         }
 
         function addMiniGameRoundToPlaylist() {
