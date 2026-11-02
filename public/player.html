@@ -61,7 +61,7 @@
         </div>
 
         <div id="gameStage" class="card" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-            <h3>Waiting for next round...</h3>
+            <h3>Waiting for host to start game...</h3>
         </div>
 
         <div class="emoji-bar">
@@ -115,7 +115,17 @@
                 document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
             }
 
-            // Mobile Advert handling
+            if (state.customEmojis) {
+                const emojiBar = document.querySelector('.emoji-bar');
+                if (emojiBar) {
+                    emojiBar.innerHTML = state.customEmojis.map(emoji => 
+                        `<button class="emoji-btn" onclick="sendEmoji('${emoji}')">${emoji}</button>`
+                    ).join('');
+                }
+            }
+
+            const waitingText = state.mobileWaitingText || 'Waiting for host to start game...';
+
             const adModal = document.getElementById('mobileAdModal');
             if (state.activeMobileAdvert) {
                 adModal.style.display = 'flex';
@@ -133,7 +143,7 @@
             const stage = document.getElementById('gameStage');
 
             if (state.status === 'IDLE' || state.status === 'LOBBY') {
-                stage.innerHTML = `<h3>Waiting for host to start game...</h3><p style="color: var(--text-muted); margin-top: 1rem;">Get ready!</p>`;
+                stage.innerHTML = `<h3>${waitingText}</h3><p style="color: var(--text-muted); margin-top: 1rem;">Get ready!</p>`;
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
