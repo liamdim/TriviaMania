@@ -1,511 +1,202 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const fs = require('fs');
-const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-let gameState = {
-    status: 'IDLE',
-    currentRoundIndex: 0,
-    playlist: [],
-    currentQuestionIndex: 0,
-    timer: 0,
-    timerMax: 15,
-    scores: {},
-    mutedPlayers: {},
-    chatEnabled: true,
-    chatHistory: [],
-    activeScreenAdvert: null,
-    activeMobileAdvert: null,
-    venueDetails: 'Welcome to Trivia Night!',
-    welcomeHeader: 'Welcome to TriviaMania!',
-    mobileWaitingText: 'Waiting for host to start game...',
-    customEmojis: ['🔥', '🍻', '👏', '😂', '🎉', '💡'],
-    announcement: { active: false, text: '' },
-    settings: { 
-        questionTime: 15,
-        intermissionTime: 5,
-        countdownSound: true 
-    }
-};
-
-let timerInterval = null;
-let disconnectedPlayers = {}; // 10-second grace window buffer for phone calls / app switches
-
-const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
-
-function sanitizeText(text) {
-    if (!text) return '';
-    let clean = text.trim();
-    badWords.forEach(word => {
-        const regex = new RegExp('\\b' + word + '\\b', 'gi');
-        clean = clean.replace(regex, '****');
-    });
-    return clean;
-}
-
-app.get('/api/categories', (req, res) => {
-    const categoriesDir = path.join(__dirname, 'categories');
-    if (!fs.existsSync(categoriesDir)) return res.json([]);
-    try {
-        const files = fs.readdirSync(categoriesDir);
-        const categories = files
-            .filter(file => fs.statSync(path.join(categoriesDir, file)).isFile())
-            .map(file => file.replace(/\.[^/.]+$/, ''));
-        res.json(categories);
-    } catch (err) {
-        res.json([]);
-    }
-});
-
-app.get('/api/beatiq/tracks', (req, res) => {
-    try {
-        function findFile(dir, filename) {
-            if (!fs.existsSync(dir)) return null;
-            const files = fs.readdirSync(dir);
-            for (const file of files) {
-                const fullPath = path.join(dir, file);
-                try {
-                    const stat = fs.statSync(fullPath);
-                    if (stat.isDirectory()) {
-                        if (file === 'node_modules' || file === '.git') continue;
-                        const found = findFile(fullPath, filename);
-                        if (found) return found;
-                    } else if (file === filename) return fullPath;
-                } catch (e) {}
-            }
-            return null;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:,">
+    <title>TriviaMania - Player Controller</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --bg-color: #05050a;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffee00;
+            --text: #ffffff;
+            --text-muted: #8b9bb4;
+            --border-glow: 0 0 15px rgba(0, 243, 255, 0.25);
         }
-        const foundPath = findFile(__dirname, 'curatedTracks.json');
-        if (foundPath) {
-            const rawData = fs.readFileSync(foundPath, 'utf8');
-            return res.json(JSON.parse(rawData));
-        }
-        return res.json([]);
-    } catch (err) {
-        return res.json([]);
-    }
-});
-
-function parseCategoryFile(filename) {
-    const categoriesDir = path.join(__dirname, 'categories');
-    let filePath = path.join(categoriesDir, filename);
-    if (!fs.existsSync(filePath)) filePath = path.join(categoriesDir, filename + '.txt');
-    if (!fs.existsSync(filePath)) return [];
-
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    const lines = fileContent.split(/\r?\n/);
-    const questions = [];
-    let currentQ = null;
-
-    for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
-        if (line.startsWith('#Q')) {
-            if (currentQ) {
-                currentQ.options.sort(() => 0.5 - Math.random());
-                questions.push(currentQ);
-            }
-            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '', fastestPlayerId: null };
-        } else if (line.startsWith('^')) {
-            if (currentQ) currentQ.answer = line.replace('^', '').trim();
-        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
-            if (currentQ) {
-                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
-                currentQ.options.push(optText);
-            }
-        }
-    }
-    if (currentQ) {
-        currentQ.options.sort(() => 0.5 - Math.random());
-        questions.push(currentQ);
-    }
-    return questions.sort(() => 0.5 - Math.random());
-}
-
-async function generateAIQuestions(type, count) {
-    let prompt = '';
-    if (type === 'lingo') {
-        prompt = `Generate exactly ${count} unique, completely fresh 5-letter English words for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clue). No markdown.`;
-    } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely fresh and randomized famous words, bands, or cities for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
-    } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} randomized trivia statistics questions. Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
-    } else if (type === 'tenable') {
-        prompt = `Generate exactly ${count} randomized Tenable top list challenges. Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
-    } else if (type === 'one-percent') {
-        prompt = `Generate exactly ${count} randomized 1% Club logic brainteasers. Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
-    }
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-
-        let text = response.text.trim();
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
-
-        return JSON.parse(text);
-    } catch (err) {
-        return [];
-    }
-}
-
-function getCurrentRoundTimer() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (round && round.timer) return round.timer;
-    return gameState.settings.questionTime || 15;
-}
-
-io.on('connection', (socket) => {
-    socket.emit('state-update', gameState);
-    socket.emit('announcement-update', gameState.announcement);
-
-    socket.on('player-join', (playerName) => {
-        const cleanName = sanitizeText(playerName) || 'Anonymous';
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); position: relative; overflow-x: hidden; }
         
-        // Check if player is rejoining within the 10-second grace period
-        if (disconnectedPlayers[cleanName]) {
-            clearTimeout(disconnectedPlayers[cleanName].timeout);
-            gameState.scores[socket.id] = disconnectedPlayers[cleanName].playerData;
-            delete disconnectedPlayers[cleanName];
-        } else {
-            gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
-        }
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('submit-answer', ({ answer, timeRemaining }) => {
-        if (gameState.status !== 'QUESTION') return;
-        const player = gameState.scores[socket.id];
-        if (!player) return;
-
-        const currentRound = gameState.playlist[gameState.currentRoundIndex];
-        if (!currentRound || !currentRound.questions) return;
-
-        const currentQ = currentRound.questions[gameState.currentQuestionIndex];
-        if (!currentQ) return;
-
-        if (player.hasAnsweredCurrent) return;
-
-        let isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
-        let pointsEarned = 0;
-
-        if (isCorrect) {
-            if (!currentQ.fastestPlayerId) currentQ.fastestPlayerId = socket.id;
-            const isFastest = currentQ.fastestPlayerId === socket.id;
-
-            player.streak = (player.streak || 0) + 1;
-            const streakMultiplier = player.streak >= 3 ? 1.5 : (player.streak >= 2 ? 1.25 : 1.0);
-            
-            const timeBonus = Math.floor((timeRemaining / gameState.timerMax) * 40);
-            const speedBonus = isFastest ? 25 : 0;
-            
-            pointsEarned = Math.round((50 + Math.max(0, timeBonus) + speedBonus) * streakMultiplier);
-            player.score += pointsEarned;
-        } else {
-            player.streak = 0;
-        }
-
-        player.hasAnsweredCurrent = true;
-
-        socket.emit('answer-result', { 
-            correct: isCorrect, 
-            points: pointsEarned, 
-            streak: player.streak, 
-            correctAnswer: currentQ.answer,
-            isFastest: currentQ.fastestPlayerId === socket.id 
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('add-round', (roundConfig) => {
-        const questions = parseCategoryFile(roundConfig.genre);
-        const selectedQuestions = questions.slice(0, roundConfig.count || 10);
+        .card { background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); text-align: center; }
         
-        gameState.playlist.push({
-            name: roundConfig.name || roundConfig.genre,
-            genre: roundConfig.genre,
-            timer: roundConfig.timer ? parseInt(roundConfig.timer) : null,
-            questions: selectedQuestions
-        });
-        io.emit('state-update', gameState);
-    });
+        input, button { width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; border: none; margin-bottom: 1rem; font-weight: bold; }
+        input { background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0, 243, 255, 0.4); color: white; text-align: center; }
+        input:focus { outline: none; border-color: var(--neon-blue); box-shadow: var(--border-glow); }
+        
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
+        
+        .options-stack { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+        .option-btn { background: rgba(255, 255, 255, 0.05); color: white; font-size: 1.1rem; padding: 1rem; border-radius: 10px; border: 1px solid rgba(0, 243, 255, 0.3); transition: 0.2s; text-align: left; margin-bottom: 0; }
+        .option-btn:hover { background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue); box-shadow: var(--border-glow); }
 
-    socket.on('add-beatiq-round', (roundConfig) => {
-        let allTracks = [];
-        try {
-            function findFile(dir, filename) {
-                if (!fs.existsSync(dir)) return null;
-                const files = fs.readdirSync(dir);
-                for (const file of files) {
-                    const fullPath = path.join(dir, file);
-                    try {
-                        const stat = fs.statSync(fullPath);
-                        if (stat.isDirectory()) {
-                            if (file === 'node_modules' || file === '.git') continue;
-                            const found = findFile(fullPath, filename);
-                            if (found) return found;
-                        } else if (file === filename) return fullPath;
-                    } catch (e) {}
+        .emoji-bar { display: flex; justify-content: space-around; background: rgba(5, 10, 20, 0.8); padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .emoji-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.2rem; width: auto; margin-bottom: 0; box-shadow: none; }
+        
+        #announcementBanner { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; display: none; text-align: center; box-shadow: 0 0 15px rgba(255, 238, 0, 0.4); }
+        
+        .floating-emoji { position: fixed; bottom: 80px; font-size: 2.5rem; animation: floatUp 1.5s ease-out forwards; pointer-events: none; z-index: 9999; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="mobileAudioPlayer" preload="auto"></audio>
+    <div id="announcementBanner"></div>
+
+    <div id="joinScreen" class="card" style="margin-top: auto; margin-bottom: auto;">
+        <h2 style="color: var(--neon-blue); margin-bottom: 0.5rem;">TRIVIAMANIA</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Enter your player nickname</p>
+        <input type="text" id="playerNameInput" placeholder="Your Nickname" maxlength="15">
+        <button onclick="joinGame()">Join Game 🚀</button>
+    </div>
+
+    <div id="gameScreen" style="display: none; flex: 1; flex-direction: column;">
+        <div class="card" style="padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+            <span id="playerDisplayName" style="font-weight: bold; color: var(--neon-blue);">Player</span>
+            <span id="mobileQuestionCounter" style="color: var(--text-muted);">Q --</span>
+            <span id="mobileTimerDisplay" style="font-weight: bold; color: var(--neon-yellow); background: rgba(0,0,0,0.5); padding: 0.2rem 0.5rem; border-radius: 6px;">⏱ --</span>
+            <span id="playerScoreDisplay" style="font-weight: bold; color: var(--neon-green);">0 pts</span>
+        </div>
+
+        <div id="gameStage" class="card" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            <h3 style="color: var(--text-muted);">Waiting for host to start game...</h3>
+        </div>
+
+        <div id="chatControlsWrapper">
+            <div class="card" style="padding: 0.75rem; margin-bottom: 0.5rem; text-align: left;">
+                <div style="font-size: 0.85rem; color: var(--neon-blue); font-weight: bold; margin-bottom: 0.4rem;">💬 Live Room Chat</div>
+                <div id="mobileChatLog" style="height: 80px; overflow-y: auto; background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                    <span style="color: var(--text-muted); font-style: italic;">Say hi...</span>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                    <input type="text" id="playerChatInput" placeholder="Type a message..." maxlength="60" style="margin-bottom: 0; flex: 1; padding: 0.4rem; font-size: 0.85rem;">
+                    <button onclick="sendPlayerChat()" style="width: auto; margin-bottom: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Send</button>
+                </div>
+            </div>
+
+            <div class="emoji-bar" id="mobileEmojiBar">
+                <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
+                <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
+                <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
+                <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
+                <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
+                <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let myName = '';
+        let answeredCurrent = false;
+
+        socket.on('connect', () => {
+            if (myName) {
+                socket.emit('player-join', myName);
+            }
+        });
+
+        socket.on('player-emoji', (data) => {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = data.emoji;
+            el.style.left = (20 + Math.random() * 60) + '%';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        });
+
+        socket.on('chat-message', (data) => {
+            appendChatMessage(data.name, data.text);
+        });
+
+        function appendChatMessage(name, text) {
+            const chatLog = document.getElementById('mobileChatLog');
+            if (chatLog) {
+                if (chatLog.children.length === 1 && chatLog.children[0].style.fontStyle === 'italic') {
+                    chatLog.innerHTML = '';
                 }
-                return null;
-            }
-            const foundPath = findFile(__dirname, 'curatedTracks.json');
-            if (foundPath) allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
-        } catch (err) {}
-
-        const targetGenre = roundConfig.genre;
-        const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
-        
-        let genreFilteredTracks = allTracks.filter(t => t.genre === targetGenre);
-        let trackPool = genreFilteredTracks.length >= requestedCount ? genreFilteredTracks : allTracks;
-        
-        const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, requestedCount);
-        const allArtists = allTracks.map(t => t.artist);
-
-        const questions = selectedTracks.map((t) => {
-            const wrongArtists = allArtists.filter(a => a !== t.artist).sort(() => 0.5 - Math.random()).slice(0, 3);
-            while (wrongArtists.length < 3) wrongArtists.push('Alternative Artist ' + (wrongArtists.length + 1));
-            const options = [t.artist, ...wrongArtists].sort(() => 0.5 - Math.random());
-
-            return {
-                question: '🎧 Listen to snippet: Which artist performed "' + t.title + '"?',
-                options: options,
-                answer: t.artist,
-                fastestPlayerId: null,
-                audioPreviewUrl: t.previewUrl || null
-            };
-        });
-
-        gameState.playlist.push({
-            name: '🎵 Music: ' + roundConfig.name,
-            genre: 'BeatIQ (' + targetGenre + ')',
-            timer: 20,
-            questions: questions
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('add-minigame-round', async (config) => {
-        const count = parseInt(config.count || 5);
-        const rawItems = await generateAIQuestions(config.type, count);
-        let questions = [];
-
-        if (config.type === 'lingo') {
-            questions = rawItems.map(item => ({
-                gameType: 'lingo',
-                question: '🔤 LINGO: Guess 5-letter word! Hint: ' + (item.hint || 'Clue'),
-                answer: (item.word || 'SHARK').toUpperCase(),
-                options: [],
-                fastestPlayerId: null
-            }));
-        } else if (config.type === 'scramble') {
-            questions = rawItems.map(item => {
-                const ans = (item.word || 'BEATLES').toUpperCase();
-                const scrambled = item.scrambled || ans.split('').join(' ');
-                const options = [ans, 'MUSIC', 'BAND', 'STAGE'].sort(() => 0.5 - Math.random());
-                return {
-                    gameType: 'scramble',
-                    question: '🔀 WORD SCRAMBLE: [ ' + scrambled + ' ]',
-                    answer: ans,
-                    options: options,
-                    fastestPlayerId: null
-                };
-            });
-        } else if (config.type === 'higher-lower') {
-            questions = rawItems.map(item => ({
-                gameType: 'higher-lower',
-                question: '⬆️ HIGHER OR LOWER: ' + (item.fact || 'Statistic'),
-                answer: item.answer || 'Higher',
-                options: ['Higher', 'Lower'],
-                fastestPlayerId: null
-            }));
-        } else if (config.type === 'tenable') {
-            questions = rawItems.map(item => {
-                const ans = item.answer || 'Top Choice';
-                const options = [ans, 'Option A', 'Option B', 'Option C'].sort(() => 0.5 - Math.random());
-                return {
-                    gameType: 'tenable',
-                    question: '🔟 TENABLE: ' + (item.category || 'Top List'),
-                    answer: ans,
-                    options: options,
-                    fastestPlayerId: null
-                };
-            });
-        } else if (config.type === 'one-percent') {
-            questions = rawItems.map(item => {
-                const ans = item.answer || 'Solution';
-                const opts = item.options ? [...item.options] : [ans, 'A', 'B', 'C'];
-                if (!opts.includes(ans)) opts[0] = ans;
-                return {
-                    gameType: 'one-percent',
-                    question: '🧠 1% CLUB: ' + (item.q || 'Brainteaser'),
-                    answer: ans,
-                    options: opts.sort(() => 0.5 - Math.random()),
-                    fastestPlayerId: null
-                };
-            });
-        }
-
-        if (questions.length > 0) {
-            gameState.playlist.push({
-                name: config.name || '🎮 AI Game Show: ' + config.type.toUpperCase(),
-                genre: 'AI Gen (' + config.type + ')',
-                timer: 25,
-                questions: questions
-            });
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('send-emoji', (emoji) => {
-        if (!gameState.chatEnabled) return;
-        if (gameState.mutedPlayers[socket.id]) return;
-        io.emit('player-emoji', { id: socket.id, emoji });
-    });
-
-    socket.on('player-chat', (message) => {
-        if (!gameState.chatEnabled) return;
-        if (gameState.mutedPlayers[socket.id]) return;
-        const cleanMsg = sanitizeText(message);
-        if (!cleanMsg) return;
-        const player = gameState.scores[socket.id];
-        const chatObj = { name: player ? player.name : 'Anonymous', text: cleanMsg };
-        io.emit('chat-message', chatObj);
-    });
-
-    socket.on('start-round', () => {
-        if (gameState.playlist.length === 0) return;
-        if (timerInterval) clearInterval(timerInterval);
-
-        gameState.status = 'QUESTION';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.timerMax = getCurrentRoundTimer();
-        gameState.timer = gameState.timerMax;
-        
-        Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-        io.emit('state-update', gameState);
-        startQuestionTimer();
-    });
-
-    socket.on('next-question', () => {
-        advanceToNextQuestion();
-    });
-
-    socket.on('stop-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'PAUSED';
-        io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('restart-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        Object.values(gameState.scores).forEach(p => {
-            p.score = 0; p.streak = 0; p.hasAnsweredCurrent = false;
-        });
-        io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('stop-reset', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.scores = {};
-        gameState.mutedPlayers = {};
-        disconnectedPlayers = {};
-        io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('disconnect', () => {
-        const player = gameState.scores[socket.id];
-        if (player) {
-            const playerName = player.name;
-            // Hold their spot for 10 seconds in case they are on a phone call or switching apps
-            disconnectedPlayers[playerName] = {
-                playerData: player,
-                timeout: setTimeout(() => {
-                    delete gameState.scores[socket.id];
-                    delete gameState.mutedPlayers[socket.id];
-                    delete disconnectedPlayers[playerName];
-                    io.emit('state-update', gameState);
-                }, 10000)
-            };
-            delete gameState.scores[socket.id];
-        }
-        delete gameState.mutedPlayers[socket.id];
-        io.emit('state-update', gameState);
-    });
-});
-
-function startQuestionTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => {
-        if (gameState.status === 'QUESTION') {
-            gameState.timer--;
-            io.emit('timer-tick', gameState.timer);
-
-            if (gameState.timer <= 0) {
-                clearInterval(timerInterval);
-                advanceToNextQuestion();
+                const msgEl = document.createElement('div');
+                msgEl.innerHTML = '<span style="color: var(--neon-blue); font-weight: bold;">' + name + ':</span> ' + text;
+                chatLog.appendChild(msgEl);
+                chatLog.scrollTop = chatLog.scrollHeight;
             }
         }
-    }, 1000);
-}
 
-function advanceToNextQuestion() {
-    if (timerInterval) clearInterval(timerInterval);
+        socket.on('timer-tick', (timeLeft) => {
+            document.getElementById('mobileTimerDisplay').innerText = '⏱ ' + timeLeft + 's';
+        });
 
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (!round || !round.questions) return;
-
-    Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-
-    gameState.currentQuestionIndex++;
-
-    if (gameState.currentQuestionIndex >= round.questions.length) {
-        if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
-            gameState.currentRoundIndex++;
-            gameState.currentQuestionIndex = 0;
-        } else {
-            gameState.status = 'LEADERBOARD';
-            io.emit('stop-audio');
-            io.emit('state-update', gameState);
-            return;
+        function joinGame() {
+            const name = document.getElementById('playerNameInput').value.trim();
+            if (!name) { alert('Please enter a nickname!'); return; }
+            myName = name;
+            socket.emit('player-join', myName);
+            document.getElementById('joinScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
+            document.getElementById('playerDisplayName').innerText = myName;
         }
-    }
 
-    gameState.status = 'QUESTION';
-    gameState.timerMax = getCurrentRoundTimer();
-    gameState.timer = gameState.timerMax;
-    
-    io.emit('state-update', gameState);
-    startQuestionTimer();
-}
+        function sendEmoji(emoji) {
+            socket.emit('send-emoji', emoji);
+        }
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log('TriviaMania server running on port ' + PORT);
-});
+        function sendPlayerChat() {
+            const input = document.getElementById('playerChatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            appendChatMessage(myName || 'You', message);
+            socket.emit('player-chat', message);
+            input.value = '';
+        }
+
+        socket.on('answer-result', (data) => {
+            const stage = document.getElementById('gameStage');
+            if (data.correct) {
+                stage.innerHTML = '<h3 style="color: var(--neon-green); font-size: 1.5rem;">CORRECT! ✔</h3><p style="color: var(--neon-green); font-size: 1.2rem; margin-top: 0.5rem;">+' + data.points + ' pts</p>';
+            } else {
+                stage.innerHTML = '<h3 style="color: var(--neon-pink); font-size: 1.5rem;">INCORRECT ❌</h3><p style="color: var(--text-muted); margin-top: 0.5rem;">Correct Answer:</p><p style="color: var(--neon-green); font-size: 1.2rem; font-weight: bold;">' + data.correctAnswer + '</p>';
+            }
+        });
+
+        socket.on('state-update', (state) => {
+            const player = state.scores[socket.id];
+            if (player) document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
+
+            if (state.customEmojis && state.customEmojis.length > 0) {
+                const bar = document.getElementById('mobileEmojiBar');
+                bar.innerHTML = state.customEmojis.map(e => '<button class="emoji-btn" onclick="sendEmoji(\'' + e + '\')">' + e + '</button>').join('');
+            }
+
+            const stage = document.getElementById('gameStage');
+            if (state.status === 'QUESTION') {
+                const round = state.playlist[state.currentRoundIndex];
+                const q = round ? round.questions[state.currentQuestionIndex] : null;
+                if (round && q) {
+                    document.getElementById('mobileQuestionCounter').innerText = 'Q ' + (state.currentQuestionIndex + 1) + '/' + round.questions.length;
+                    if (!player || !player.hasAnsweredCurrent) {
+                        stage.innerHTML = '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p><div class="options-stack">' + q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\')">' + opt + '</button>').join('') + '</div>';
+                    }
+                }
+            } else if (state.status === 'LEADERBOARD') {
+                stage.innerHTML = '<h3 style="color: var(--neon-blue);">🏆 Standings</h3>';
+            }
+        });
+
+        function submitAnswer(answer) {
+            if (answeredCurrent) return;
+            answeredCurrent = true;
+            socket.emit('submit-answer', { answer, timeRemaining: 15 });
+            document.getElementById('gameStage').innerHTML = '<h3 style="color: var(--neon-yellow);">Answer Locked In! 🔒</h3>';
+        }
+    </script>
+</body>
+</html>
