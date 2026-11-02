@@ -114,6 +114,23 @@
             setTimeout(() => el.remove(), 1500);
         });
 
+        socket.on('chat-message', (data) => {
+            appendChatMessage(data.name, data.text);
+        });
+
+        function appendChatMessage(name, text) {
+            const chatLog = document.getElementById('mobileChatLog');
+            if (chatLog) {
+                if (chatLog.children.length === 1 && chatLog.children[0].style.fontStyle === 'italic') {
+                    chatLog.innerHTML = '';
+                }
+                const msgEl = document.createElement('div');
+                msgEl.innerHTML = '<span style="color: var(--neon-blue); font-weight: bold;">' + name + ':</span> ' + text;
+                chatLog.appendChild(msgEl);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+        }
+
         socket.on('timer-tick', (timeLeft) => {
             document.getElementById('mobileTimerDisplay').innerText = '⏱ ' + timeLeft + 's';
         });
@@ -136,6 +153,7 @@
             const input = document.getElementById('playerChatInput');
             const message = input.value.trim();
             if (!message) return;
+            appendChatMessage(myName || 'You', message);
             socket.emit('player-chat', message);
             input.value = '';
         }
