@@ -50,19 +50,33 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Bulletproof endpoint for loading BeatIQ tracks
+// Robust endpoint loading directly from your uploaded beats-main folder
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
-        const filePath = path.resolve(__dirname, 'data', 'curatedTracks.json');
-        if (fs.existsSync(filePath)) {
+        // Check potential paths inside the beats-main folder structure
+        const possiblePaths = [
+            path.resolve(__dirname, 'beats-main', 'data', 'curatedTracks.json'),
+            path.resolve(__dirname, 'beats-main', 'curatedTracks.json')
+        ];
+
+        let filePath = null;
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                filePath = p;
+                break;
+            }
+        }
+
+        if (filePath) {
             const rawData = fs.readFileSync(filePath, 'utf8');
             const data = JSON.parse(rawData);
             return res.json(data);
         }
-        console.warn('Warning: data/curatedTracks.json not found on disk.');
+
+        console.warn('Warning: curatedTracks.json not found inside beats-main folder.');
         return res.json([]);
     } catch (err) {
-        console.error('Error parsing curatedTracks.json:', err.message);
+        console.error('Error reading beats-main tracks:', err.message);
         return res.json([]);
     }
 });
@@ -174,16 +188,20 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Add BeatIQ Music round into main playlist with exact count guarantee and genre filtering
+    // Add BeatIQ Music round pulling from beats-main folder
     socket.on('add-beatiq-round', (roundConfig) => {
-        const filePath = path.resolve(__dirname, 'data', 'curatedTracks.json');
         let allTracks = [];
         try {
-            if (fs.existsSync(filePath)) {
+            const possiblePaths = [
+                path.resolve(__dirname, 'beats-main', 'data', 'curatedTracks.json'),
+                path.resolve(__dirname, 'beats-main', 'curatedTracks.json')
+            ];
+            let filePath = possiblePaths.find(p => fs.existsSync(p));
+            if (filePath) {
                 allTracks = JSON.parse(fs.readFileSync(filePath, 'utf8'));
             }
         } catch (err) {
-            console.error('Error reading tracks for round:', err);
+            console.error('Error reading beats-main tracks for round:', err);
         }
 
         const targetGenre = roundConfig.genre;
@@ -273,7 +291,6 @@ io.on('connection', (socket) => {
         if (timerInterval) clearInterval(timerInterval);
         if (leaderboardTimeout) clearTimeout(leaderboardTimeout);
 
-        // Forcefully reset to question 0 of round 0 on start
         gameState.status = 'QUESTION';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
