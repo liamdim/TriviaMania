@@ -49,6 +49,7 @@
 </head>
 <body>
 
+    <!-- Projector Audio Player for BeatIQ Music Snippets -->
     <audio id="displayAudioPlayer" preload="auto"></audio>
 
     <div id="advertOverlay">
@@ -108,6 +109,7 @@
                 document.getElementById('displayWelcomeHeader').innerText = state.welcomeHeader;
             }
 
+            // Instant Projector Advert Toggle Check
             const adOverlay = document.getElementById('advertOverlay');
             if (state.activeScreenAdvert) {
                 adOverlay.style.display = 'flex';
