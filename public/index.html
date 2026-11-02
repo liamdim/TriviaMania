@@ -87,7 +87,6 @@
         <!-- TAB 1: CONTROLS & LIVE GAME -->
         <div id="controls" class="tab-content active">
             
-            <!-- HOST SOUNDBOARD WIDGET -->
             <div class="card" style="border: 2px solid var(--accent); background: #172033;">
                 <h3>🎛️ Live Host Soundboard</h3>
                 <div class="flex-row" style="gap: 0.75rem;">
@@ -98,7 +97,6 @@
                 </div>
             </div>
 
-            <!-- HOST ANNOUNCEMENT & SETTINGS BAR -->
             <div class="card" style="border: 2px solid var(--accent); background: #172033;">
                 <h3>📢 Live Mobile Ticker & Audio Controls</h3>
                 <div class="form-group">
@@ -116,7 +114,6 @@
                 </div>
             </div>
 
-            <!-- HOST QUESTION PREVIEW CARD -->
             <div class="card" style="border: 2px dashed var(--accent);">
                 <h3>👀 Host Question Preview (Next Up)</h3>
                 <div id="hostPreviewBox">
@@ -158,7 +155,6 @@
                     </div>
                 </div>
 
-                <!-- QUICK ADVERT CONTROLS -->
                 <div style="margin-top: 1.2rem; border-top: 1px solid #334155; padding-top: 1.2rem;">
                     <label style="color: var(--accent); font-weight: bold; margin-bottom: 0.6rem;">⚡ Quick Advert Launchers</label>
                     <div class="flex-row" style="gap: 1rem;">
@@ -565,35 +561,35 @@
         }
 
         async function addBeatIQRoundToMainPlaylist() {
-    const genre = document.getElementById('beatiqGenreSelect').value;
-    const name = document.getElementById('beatiqRoundName').value;
-    const count = parseInt(document.getElementById('beatiqTrackCount').value);
+            const genre = document.getElementById('beatiqGenreSelect').value;
+            const name = document.getElementById('beatiqRoundName').value;
+            const count = parseInt(document.getElementById('beatiqTrackCount').value);
 
-    try {
-        const res = await fetch('/api/beatiq/tracks');
-        if (!res.ok) throw new Error('Network response was not ok');
-        
-        const allTracks = await res.json();
-        if (!Array.isArray(allTracks) || allTracks.length === 0) {
-            alert('Error: No tracks loaded. Check if data/curatedTracks.json exists and is valid JSON.');
-            return;
+            try {
+                const res = await fetch('/api/beatiq/tracks');
+                if (!res.ok) throw new Error('Network response was not ok');
+                
+                const allTracks = await res.json();
+                if (!Array.isArray(allTracks) || allTracks.length === 0) {
+                    alert('Error: No tracks loaded. Check if data/curatedTracks.json exists and is valid JSON.');
+                    return;
+                }
+
+                const genreTracks = allTracks.filter(t => t.genre === genre).sort(() => 0.5 - Math.random()).slice(0, count);
+
+                if (genreTracks.length === 0) {
+                    alert(`No tracks found for genre: "${genre}". Try selecting a different genre.`);
+                    return;
+                }
+
+                socket.emit('add-beatiq-round', { genre, name, tracks: genreTracks });
+                alert(`Successfully added "${name}" to your main playlist queue!`);
+                switchTab('controls');
+            } catch (err) {
+                console.error(err);
+                alert('Failed to connect to server or load BeatIQ tracks.');
+            }
         }
-
-        const genreTracks = allTracks.filter(t => t.genre === genre).sort(() => 0.5 - Math.random()).slice(0, count);
-
-        if (genreTracks.length === 0) {
-            alert(`No tracks found for genre: "${genre}". Try selecting a different genre.`);
-            return;
-        }
-
-        socket.emit('add-beatiq-round', { genre, name, tracks: genreTracks });
-        alert(`Successfully added "${name}" to your main playlist queue!`);
-        switchTab('controls');
-    } catch (err) {
-        console.error(err);
-        alert('Failed to connect to server or load BeatIQ tracks.');
-    }
-}
 
         let savedAds = JSON.parse(localStorage.getItem('triviamania_ads_v2') || '[]');
 
