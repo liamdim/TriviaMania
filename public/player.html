@@ -67,11 +67,17 @@
             <h3>Waiting for host to start game...</h3>
         </div>
 
-        <!-- Chat / Shoutout Text Bar -->
+        <!-- Mobile Chat Room & Shoutout Box -->
         <div id="chatControlsWrapper">
-            <div id="chatBarContainer" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <input type="text" id="playerChatInput" placeholder="Type a shoutout or taunt..." maxlength="60" style="margin-bottom: 0; flex: 1; padding: 0.7rem; font-size: 0.95rem;">
-                <button onclick="sendPlayerChat()" style="width: auto; margin-bottom: 0; padding: 0.7rem 1.2rem; font-size: 0.95rem;">Send 💬</button>
+            <div class="card" style="padding: 0.75rem; margin-bottom: 0.5rem; text-align: left;">
+                <div style="font-size: 0.85rem; color: var(--accent); font-weight: bold; margin-bottom: 0.4rem;">💬 Live Room Chat</div>
+                <div id="mobileChatLog" style="height: 110px; overflow-y: auto; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                    <span style="color: var(--text-muted); font-style: italic;">Welcome to the room! Say hi...</span>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                    <input type="text" id="playerChatInput" placeholder="Type a message..." maxlength="60" style="margin-bottom: 0; flex: 1; padding: 0.5rem; font-size: 0.85rem;">
+                    <button onclick="sendPlayerChat()" style="width: auto; margin-bottom: 0; padding: 0.5rem 1rem; font-size: 0.85rem;">Send</button>
+                </div>
             </div>
 
             <div class="emoji-bar" id="emojiBarContainer">
@@ -115,6 +121,23 @@
             setTimeout(() => el.remove(), 3000);
         });
 
+        socket.on('chat-message', (data) => {
+            appendChatMessage(data.name, data.text);
+        });
+
+        function appendChatMessage(name, text) {
+            const chatLog = document.getElementById('mobileChatLog');
+            if (chatLog) {
+                if (chatLog.children.length === 1 && chatLog.children[0].style.fontStyle === 'italic') {
+                    chatLog.innerHTML = '';
+                }
+                const msgEl = document.createElement('div');
+                msgEl.innerHTML = `<span style="color: var(--accent); font-weight: bold;">${name}:</span> ${text}`;
+                chatLog.appendChild(msgEl);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+        }
+
         function joinGame() {
             const name = document.getElementById('playerNameInput').value.trim();
             if (!name) { alert('Please enter a nickname!'); return; }
@@ -153,6 +176,16 @@
                     emojiBar.innerHTML = state.customEmojis.map(emoji => 
                         `<button class="emoji-btn" onclick="sendEmoji('${emoji}')">${emoji}</button>`
                     ).join('');
+                }
+            }
+
+            if (state.chatHistory && state.chatHistory.length > 0) {
+                const chatLog = document.getElementById('mobileChatLog');
+                if (chatLog && chatLog.children.length <= 1) {
+                    chatLog.innerHTML = state.chatHistory.map(msg => 
+                        `<div><span style="color: var(--accent); font-weight: bold;">${msg.name}:</span> ${msg.text}</div>`
+                    ).join('');
+                    chatLog.scrollTop = chatLog.scrollHeight;
                 }
             }
 
