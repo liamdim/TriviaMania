@@ -73,6 +73,10 @@
     <script>
         const socket = io();
 
+        socket.on('connect', () => {
+            console.log("Projector display connected to server successfully!");
+        });
+
         socket.on('stop-audio', () => {
             const audio = document.getElementById('displayAudioPlayer');
             audio.pause();
@@ -103,6 +107,8 @@
         });
 
         socket.on('state-update', (state) => {
+            console.log("Projector received state-update. Active screen advert:", state.activeScreenAdvert);
+
             if (state.venueDetails) document.getElementById('displayVenueDetails').innerText = state.venueDetails;
             if (state.welcomeHeader) {
                 document.getElementById('headerVenueTitle').innerText = state.welcomeHeader;
@@ -142,7 +148,7 @@
                         if (audio.src !== q.audioPreviewUrl) {
                             audio.src = q.audioPreviewUrl;
                             audio.load();
-                            audio.play().catch(e => {});
+                            audio.play().catch(e => console.log("Audio autoplay prevented:", e));
                         }
                     } else {
                         const audio = document.getElementById('displayAudioPlayer');
