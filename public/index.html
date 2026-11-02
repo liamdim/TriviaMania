@@ -314,11 +314,19 @@
                         <option value="movie-themes">Movie Themes & Soundtracks</option>
                         <option value="disney-pixar">Disney & Pixar Themes</option>
                         <option value="cartoon-themes">Cartoon & Anime Themes</option>
+                        <option value="video-game">Video Game OSTs</option>
+                        <option value="anime-ost">Anime OSTs & Openings</option>
+                        <option value="motown-soul">Motown & Classic Soul</option>
+                        <option value="disco-funk">70s & 80s Disco & Funk</option>
+                        <option value="broadway-musicals">Broadway & Musicals</option>
+                        <option value="dance-eurodance">90s Eurodance & Club</option>
+                        <option value="reggae-ska">Reggae & Ska</option>
+                        <option value="folk-acoustic">Acoustic & Folk</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Round Name:</label>
-                    <input type="text" id="beatiqRoundName" value="80s Synthpop Music Round">
+                    <input type="text" id="beatiqRoundName" value="Disney & Pixar Theme Round">
                 </div>
                 <div class="form-group">
                     <label>Number of Tracks to Include:</label>
@@ -568,6 +576,7 @@
         function sendAnnouncement() {
             const text = document.getElementById('announcementInput').value.trim();
             socket.emit('update-announcement', { active: true, text });
+            alert('Announcement broadcasted to all screens!');
         }
 
         function clearAnnouncement() {
