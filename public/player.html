@@ -16,7 +16,7 @@
             --text: #ffffff;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); overflow-x: hidden; }
         .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.4); text-align: center; }
         input { width: 100%; padding: 0.9rem; background: rgba(5,10,20,0.9); border: 1px solid var(--neon-blue); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; text-align: center; }
         button { width: 100%; background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-bottom: 0.75rem; }
@@ -25,7 +25,13 @@
         .option-btn:active { background: var(--neon-blue); color: #000; }
         .emoji-bar { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; }
         .emoji-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); font-size: 1.4rem; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; width: auto; }
-        .emoji-btn:hover { background: rgba(0,243,255,0.3); border-color: var(--neon-blue); }
+        .emoji-btn:active { transform: scale(1.2); background: rgba(0,243,255,0.4); }
+
+        @keyframes floatUpMobile {
+            0% { transform: translateY(0px) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-250px) scale(1.5); opacity: 0; }
+        }
+        .mobile-floating-emoji { position: absolute; font-size: 2.5rem; animation: floatUpMobile 1.5s ease-out forwards; z-index: 999; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -45,11 +51,11 @@
         </div>
 
         <!-- EMOJI REACTION & CHAT BAR -->
-        <div class="card" style="padding: 1rem;">
-            <p style="font-size: 0.85rem; color: #8b9bb4; margin-bottom: 0.4rem;">Tap to Send Reactions & Chat:</p>
+        <div class="card" style="padding: 1rem; position: relative;">
+            <p style="font-size: 0.85rem; color: #8b9bb4; margin-bottom: 0.4rem;">Tap Emojis to Float Reactions:</p>
             <div class="emoji-bar" id="emojiBarContainer"></div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                <input type="text" id="playerChatInput" placeholder="Say something..." style="margin-bottom:0; flex:1; padding:0.5rem; font-size:0.9rem; text-align:left;">
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                <input type="text" id="playerChatInput" placeholder="Type a chat message..." style="margin-bottom:0; flex:1; padding:0.5rem; font-size:0.9rem; text-align:left;">
                 <button onclick="sendPlayerChat()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem; margin-bottom:0;">Send</button>
             </div>
             <div id="mobileChatFeed" style="max-height: 70px; overflow-y: auto; text-align: left; font-size: 0.8rem; color: #8b9bb4; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 6px; margin-top: 0.5rem;"></div>
@@ -85,19 +91,31 @@
             const container = document.getElementById('emojiBarContainer');
             const list = emojis && emojis.length > 0 ? emojis : ['🔥', '🍻', '👏', '😂', '🎉', '💡'];
             container.innerHTML = list.map(e => `
-                <button class="emoji-btn" onclick="sendEmoji('${e}')">${e}</button>
+                <button class="emoji-btn" onclick="sendEmojiButton('${e}')">${e}</button>
             `).join('');
         }
 
-        function sendEmoji(emoji) {
-            socket.emit('player-emoji', emoji);
+        function sendEmojiButton(emoji) {
+            socket.emit('player-reaction', emoji);
+            spawnMobileFloatingEmoji(emoji);
+        }
+
+        function spawnMobileFloatingEmoji(emoji) {
+            const card = document.getElementById('emojiBarContainer');
+            const el = document.createElement('div');
+            el.className = 'mobile-floating-emoji';
+            el.innerText = emoji;
+            el.style.left = Math.random() * 80 + 10 + '%';
+            el.style.bottom = '40px';
+            card.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
         }
 
         function sendPlayerChat() {
             const input = document.getElementById('playerChatInput');
             const text = input.value.trim();
             if (!text) return;
-            socket.emit('player-emoji', text);
+            socket.emit('player-chat', text); // Or generic chat event
             input.value = '';
         }
 
@@ -123,7 +141,7 @@
 
                     if (q.options && q.options.length > 0) {
                         optContainer.innerHTML = q.options.map(opt => `
-                            <button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                            <button class="option-card option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
                         `).join('');
                     } else {
                         optContainer.innerHTML = `
@@ -136,6 +154,10 @@
                 document.getElementById('questionDisplay').innerText = '🎉 Game Over! Check the main projector screen for final rankings.';
                 document.getElementById('optionsContainer').innerHTML = '';
             }
+        });
+
+        socket.on('trigger-floating-emoji', (emoji) => {
+            // Can trigger local subtle effects if desired
         });
 
         socket.on('chat-message', (msg) => {
