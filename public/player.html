@@ -2,287 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>TriviaMania - Player Controller</title>
+    <title>TriviaMania - Mobile Player</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.85);
+            --panel-bg: rgba(15, 23, 42, 0.9);
             --neon-blue: #00f3ff;
-            --neon-pink: #ff0055;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
             --text: #ffffff;
-            --text-muted: #8b9bb4;
-            --border-glow: 0 0 15px rgba(0, 243, 255, 0.25);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); position: relative; overflow-x: hidden; }
-        
-        .card { background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); text-align: center; }
-        
-        input, button { width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; border: none; margin-bottom: 1rem; font-weight: bold; }
-        input { background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0, 243, 255, 0.4); color: white; text-align: center; }
-        input:focus { outline: none; border-color: var(--neon-blue); box-shadow: var(--border-glow); }
-        
-        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        button.success { background: linear-gradient(135deg, #00aa44, #00ff66) !important; color: #000 !important; }
-        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055) !important; color: #fff !important; }
-        
-        .options-stack { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
-        .option-btn { background: rgba(255, 255, 255, 0.05); color: white; font-size: 1.1rem; padding: 1rem; border-radius: 10px; border: 1px solid rgba(0, 243, 255, 0.3); transition: 0.2s; text-align: left; margin-bottom: 0; }
-        .option-btn:hover { background: rgba(0, 243, 255, 0.15); border-color: var(--neon-blue); box-shadow: var(--border-glow); }
-
-        .emoji-bar { display: flex; justify-content: space-around; background: rgba(5, 10, 20, 0.8); padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .emoji-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.2rem; width: auto; margin-bottom: 0; box-shadow: none; }
-        
-        #announcementBanner { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; padding: 0.75rem; border-radius: 8px; font-weight: bold; margin-bottom: 1rem; display: none; text-align: center; box-shadow: 0 0 15px rgba(255, 238, 0, 0.4); }
-        
-        .floating-emoji { position: fixed; bottom: 80px; font-size: 2.5rem; animation: floatUp 1.5s ease-out forwards; pointer-events: none; z-index: 9999; }
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0.5); opacity: 1; }
-            100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
-        }
-
-        #mobileAdvertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.4); text-align: center; }
+        input { width: 100%; padding: 0.9rem; background: rgba(5,10,20,0.9); border: 1px solid var(--neon-blue); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; text-align: center; }
+        button { width: 100%; background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-bottom: 0.75rem; }
+        button:hover { filter: brightness(1.2); }
+        .option-btn { background: rgba(15,23,42,0.9); border: 2px solid var(--neon-blue); color: white; padding: 1.2rem; font-size: 1.1rem; border-radius: 8px; margin-bottom: 0.75rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .option-btn:active { background: var(--neon-blue); color: #000; }
     </style>
 </head>
 <body>
 
-    <audio id="mobileAudioPlayer" preload="auto"></audio>
-
-    <div id="mobileAdvertOverlay">
-        <h2 id="mobileAdTitle" style="font-size: 2rem; color: var(--neon-blue); margin-bottom: 1.5rem;"></h2>
-        <img id="mobileAdImage" style="max-height: 50vh; max-width: 85vw; border-radius: 12px; box-shadow: 0 0 20px rgba(0,243,255,0.4); display: none;" />
+    <div id="joinScreen" class="card" style="margin-top: 2rem;">
+        <h2 style="color: var(--neon-blue); margin-bottom: 1rem;">Join Trivia Night</h2>
+        <input type="text" id="playerNameInput" placeholder="Enter Your Team Name">
+        <button onclick="joinGame()">🚀 Join Game</button>
     </div>
 
-    <div id="announcementBanner"></div>
-
-    <div id="joinScreen" class="card" style="margin-top: auto; margin-bottom: auto;">
-        <h2 style="color: var(--neon-blue); margin-bottom: 0.5rem;">TRIVIAMANIA</h2>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;" id="mobileWaitingSubText">Enter your player nickname</p>
-        <input type="text" id="playerNameInput" placeholder="Your Nickname" maxlength="15">
-        <button onclick="joinGame()">Join Game 🚀</button>
+    <div id="gameScreen" style="display:none;">
+        <div class="card">
+            <h3 id="roundNameDisplay" style="color: var(--neon-green); font-size: 1.1rem; margin-bottom: 0.5rem;">Waiting for game...</h3>
+            <p id="questionDisplay" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">Get ready!</p>
+            <div id="optionsContainer"></div>
+            <div id="feedbackDisplay" style="margin-top: 1rem; font-size: 1.1rem; font-weight: bold;"></div>
+        </div>
     </div>
 
-    <div id="gameScreen" style="display: none; flex: 1; flex-direction: column;">
-        <div class="card" style="padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-            <span id="playerDisplayName" style="font-weight: bold; color: var(--neon-blue);">Player</span>
-            <span id="mobileQuestionCounter" style="color: var(--text-muted);">Q --</span>
-            <span id="mobileTimerDisplay" style="font-weight: bold; color: var(--neon-yellow); background: rgba(0,0,0,0.5); padding: 0.2rem 0.5rem; border-radius: 6px;">⏱ --</span>
-            <span id="playerScoreDisplay" style="font-weight: bold; color: var(--neon-green);">0 pts</span>
-        </div>
-
-        <div id="gameStage" class="card" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-            <h3 style="color: var(--text-muted);" id="mobileWaitingHeading">Waiting for host to start game...</h3>
-        </div>
-
-        <div id="chatControlsWrapper">
-            <div class="card" style="padding: 0.75rem; margin-bottom: 0.5rem; text-align: left;">
-                <div style="font-size: 0.85rem; color: var(--neon-blue); font-weight: bold; margin-bottom: 0.4rem;">💬 Live Room Chat</div>
-                <div id="mobileChatLog" style="height: 80px; overflow-y: auto; background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
-                    <span style="color: var(--text-muted); font-style: italic;">Say hi...</span>
-                </div>
-                <div style="display: flex; gap: 0.4rem;">
-                    <input type="text" id="playerChatInput" placeholder="Type a message..." maxlength="60" style="margin-bottom: 0; flex: 1; padding: 0.4rem; font-size: 0.85rem;">
-                    <button onclick="sendPlayerChat()" style="width: auto; margin-bottom: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Send</button>
-                </div>
-            </div>
-
-            <div class="emoji-bar" id="mobileEmojiBar">
-                <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
-                <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
-                <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
-                <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
-                <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
-                <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
-            </div>
-        </div>
+    <!-- Mobile Advert Overlay Modal -->
+    <div id="mobileAdModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; text-align:center;">
+        <h3 style="color: #ffee00; font-size: 1.5rem; margin-bottom: 1rem;">📢 SPONSOR SPECIAL</h3>
+        <div id="mobileAdImageContainer"></div>
+        <p id="mobileAdTextContainer" style="color: #ffffff; font-size: 1.2rem; font-weight: bold; margin-bottom: 1.5rem;"></p>
+        <button onclick="hideMobileAdvert()" style="background:#ffee00; color:#000; border:none; padding:0.75rem 1.5rem; font-weight:bold; border-radius:6px; width:auto;">Got It / Close</button>
     </div>
 
     <script>
-        const socket = io({
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 500
-        });
-
-        let myName = '';
-        let answeredCurrent = false;
-        let lastQuestionIndex = -1;
-
-        socket.on('connect', () => {
-            if (myName) socket.emit('player-join', myName);
-        });
-
-        socket.on('stop-audio', () => {
-            const audio = document.getElementById('mobileAudioPlayer');
-            audio.pause();
-            audio.currentTime = 0;
-        });
-
-        socket.on('player-emoji', (data) => {
-            const el = document.createElement('div');
-            el.className = 'floating-emoji';
-            el.innerText = data.emoji;
-            el.style.left = (20 + Math.random() * 60) + '%';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1500);
-        });
-
-        socket.on('announcement-update', (announcement) => {
-            const banner = document.getElementById('announcementBanner');
-            if (announcement.active && announcement.text) {
-                banner.style.display = 'block';
-                banner.innerText = '📢 ' + announcement.text;
-            } else {
-                banner.style.display = 'none';
-            }
-        });
-
-        socket.on('chat-message', (data) => {
-            appendChatMessage(data.name, data.text);
-        });
-
-        function appendChatMessage(name, text) {
-            const chatLog = document.getElementById('mobileChatLog');
-            if (chatLog) {
-                if (chatLog.children.length === 1 && chatLog.children[0].style.fontStyle === 'italic') {
-                    chatLog.innerHTML = '';
-                }
-                const msgEl = document.createElement('div');
-                msgEl.innerHTML = '<span style="color: var(--neon-blue); font-weight: bold;">' + name + ':</span> ' + text;
-                chatLog.appendChild(msgEl);
-                chatLog.scrollTop = chatLog.scrollHeight;
-            }
-        }
-
-        socket.on('timer-tick', (timeLeft) => {
-            document.getElementById('mobileTimerDisplay').innerText = '⏱ ' + timeLeft + 's';
-        });
+        const socket = io({ transports: ['websocket', 'polling'] });
+        let playerName = '';
 
         function joinGame() {
-            const name = document.getElementById('playerNameInput').value.trim();
-            if (!name) { alert('Please enter a nickname!'); return; }
-            myName = name;
-
-            const audio = document.getElementById('mobileAudioPlayer');
-            audio.play().catch(() => {});
-            audio.pause();
-
-            socket.emit('player-join', myName);
+            playerName = document.getElementById('playerNameInput').value.trim();
+            if (!playerName) { alert('Please enter your team name!'); return; }
+            socket.emit('player-join', playerName);
             document.getElementById('joinScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'flex';
-            document.getElementById('playerDisplayName').innerText = myName;
+            document.getElementById('gameScreen').style.display = 'block';
         }
 
-        function sendEmoji(emoji) { socket.emit('send-emoji', emoji); }
-
-        function sendPlayerChat() {
-            const input = document.getElementById('playerChatInput');
-            const message = input.value.trim();
-            if (!message) return;
-            appendChatMessage(myName || 'You', message);
-            socket.emit('player-chat', message);
-            input.value = '';
+        function submitAnswer(ans) {
+            socket.emit('submit-answer', { answer: ans, timeRemaining: 15 });
+            document.getElementById('optionsContainer').innerHTML = '<p style="color: var(--neon-green); font-size: 1.2rem;">Answer locked in! Waiting for round results...</p>';
         }
-
-        socket.on('answer-result', (data) => {
-            const stage = document.getElementById('gameStage');
-            if (data.correct) {
-                stage.innerHTML = '<h3 style="color: var(--neon-green); font-size: 1.5rem;">CORRECT! ✔</h3>' +
-                    '<p style="color: var(--neon-green); font-size: 1.2rem; margin-top: 0.5rem;">+' + data.points + ' pts</p>' +
-                    '<p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Streak: 🔥 x' + data.streak + '</p>';
-            } else {
-                stage.innerHTML = '<h3 style="color: var(--neon-pink); font-size: 1.5rem;">INCORRECT ❌</h3>' +
-                    '<p style="color: var(--text-muted); margin-top: 0.5rem;">Correct Answer was:</p>' +
-                    '<p style="color: var(--neon-green); font-size: 1.2rem; font-weight: bold; margin-top: 0.2rem;">' + data.correctAnswer + '</p>';
-            }
-        });
 
         socket.on('state-update', (state) => {
-            const player = state.scores[socket.id];
-            if (player) document.getElementById('playerScoreDisplay').innerText = player.score + ' pts';
-
-            if (state.mobileWaitingText) {
-                document.getElementById('mobileWaitingSubText').innerText = state.mobileWaitingText;
-            }
-
-            const mobileAdOverlay = document.getElementById('mobileAdvertOverlay');
             if (state.activeMobileAdvert) {
-                mobileAdOverlay.style.display = 'flex';
-                document.getElementById('mobileAdTitle').innerText = state.activeMobileAdvert.title;
-                const mImg = document.getElementById('mobileAdImage');
-                if (state.activeMobileAdvert.image) {
-                    mImg.src = state.activeMobileAdvert.image;
-                    mImg.style.display = 'block';
-                } else {
-                    mImg.style.display = 'none';
-                }
+                showMobileAdvert(state.activeMobileAdvert);
             } else {
-                mobileAdOverlay.style.display = 'none';
+                hideMobileAdvert();
             }
 
-            if (state.customEmojis && state.customEmojis.length > 0) {
-                const bar = document.getElementById('mobileEmojiBar');
-                bar.innerHTML = state.customEmojis.map(e => '<button class="emoji-btn" onclick="sendEmoji(\'' + e + '\')">' + e + '</button>').join('');
-            }
-
-            const stage = document.getElementById('gameStage');
-            if (state.status === 'IDLE' || state.status === 'PAUSED') {
-                stage.innerHTML = '<h3 style="color: var(--text-muted);" id="mobileWaitingHeading">' + (state.mobileWaitingText || 'Waiting for host to start game...') + '</h3>';
-            } else if (state.status === 'QUESTION') {
+            if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
-                const q = round ? round.questions[state.currentQuestionIndex] : null;
+                const q = round && round.questions ? round.questions[state.currentQuestionIndex] : null;
+                
+                document.getElementById('roundNameDisplay').innerText = round ? round.name : 'Trivia Round';
+                
+                if (q) {
+                    document.getElementById('questionDisplay').innerText = q.question;
+                    const optContainer = document.getElementById('optionsContainer');
+                    document.getElementById('feedbackDisplay').innerText = '';
 
-                if (state.currentQuestionIndex !== lastQuestionIndex) {
-                    lastQuestionIndex = state.currentQuestionIndex;
-                    answeredCurrent = false;
-                }
-
-                if (round && q) {
-                    if (q.audioPreviewUrl) {
-                        const audio = document.getElementById('mobileAudioPlayer');
-                        if (audio.src !== q.audioPreviewUrl) {
-                            audio.src = q.audioPreviewUrl;
-                            audio.load();
-                            audio.play().catch(e => {});
-                        }
+                    if (q.options && q.options.length > 0) {
+                        optContainer.innerHTML = q.options.map(opt => `
+                            <button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                        `).join('');
                     } else {
-                        const audio = document.getElementById('mobileAudioPlayer');
-                        audio.pause();
-                        audio.currentTime = 0;
-                    }
-
-                    document.getElementById('mobileQuestionCounter').innerText = 'Q ' + (state.currentQuestionIndex + 1) + '/' + round.questions.length;
-                    
-                    if (player && player.hasAnsweredCurrent) {
-                        // Locked state
-                    } else if (!answeredCurrent) {
-                        stage.innerHTML = 
-                            '<p style="font-size: 1.1rem; margin-bottom: 1rem; font-weight: bold;">' + q.question + '</p>' +
-                            '<div class="options-stack">' +
-                                q.options.map(opt => '<button class="option-btn" onclick="submitAnswer(\'' + opt.replace(/'/g, "\\'") + '\', this)">' + opt + '</button>').join('') +
-                            '</div>';
+                        optContainer.innerHTML = `
+                            <input type="text" id="textAnswerInput" placeholder="Type your answer..." style="margin-bottom:0.75rem;">
+                            <button onclick="submitAnswer(document.getElementById('textAnswerInput').value)">Submit Answer</button>
+                        `;
                     }
                 }
             } else if (state.status === 'LEADERBOARD') {
-                const audio = document.getElementById('mobileAudioPlayer');
-                audio.pause();
-                stage.innerHTML = '<h3 style="color: var(--neon-blue);">🏆 Standings</h3>';
+                document.getElementById('questionDisplay').innerText = '🎉 Game Over! Check the main projector screen for final rankings.';
+                document.getElementById('optionsContainer').innerHTML = '';
             }
         });
 
-        function submitAnswer(answer, btnElement) {
-            if (answeredCurrent) return;
-            answeredCurrent = true;
-            if (btnElement) btnElement.classList.add('success');
-            socket.emit('submit-answer', { answer, timeRemaining: 15 });
-            document.getElementById('gameStage').innerHTML = '<h3 style="color: var(--neon-yellow);">Answer Locked In! 🔒</h3>';
+        socket.on('answer-result', (res) => {
+            const fb = document.getElementById('feedbackDisplay');
+            if (res.correct) {
+                fb.style.color = '#00ff66';
+                fb.innerText = `✅ Correct! +${res.points} pts (Streak x${res.streak})`;
+            } else {
+                fb.style.color = '#ff0055';
+                fb.innerText = `❌ Incorrect. Correct answer: ${res.correctAnswer}`;
+            }
+        });
+
+        socket.on('broadcast-advert-mobile', (ad) => { showMobileAdvert(ad); });
+        socket.on('hide-advert-mobile', () => { hideMobileAdvert(); });
+
+        function showMobileAdvert(ad) {
+            const overlay = document.getElementById('mobileAdModal');
+            const imgContainer = document.getElementById('mobileAdImageContainer');
+            const textContainer = document.getElementById('mobileAdTextContainer');
+
+            imgContainer.innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 35vh; max-width: 85vw; border-radius: 8px; border: 1px solid #ffee00; margin-bottom: 1rem; object-fit: contain;">` : '';
+            textContainer.innerText = ad.text;
+            overlay.style.display = 'flex';
+        }
+
+        function hideMobileAdvert() {
+            document.getElementById('mobileAdModal').style.display = 'none';
         }
     </script>
 </body>
