@@ -181,18 +181,18 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     }
 });
 
-// NEW MUSIC TAB: URL / TRACK TO MULTIPLE CHOICE QUIZ GENERATOR
+// MUSIC QUIZ STUDIO: SONG / URL TO MULTIPLE CHOICE QUESTIONS
 app.post('/api/add-track-quiz', async (req, res) => {
-    const { songQuery, roundName = 'Custom Music Quiz Round' } = req.body;
-    if (!songQuery) return res.status(400).json({ error: 'Song input or URL is required' });
+    const { songQuery } = req.body;
+    if (!songQuery) return res.status(400).json({ error: 'Song input is required' });
 
     const seed = Date.now() + Math.floor(Math.random() * 100000);
-    const prompt = `Create a high-quality trivia multiple-choice question based on this song or link reference: "${songQuery}" (Timestamp Seed ${seed}).
-    Return ONLY a valid JSON object with keys:
-    - "question": string (e.g., "Which artist performed the hit song '...'?")
-    - "options": array of 4 strings (1 correct answer and 3 plausible distractors)
-    - "answer": string (the exact correct option matching one of the options)
-    No markdown formatting, no backticks, just raw JSON.`;
+    const prompt = `Create a list of multiple-choice trivia questions based on these songs, artists, or links: "${songQuery}" (Timestamp Seed ${seed}).
+    Return ONLY a valid JSON array of objects with keys:
+    - "question": string
+    - "options": array of 4 strings
+    - "answer": string
+    No markdown, just raw JSON array.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -204,31 +204,17 @@ app.post('/api/add-track-quiz', async (req, res) => {
         if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
         else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
 
-        const item = JSON.parse(text);
-        
-        let musicRound = gameState.playlist.find(r => r.name === roundName);
-        const newQ = {
+        const items = JSON.parse(text);
+        const questions = items.map(item => ({
             question: item.question,
             options: (item.options || []).sort(() => 0.5 - Math.random()),
             answer: item.answer,
             fastestPlayerId: null
-        };
+        }));
 
-        if (musicRound) {
-            musicRound.questions.push(newQ);
-        } else {
-            gameState.playlist.push({
-                name: roundName,
-                genre: 'Custom Music Quiz',
-                timer: 20,
-                questions: [newQ]
-            });
-        }
-
-        io.emit('state-update', gameState);
-        res.json({ success: true, question: newQ });
+        res.json({ success: true, questions });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to generate quiz from song input: ' + err.message });
+        res.status(500).json({ error: 'Failed to generate quiz: ' + err.message });
     }
 });
 
@@ -268,7 +254,6 @@ function parseCategoryFile(filename) {
     return questions.sort(() => 0.5 - Math.random());
 }
 
-// AI MINI-GAMES WITH TIMESTAMP SEED
 async function generateAIQuestions(type, count) {
     let prompt = '';
     const seed = Date.now() + Math.floor(Math.random() * 100000);
@@ -278,10 +263,6 @@ async function generateAIQuestions(type, count) {
         prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
     } else if (type === 'higher-lower') {
         prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
-    } else if (type === 'tenable') {
-        prompt = `Generate exactly ${count} completely randomized Tenable top list challenges (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
-    } else if (type === 'one-percent') {
-        prompt = `Generate exactly ${count} completely randomized 1% Club logic brainteasers (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
     }
 
     try {
@@ -379,6 +360,17 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('add-custom-playlist', (playlistObj) => {
+        if (!playlistObj || !playlistObj.questions || playlistObj.questions.length === 0) return;
+        gameState.playlist.push({
+            name: playlistObj.name || 'Custom Playlist',
+            genre: 'Saved Music Playlist',
+            timer: 20,
+            questions: playlistObj.questions
+        });
+        io.emit('state-update', gameState);
+    });
+
     socket.on('add-minigame-round', async (config) => {
         const count = parseInt(config.count || 5);
         const rawItems = await generateAIQuestions(config.type, count);
@@ -413,31 +405,6 @@ io.on('connection', (socket) => {
                 options: ['Higher', 'Lower'],
                 fastestPlayerId: null
             }));
-        } else if (config.type === 'tenable') {
-            questions = rawItems.map(item => {
-                const ans = item.answer || 'Top Choice';
-                const options = [ans, 'Option A', 'Option B', 'Option C'].sort(() => 0.5 - Math.random());
-                return {
-                    gameType: 'tenable',
-                    question: '🔟 TENABLE: ' + (item.category || 'Top List'),
-                    answer: ans,
-                    options: options,
-                    fastestPlayerId: null
-                };
-            });
-        } else if (config.type === 'one-percent') {
-            questions = rawItems.map(item => {
-                const ans = item.answer || 'Solution';
-                const opts = item.options ? [...item.options] : [ans, 'A', 'B', 'C'];
-                if (!opts.includes(ans)) opts[0] = ans;
-                return {
-                    gameType: 'one-percent',
-                    question: '🧠 1% CLUB: ' + (item.q || 'Brainteaser'),
-                    answer: ans,
-                    options: opts.sort(() => 0.5 - Math.random()),
-                    fastestPlayerId: null
-                };
-            });
         }
 
         if (questions.length > 0) {
@@ -476,82 +443,6 @@ io.on('connection', (socket) => {
         gameState.playlist = [];
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-venue-details', (details) => {
-        gameState.venueDetails = sanitizeText(details);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-welcome-header', (headerText) => {
-        gameState.welcomeHeader = sanitizeText(headerText);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-mobile-waiting', (waitingText) => {
-        gameState.mobileWaitingText = sanitizeText(waitingText);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-custom-emojis', (emojisArray) => {
-        if (Array.isArray(emojisArray)) {
-            gameState.customEmojis = emojisArray;
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('toggle-chat', (enabled) => {
-        gameState.chatEnabled = enabled;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('toggle-mute-player', (socketId) => {
-        gameState.mutedPlayers[socketId] = !gameState.mutedPlayers[socketId];
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-announcement', (announcementData) => {
-        gameState.announcement = {
-            active: announcementData.active,
-            text: sanitizeText(announcementData.text)
-        };
-        io.emit('announcement-update', gameState.announcement);
-    });
-
-    socket.on('send-emoji', (emoji) => {
-        if (!gameState.chatEnabled) return;
-        if (gameState.mutedPlayers[socket.id]) return;
-        io.emit('player-emoji', { id: socket.id, emoji });
-    });
-
-    socket.on('player-chat', (message) => {
-        if (!gameState.chatEnabled) return;
-        if (gameState.mutedPlayers[socket.id]) return;
-        const cleanMsg = sanitizeText(message);
-        if (!cleanMsg) return;
-        const player = gameState.scores[socket.id];
-        const chatObj = { name: player ? player.name : 'Anonymous', text: cleanMsg };
-        io.emit('chat-message', chatObj);
-    });
-
-    socket.on('broadcast-advert-screen', (adData) => {
-        gameState.activeScreenAdvert = adData;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-screen', () => {
-        gameState.activeScreenAdvert = null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('broadcast-advert-mobile', (adData) => {
-        gameState.activeMobileAdvert = adData;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-mobile', () => {
-        gameState.activeMobileAdvert = null;
         io.emit('state-update', gameState);
     });
 
@@ -608,17 +499,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        const player = gameState.scores[socket.id];
-        if (player) {
-            const playerName = player.name;
-        }
         delete gameState.mutedPlayers[socket.id];
         io.emit('state-update', gameState);
     });
 });
 
 function startQuestionTimer() {
-    if (timerInterval) clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerIntenterval || timerInterval);
 
     timerInterval = setInterval(() => {
         if (gameState.status === 'QUESTION') {
@@ -657,7 +544,7 @@ function advanceToNextQuestion() {
 
     gameState.status = 'QUESTION';
     gameState.timerMax = getCurrentRoundTimer();
-    gameState.timer = gameState.timerMax;
+    gameState.timer =gameState.timerMax;
     
     io.emit('state-update', gameState);
     startQuestionTimer();
