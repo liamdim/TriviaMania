@@ -72,9 +72,9 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// NEW BULK AI QUESTION GENERATOR ENDPOINT
+// BULK AI QUESTION GENERATOR ENDPOINT
 app.post('/api/generate-bulk-trivia', async (req, res) => {
-    const { categoryName, count = 30 } = req.body;
+    const { categoryName, count = 50 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
 
     const seed = Math.floor(Math.random() * 100000);
@@ -100,9 +100,8 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
             return res.status(500).json({ error: 'Failed to generate questions format' });
         }
 
-        // Format into TriviaMania standard text format (#Q, ^Answer, options)
         let fileContent = '';
-        items.forEach((item, idx) => {
+        items.forEach((item) => {
             fileContent += `#Q ${item.question}\n`;
             if (item.options && Array.isArray(item.options)) {
                 item.options.forEach((opt, oIdx) => {
