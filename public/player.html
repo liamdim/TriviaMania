@@ -105,7 +105,57 @@
         let hasVotedPoll = false;
         let currentQuestionIndexTracker = -1;
 
+        // Web Audio API Synthesizer for game sound effects
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+                if (type === 'lock') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(150, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch (e) {
+                // Audio context fallback or browser block
+            }
+        }
+
         function joinGame() {
+            initAudio();
             const input = document.getElementById('playerNameInput');
             playerName = input.value.trim();
             if (!playerName) { alert('Please enter your team name!'); return; }
@@ -216,12 +266,14 @@
 
         function votePoll(option) {
             hasVotedPoll = true;
+            playSound('lock');
             socket.emit('poll-vote', option);
         }
 
         function submitAnswer(ans, btnElement) {
             if (hasAnswered) return;
             hasAnswered = true;
+            playSound('lock');
 
             const allBtns = document.querySelectorAll('.option-btn');
             allBtns.forEach(b => b.disabled = true);
@@ -234,6 +286,7 @@
             const submitBtn = document.getElementById('textSubmitBtn');
             if (!input || hasAnswered) return;
             hasAnswered = true;
+            playSound('lock');
             if (submitBtn) submitBtn.disabled = true;
             if (input) input.disabled = true;
             
@@ -251,9 +304,11 @@
 
             const banner = document.getElementById('answerFeedbackBanner');
             if (res.correct) {
+                playSound('correct');
                 banner.innerText = `✅ Correct! +${res.points} pts (Streak 🔥 x${res.streak})`;
                 banner.style.color = 'var(--neon-green)';
             } else {
+                playSound('wrong');
                 banner.innerText = `❌ Incorrect! Correct answer was: ${res.correctAnswer}`;
                 banner.style.color = 'var(--neon-red)';
             }
