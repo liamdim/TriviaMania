@@ -216,7 +216,7 @@ async function generateAIQuestions(type, count) {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'gemini-2.5-flash',
             contents: prompt,
         });
 
@@ -386,11 +386,23 @@ io.on('connection', (socket) => {
     socket.on('broadcast-advert-screen', (adData) => {
         gameState.activeScreenAdvert = adData;
         io.emit('state-update', gameState);
+        io.emit('broadcast-advert-screen', adData);
     });
 
     socket.on('hide-advert-screen', () => {
         gameState.activeScreenAdvert = null;
         io.emit('state-update', gameState);
+        io.emit('hide-advert-screen');
+    });
+
+    socket.on('broadcast-advert-mobile', (adData) => {
+        gameState.activeMobileAdvert = adData;
+        io.emit('broadcast-advert-mobile', adData);
+    });
+
+    socket.on('hide-advert-mobile', () => {
+        gameState.activeMobileAdvert = null;
+        io.emit('hide-advert-mobile');
     });
 
     socket.on('move-round', ({ index, direction }) => {
