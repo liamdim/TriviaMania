@@ -50,7 +50,7 @@
                 <textarea id="adTextInput" placeholder="Enter sponsor message, drink deals, or special announcements..."></textarea>
             </div>
             <div class="form-group">
-                <label>Sponsor Image (Optional Upload / Base64):</label>
+                <label>Sponsor Image / Pic (Optional):</label>
                 <input type="file" id="adImageFile" accept="image/*" style="color: white; margin-bottom: 0.5rem;">
                 <input type="hidden" id="adImageBase64" value="">
             </div>
@@ -69,12 +69,33 @@
         const socket = io({ transports: ['websocket', 'polling'] });
         let advertsList = [];
 
+        // Compress image to prevent payload size issues
         document.getElementById('adImageFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(uploadEvent) {
-                document.getElementById('adImageBase64').value = uploadEvent.target.result;
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    document.getElementById('adImageBase64').value = canvas.toDataURL('image/jpeg', 0.7);
+                };
+                img.src = uploadEvent.target.result;
             };
             reader.readAsDataURL(file);
         });
@@ -89,15 +110,15 @@
         function saveAdvert() {
             const text = document.getElementById('adTextInput').value.trim();
             const image = document.getElementById('adImageBase64').value;
-            if (!text) { alert('Please enter advert text!'); return; }
+            if (!text && !image) { alert('Please enter advert text or upload a picture!'); return; }
 
-            advertsList.push({ text, image });
+            advertsList.push({ text: text || 'Sponsor Advertisement', image: image });
             socket.emit('update-adverts-library', advertsList);
 
             document.getElementById('adTextInput').value = '';
             document.getElementById('adImageBase64').value = '';
             document.getElementById('adImageFile').value = '';
-            alert('Advert successfully saved to library and synced to host controls!');
+            alert('Advert successfully saved and synced to the host screen dropdown!');
         }
 
         function deleteAdvert(index) {
@@ -113,10 +134,12 @@
             }
             container.innerHTML = advertsList.map((ad, idx) => `
                 <div class="ad-item">
-                    <div>
-                        <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
-                        <p style="font-size: 0.95rem; margin-top: 0.25rem;">${ad.text}</p>
-                        ${ad.image ? '<span style="font-size:0.8rem; color:var(--neon-green);">[Has Sponsor Image]</span>' : ''}
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        ${ad.image ? `<img src="${ad.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--neon-blue);">` : ''}
+                        <div>
+                            <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
+                            <p style="font-size: 0.95rem; margin-top: 0.25rem;">${ad.text}</p>
+                        </div>
                     </div>
                     <button onclick="deleteAdvert(${idx})" style="background: rgba(255,0,85,0.3); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Delete</button>
                 </div>
