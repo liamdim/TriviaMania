@@ -55,15 +55,22 @@
             <button class="btn-green" onclick="joinGame()">🚀 Join Trivia Game</button>
         </div>
 
-        <!-- WAITING / LOBBY SCREEN -->
+        <!-- WAITING / LOBBY & LEADERBOARD SCREEN -->
         <div class="card" id="waitingScreen" style="display: none; text-align: center;">
             <h3 style="color: var(--neon-green); margin-bottom: 0.5rem;" id="waitingHeader">You're In!</h3>
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;" id="waitingSubtext">Waiting for host to start the game...</p>
-            <p id="personalScoreDisplay" style="color: var(--neon-yellow); font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;"></p>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;" id="waitingSubtext">Waiting for host to start the game...</p>
+            <p id="personalScoreDisplay" style="color: var(--neon-yellow); font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem;"></p>
             
+            <!-- Lobby Poll Section -->
             <div id="pollSection" style="background: rgba(5,10,20,0.6); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2); margin-top: 1rem; display: none;">
                 <h4 style="color: var(--neon-yellow); margin-bottom: 0.5rem;" id="pollQ">Lobby Poll</h4>
                 <div id="pollBtns" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+
+            <!-- Mobile Live Leaderboard Section -->
+            <div id="mobileLeaderboardSection" style="background: rgba(5,10,20,0.8); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.3); margin-top: 1rem;">
+                <h4 style="color: var(--neon-blue); margin-bottom: 0.75rem;">🏆 Live Rankings</h4>
+                <div id="mobileLeaderboardList" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y: auto; text-align: left;"></div>
             </div>
         </div>
 
@@ -101,6 +108,7 @@
         const socket = io({ transports: ['websocket', 'polling'] });
         let playerName = '';
         let hasAnswered = false;
+        let hasVotedPoll = false;
         let currentQuestionIndexTracker = -1;
 
         function joinGame() {
@@ -116,11 +124,25 @@
         }
 
         socket.on('state-update', (state) => {
+            // Update personal score & mobile leaderboard rankings
             if (state.scores) {
                 const myId = socket.id;
                 const me = state.scores[myId];
                 if (me) {
                     document.getElementById('personalScoreDisplay').innerText = `Your Score: ${me.score} pts | Streak: 🔥 x${me.streak || 0}`;
+                }
+
+                const sortedPlayers = Object.values(state.scores).sort((a, b) => b.score - a.score);
+                const lbList = document.getElementById('mobileLeaderboardList');
+                if (sortedPlayers.length > 0) {
+                    lbList.innerHTML = sortedPlayers.map((p, idx) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0.5rem; background:rgba(0,243,255,0.05); border-radius:4px; font-size:0.9rem;">
+                            <span>#${idx + 1} ${p.name}</span>
+                            <span style="color:var(--neon-green); font-weight:bold;">${p.score} pts</span>
+                        </div>
+                    `).join('');
+                } else {
+                    lbList.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No scores recorded yet.</p>';
                 }
             }
 
@@ -156,24 +178,56 @@
                         }
                     }
                 }
-            } else if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'LEADERBOARD') {
+            } else if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'LEADERBOARD' || state.status === 'INTERMISSION') {
                 if (playerName) {
                     document.getElementById('waitingScreen').style.display = 'block';
                     document.getElementById('questionScreen').style.display = 'none';
                 }
 
+                // Lobby poll handling with auto-hide upon voting
                 if (state.lobbySettings && state.lobbySettings.showPoll) {
+                    const votes = state.lobbySettings.votes || {};
+                    const hasAlreadyVoted = votes[socket.id] !== undefined;
+
                     document.getElementById('pollSection').style.display = 'block';
                     document.getElementById('pollQ').innerText = state.lobbySettings.pollQuestion;
                     const pollBtns = document.getElementById('pollBtns');
-                    pollBtns.innerHTML = state.lobbySettings.pollOptions.map(opt => `
-                        <button class="btn-blue" style="padding: 0.6rem; font-size: 0.95rem; margin-bottom:0.3rem;" onclick="socket.emit('poll-vote', '${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                    `).join('');
+
+                    if (!hasVotedPoll && !hasAlreadyVoted) {
+                        // Show voting buttons
+                        pollBtns.innerHTML = state.lobbySettings.pollOptions.map(opt => `
+                            <button class="btn-blue" style="padding: 0.6rem; font-size: 0.95rem; margin-bottom:0.3rem;" onclick="votePoll('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                        `).join('');
+                    } else {
+                        // Show live results breakdown after voting
+                        const totalVotes = Object.keys(votes).length;
+                        const counts = {};
+                        state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
+                        Object.values(votes).forEach(val => { if (counts[val] !== undefined) counts[val]++; });
+
+                        pollBtns.innerHTML = '<p style="color:var(--neon-green); font-size:0.9rem; margin-bottom:0.4rem;">✅ Vote Recorded! Live Results:</p>' + 
+                            state.lobbySettings.pollOptions.map(opt => {
+                                const c = counts[opt] || 0;
+                                const p = totalVotes > 0 ? Math.round((c / totalVotes) * 100) : 0;
+                                return `
+                                    <div style="background: rgba(0,243,255,0.1); padding: 0.4rem 0.8rem; border-radius: 6px; display:flex; justify-content:space-between; font-size:0.9rem;">
+                                        <span>${opt}</span>
+                                        <span><strong>${p}%</strong> (${c})</span>
+                                    </div>
+                                `;
+                            }).join('');
+                    }
                 } else {
+                    hasVotedPoll = false;
                     document.getElementById('pollSection').style.display = 'none';
                 }
             }
         });
+
+        function votePoll(option) {
+            hasVotedPoll = true;
+            socket.emit('poll-vote', option);
+        }
 
         function submitAnswer(ans, btnElement) {
             if (hasAnswered) return;
@@ -198,7 +252,6 @@
 
         socket.on('answer-result', (res) => {
             const allBtns = document.querySelectorAll('.option-btn');
-            
             allBtns.forEach(b => {
                 const text = b.innerText.trim();
                 if (text.toLowerCase() === res.correctAnswer.toLowerCase()) {
