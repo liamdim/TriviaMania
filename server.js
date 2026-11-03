@@ -235,11 +235,11 @@ async function generateAIQuestions(type, count) {
     const seed = Date.now() + Math.floor(Math.random() * 100000);
     
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, no introductory text, just raw JSON array.`;
+        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of exactly ${count} objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, no introductory text, just raw JSON array.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. For each item, provide the correct answer ("word") AND 3 tricky multiple-choice options ("options" array containing 4 strings total: the correct answer and 3 deceptive decoy words that share similar letters or spelling patterns). Return ONLY a valid JSON array of objects with keys "word", "scrambled" (randomly jumbled letters separated by spaces like "L E A B T S E"), "options" (array of 4 strings including the word), and "answer" (the correct word). No markdown, just raw JSON array.`;
+        prompt = `Generate exactly ${count} famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. For each item, provide the correct answer ("word") AND 3 tricky multiple-choice options ("options" array containing 4 strings total: the correct answer and 3 deceptive decoy words that share similar letters or spelling patterns). Return ONLY a valid JSON array of exactly ${count} objects with keys "word", "scrambled" (randomly jumbled letters separated by spaces like "L E A B T S E"), "options" (array of 4 strings including the word), and "answer" (the correct word). No markdown, just raw JSON array.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, no introductory text, just raw JSON array.`;
+        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of exactly ${count} objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, no introductory text, just raw JSON array.`;
     }
 
     try {
@@ -258,28 +258,61 @@ async function generateAIQuestions(type, count) {
 
         const parsed = JSON.parse(text);
         if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            return parsed.slice(0, count);
         }
     } catch (err) {
         console.error('AI generation error:', err.message);
     }
 
+    // Expanded robust fallbacks up to 15 items
     if (type === 'scramble') {
         return [
             { word: 'BEATLES', scrambled: 'S E T A E B L', options: ['BEATLES', 'BALTEES', 'BASTLES', 'BEALTES'], answer: 'BEATLES' },
             { word: 'MATRIX', scrambled: 'X I R T A M', options: ['MATRIX', 'MARTIX', 'MATRXI', 'MITRAX'], answer: 'MATRIX' },
-            { word: 'DIAMOND', scrambled: 'D N O M A I D', options: ['DIAMOND', 'DAMIOND', 'DIMANOV', 'DOMIAND'], answer: 'DIAMOND' }
+            { word: 'DIAMOND', scrambled: 'D N O M A I D', options: ['DIAMOND', 'DAMIOND', 'DIMANOV', 'DOMIAND'], answer: 'DIAMOND' },
+            { word: 'SUNSET', scrambled: 'T E N S U S', options: ['SUNSET', 'SNUSET', 'SUENST', 'SUTNES'], answer: 'SUNSET' },
+            { word: 'PYTHON', scrambled: 'N O H T Y P', options: ['PYTHON', 'PIYTHON', 'PYTINOH', 'PITHYON'], answer: 'PYTHON' },
+            { word: 'GALAXY', scrambled: 'Y X A L A G', options: ['GALAXY', 'GLAXYA', 'GAALXY', 'GALAYX'], answer: 'GALAXY' },
+            { word: 'ROCKET', scrambled: 'T E C K O R', options: ['ROCKET', 'ROCCET', 'ROKET', 'ROTCET'], answer: 'ROCKET' },
+            { word: 'VOLCANO', scrambled: 'O N A C L O V', options: ['VOLCANO', 'VOCALNO', 'VOLCAN', 'VALCONO'], answer: 'VOLCANO' },
+            { word: 'WHISKEY', scrambled: 'Y E K S I H W', options: ['WHISKEY', 'WISKEY', 'WHISKY', 'WISHKEY'], answer: 'WHISKEY' },
+            { word: 'CRYSTAL', scrambled: 'L A T S Y R C', options: ['CRYSTAL', 'CRISTAL', 'CRISTALL', 'CRYSATL'], answer: 'CRYSTAL' },
+            { word: 'DRAGON', scrambled: 'N O G A R D', options: ['DRAGON', 'DARGON', 'DRAGON', 'DRAGONE'], answer: 'DRAGON' },
+            { word: 'PLANET', scrambled: 'T E N A L P', options: ['PLANET', 'PLANETT', 'PLANTET', 'PALLENT'], answer: 'PLANET' },
+            { word: 'THUNDER', scrambled: 'R E D N U H T', options: ['THUNDER', 'THUNER', 'TUNDHER', 'THUDNER'], answer: 'THUNDER' },
+            { word: 'FESTIVAL', scrambled: 'L A V I T S E F', options: ['FESTIVAL', 'FESTIVALL', 'FESTAVAL', 'FESTVIL'], answer: 'FESTIVAL' },
+            { word: 'MONSTER', scrambled: 'R E T S N O M', options: ['MONSTER', 'MONSTAR', 'MONSTRE', 'MOSTER'], answer: 'MONSTER' }
         ].slice(0, count);
     } else if (type === 'lingo') {
         return [
             { word: 'SHARK', hint: 'Ocean predator' },
             { word: 'TIGER', hint: 'Striped big cat' },
-            { word: 'PLANT', hint: 'Green living thing' }
+            { word: 'PLANT', hint: 'Green living thing' },
+            { word: 'TRAIN', hint: 'Railway transport' },
+            { word: 'MUSIC', hint: 'Auditory art' },
+            { word: 'BRAIN', hint: 'Thinking organ' },
+            { word: 'LIGHT', hint: 'Illumination source' },
+            { word: 'WATER', hint: 'Essential liquid' },
+            { word: 'EARTH', hint: 'Our home planet' },
+            { word: 'CHAIR', hint: 'Seating furniture' },
+            { word: 'BEACH', hint: 'Sandy shore' },
+            { word: 'HOUSE', hint: 'Living building' },
+            { word: 'CLOUD', hint: 'Sky vapor' },
+            { word: 'APPLE', hint: 'Crisp fruit' },
+            { word: 'SPACE', hint: 'Vast cosmos' }
         ].slice(0, count);
     } else {
         return [
             { fact: 'Average annual rainfall in London (mm)', options: ['Higher', 'Lower'], answer: 'Lower' },
-            { fact: 'Global population in billions', options: ['Higher', 'Lower'], answer: 'Higher' }
+            { fact: 'Global population in billions', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Speed of light in miles per second', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Height of Mount Everest in meters', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Number of bones in an adult human body', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Boiling point of water in Fahrenheit', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Distance from Earth to the Moon in miles', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Total number of keys on a standard piano', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Age of the universe in billions of years', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Number of states in the United States', options: ['Higher', 'Lower'], answer: 'Higher' }
         ].slice(0, count);
     }
 }
