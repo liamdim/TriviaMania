@@ -92,7 +92,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI GENERATOR WITH GITHUB PERMANENT COMMIT
+// BULK AI GENERATOR WITH GITHUB PERMANENT COMMIT (CLEAN FILENAMES, NO .TXT)
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
