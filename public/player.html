@@ -18,7 +18,7 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; justify-content: space-between; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; justify-content: space-between; background-image: radial-gradient(circle at 50% 20%, #1a103c 0%, #05050a 85%); }
         header { text-align: center; padding: 0.75rem; background: rgba(10, 15, 30, 0.9); border-bottom: 1px solid rgba(0, 243, 255, 0.3); border-radius: 8px; margin-bottom: 1rem; }
         header h1 { font-size: 1.25rem; color: var(--neon-blue); }
         .container { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 500px; width: 100%; margin: 0 auto; }
@@ -29,16 +29,12 @@
         .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
         input[type="text"] { width: 100%; padding: 1rem; background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0, 243, 255, 0.4); color: white; border-radius: 8px; font-size: 1.1rem; margin-bottom: 1rem; text-align: center; }
         
-        /* Options Grid for Questions */
         .options-container { display: flex; flex-direction: column; gap: 0.75rem; }
         .option-btn { background: rgba(0, 243, 255, 0.15); border: 2px solid var(--neon-blue); color: white; padding: 1.2rem; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; }
         .option-btn:hover:not(:disabled) { background: rgba(0, 243, 255, 0.3); }
         .option-btn:disabled { cursor: not-allowed; opacity: 0.8; }
-        
-        /* Direct Feedback Colors */
         .option-btn.reveal-correct { background: var(--neon-green) !important; color: #000 !important; border-color: var(--neon-green) !important; box-shadow: 0 0 15px var(--neon-green); }
 
-        /* Mobile Advert Overlay */
         #mobileAdvertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
     </style>
 </head>
@@ -61,13 +57,11 @@
             <p style="color: var(--text-muted); margin-bottom: 1rem;" id="waitingSubtext">Waiting for host to start the game...</p>
             <p id="personalScoreDisplay" style="color: var(--neon-yellow); font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem;"></p>
             
-            <!-- Lobby Poll Section -->
             <div id="pollSection" style="background: rgba(5,10,20,0.6); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2); margin-top: 1rem; display: none;">
                 <h4 style="color: var(--neon-yellow); margin-bottom: 0.5rem;" id="pollQ">Lobby Poll</h4>
                 <div id="pollBtns" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
             </div>
 
-            <!-- Mobile Live Leaderboard Section -->
             <div id="mobileLeaderboardSection" style="background: rgba(5,10,20,0.8); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.3); margin-top: 1rem;">
                 <h4 style="color: var(--neon-blue); margin-bottom: 0.75rem;">🏆 Live Rankings</h4>
                 <div id="mobileLeaderboardList" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y: auto; text-align: left;"></div>
@@ -124,7 +118,6 @@
         }
 
         socket.on('state-update', (state) => {
-            // Update personal score & mobile leaderboard rankings
             if (state.scores) {
                 const myId = socket.id;
                 const me = state.scores[myId];
@@ -184,7 +177,6 @@
                     document.getElementById('questionScreen').style.display = 'none';
                 }
 
-                // Lobby poll handling with auto-hide upon voting
                 if (state.lobbySettings && state.lobbySettings.showPoll) {
                     const votes = state.lobbySettings.votes || {};
                     const hasAlreadyVoted = votes[socket.id] !== undefined;
@@ -194,12 +186,10 @@
                     const pollBtns = document.getElementById('pollBtns');
 
                     if (!hasVotedPoll && !hasAlreadyVoted) {
-                        // Show voting buttons
                         pollBtns.innerHTML = state.lobbySettings.pollOptions.map(opt => `
                             <button class="btn-blue" style="padding: 0.6rem; font-size: 0.95rem; margin-bottom:0.3rem;" onclick="votePoll('${opt.replace(/'/g, "\\'")}')">${opt}</button>
                         `).join('');
                     } else {
-                        // Show live results breakdown after voting
                         const totalVotes = Object.keys(votes).length;
                         const counts = {};
                         state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
