@@ -4,261 +4,254 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>TriviaMania - Mobile Player</title>
+    <title>TriviaMania - Player Controller</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.9);
+            --panel-bg: rgba(15, 23, 42, 0.95);
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
+            --neon-red: #ff0055;
             --text: #ffffff;
+            --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1.5rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); overflow-x: hidden; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.4); text-align: center; }
-        input { width: 100%; padding: 0.9rem; background: rgba(5,10,20,0.9); border: 1px solid var(--neon-blue); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; text-align: center; }
-        button { width: 100%; background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-bottom: 0.75rem; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; justify-content: space-between; }
+        header { text-align: center; padding: 0.75rem; background: rgba(10, 15, 30, 0.9); border-bottom: 1px solid rgba(0, 243, 255, 0.3); border-radius: 8px; margin-bottom: 1rem; }
+        header h1 { font-size: 1.25rem; color: var(--neon-blue); }
+        .container { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 500px; width: 100%; margin: 0 auto; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); margin-bottom: 1rem; }
+        button { padding: 1rem; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 1.1rem; width: 100%; transition: 0.2s; margin-bottom: 0.75rem; }
         button:hover { filter: brightness(1.2); }
-        .option-btn { background: rgba(15,23,42,0.9); border: 2px solid var(--neon-blue); color: white; padding: 1.1rem; font-size: 1rem; border-radius: 8px; margin-bottom: 0.6rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .option-btn:active { background: var(--neon-blue); color: #000; }
-        .emoji-bar { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; }
-        .emoji-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); font-size: 1.4rem; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; width: auto; }
-        .emoji-btn:active { transform: scale(1.2); background: rgba(0,243,255,0.4); }
+        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
+        .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
+        input[type="text"] { width: 100%; padding: 1rem; background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0, 243, 255, 0.4); color: white; border-radius: 8px; font-size: 1.1rem; margin-bottom: 1rem; text-align: center; }
+        
+        /* Options Grid for Questions */
+        .options-container { display: flex; flex-direction: column; gap: 0.75rem; }
+        .option-btn { background: rgba(0, 243, 255, 0.15); border: 2px solid var(--neon-blue); color: white; padding: 1.2rem; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; }
+        .option-btn:hover:not(:disabled) { background: rgba(0, 243, 255, 0.3); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        
+        /* Correct / Incorrect Feedback States */
+        .option-btn.correct { background: var(--neon-green) !important; color: #000 !important; border-color: var(--neon-green) !important; }
+        .option-btn.incorrect { background: var(--neon-red) !important; color: #fff !important; border-color: var(--neon-red) !important; }
 
-        .poll-bar-container { background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; height: 22px; margin-top: 0.3rem; margin-bottom: 0.6rem; position: relative; }
-        .poll-bar-fill { background: linear-gradient(90deg, #0077ff, var(--neon-green)); height: 100%; width: 0%; transition: width 0.4s ease; }
-
-        @keyframes floatUpMobile {
-            0% { transform: translateY(0px) scale(0.8); opacity: 1; }
-            100% { transform: translateY(-250px) scale(1.5); opacity: 0; }
-        }
-        .mobile-floating-emoji { position: absolute; font-size: 2.5rem; animation: floatUpMobile 1.5s ease-out forwards; z-index: 999; pointer-events: none; }
+        /* Mobile Advert Overlay */
+        #mobileAdvertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
     </style>
 </head>
 <body>
+    <header>
+        <h1 id="appTitle">⚡ TriviaMania</h1>
+    </header>
 
-    <div id="joinScreen" class="card" style="margin-top: 2rem;">
-        <h2 style="color: var(--neon-blue); margin-bottom: 1rem;">Join Trivia Night</h2>
-        <input type="text" id="playerNameInput" placeholder="Enter Your Team Name">
-        <button onclick="joinGame()">🚀 Join Game</button>
-    </div>
-
-    <div id="gameScreen" style="display:none;">
-        <!-- PRACTICE POLL CARD -->
-        <div class="card" id="pollCardContainer" style="border-color: var(--neon-green); display:none;">
-            <h3 style="color: var(--neon-green); font-size: 1rem; margin-bottom: 0.5rem;">📊 LIVE LOBBY POLL</h3>
-            <p id="pollQuestionText" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem;"></p>
-            <div id="pollOptionsContainer"></div>
+    <div class="container">
+        <!-- JOIN SCREEN -->
+        <div class="card" id="joinScreen">
+            <h3 style="color: var(--neon-blue); margin-bottom: 1rem; text-align: center;">Enter Player / Team Name</h3>
+            <input type="text" id="playerNameInput" placeholder="Your Team Name..." maxlength="25">
+            <button class="btn-green" onclick="joinGame()">🚀 Join Trivia Game</button>
         </div>
 
-        <div class="card" id="questionCardContainer">
-            <h3 id="roundNameDisplay" style="color: var(--neon-green); font-size: 1.1rem; margin-bottom: 0.5rem;">Waiting for game...</h3>
-            <p id="questionDisplay" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;">Get ready!</p>
-            <div id="optionsContainer"></div>
-            <div id="feedbackDisplay" style="margin-top: 1rem; font-size: 1.1rem; font-weight: bold;"></div>
-        </div>
-
-        <!-- EMOJI REACTION & CHAT BAR -->
-        <div class="card" style="padding: 1rem; position: relative;">
-            <p style="font-size: 0.85rem; color: #8b9bb4; margin-bottom: 0.4rem;">Tap Emojis to Float Reactions:</p>
-            <div class="emoji-bar" id="emojiBarContainer"></div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
-                <input type="text" id="playerChatInput" placeholder="Type a chat message..." style="margin-bottom:0; flex:1; padding:0.5rem; font-size:0.9rem; text-align:left;">
-                <button onclick="sendPlayerChat()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem; margin-bottom:0;">Send</button>
+        <!-- WAITING / LOBBY SCREEN -->
+        <div class="card" id="waitingScreen" style="display: none; text-align: center;">
+            <h3 style="color: var(--neon-green); margin-bottom: 0.5rem;" id="waitingHeader">You're In!</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;" id="waitingSubtext">Waiting for host to start the game...</p>
+            
+            <div id="pollSection" style="background: rgba(5,10,20,0.6); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2); margin-top: 1rem; display: none;">
+                <h4 style="color: var(--neon-yellow); margin-bottom: 0.5rem;" id="pollQ">Lobby Poll</h4>
+                <div id="pollBtns" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
             </div>
-            <div id="mobileChatFeed" style="max-height: 70px; overflow-y: auto; text-align: left; font-size: 0.8rem; color: #8b9bb4; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 6px; margin-top: 0.5rem;"></div>
+        </div>
+
+        <!-- QUESTION SCREEN -->
+        <div class="card" id="questionScreen" style="display: none;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                <span id="qCounter">Question 1</span>
+                <span id="timerDisplay" style="color: var(--neon-yellow); font-weight: bold;">Time: 15s</span>
+            </div>
+            <h3 id="activeQuestionText" style="font-size: 1.3rem; margin-bottom: 1.5rem; text-align: center; line-height: 1.3;">Question text...</h3>
+            <div class="options-container" id="questionOptionsContainer"></div>
+        </div>
+
+        <!-- RESULT / FEEDBACK SCREEN -->
+        <div class="card" id="resultScreen" style="display: none; text-align: center;">
+            <h2 id="resultHeading" style="font-size: 1.8rem; margin-bottom: 0.5rem;">Result</h2>
+            <p id="resultDetails" style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1rem;"></p>
+            <p style="font-size: 1rem; color: var(--neon-yellow);">Get ready for the next question...</p>
+        </div>
+
+        <!-- LIVE CHAT BOX -->
+        <div class="card" id="chatCard" style="display: none; margin-top: auto;">
+            <h4 style="color: var(--neon-blue); margin-bottom: 0.5rem; font-size: 0.95rem;">💬 Table Chat</h4>
+            <div id="chatFeed" style="height: 80px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 6px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-muted);"></div>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="chatInput" placeholder="Send message..." style="margin-bottom: 0; font-size: 0.9rem; padding: 0.5rem;">
+                <button class="btn-blue" style="width: 80px; padding: 0.5rem; margin-bottom: 0; font-size: 0.9rem;" onclick="sendChatMessage()">Send</button>
+            </div>
         </div>
     </div>
 
-    <!-- Mobile Advert Modal -->
-    <div id="mobileAdModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; text-align:center;">
-        <h3 style="color: #ffee00; font-size: 1.5rem; margin-bottom: 1rem;">📢 SPONSOR SPECIAL</h3>
-        <div id="mobileAdImageContainer"></div>
-        <p id="mobileAdTextContainer" style="color: #ffffff; font-size: 1.2rem; font-weight: bold; margin-bottom: 1.5rem;"></p>
-        <button onclick="hideMobileAdvert()" style="background:#ffee00; color:#000; border:none; padding:0.75rem 1.5rem; font-weight:bold; border-radius:6px; width:auto;">Got It / Close</button>
+    <!-- Mobile Advert Overlay -->
+    <div id="mobileAdvertOverlay">
+        <h3 style="color: var(--neon-yellow); margin-bottom: 1rem;">📢 SPONSOR MESSAGE</h3>
+        <p id="mobileAdvertText" style="font-size: 1.2rem; margin-bottom: 1.5rem; line-height: 1.4;"></p>
+        <div id="mobileAdvertImageContainer" style="margin-bottom: 1.5rem;"></div>
+        <button class="btn-blue" onclick="dismissMobileAdvert()">Got It / Close</button>
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
         let playerName = '';
-        let hasVotedPoll = false;
+        let hasAnswered = false;
+        let selectedButtonElement = null;
 
         function joinGame() {
-            playerName = document.getElementById('playerNameInput').value.trim();
+            const input = document.getElementById('playerNameInput');
+            playerName = input.value.trim();
             if (!playerName) { alert('Please enter your team name!'); return; }
+
             socket.emit('player-join', playerName);
             document.getElementById('joinScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-        }
-
-        function submitAnswer(ans) {
-            socket.emit('submit-answer', { answer: ans, timeRemaining: 15 });
-            document.getElementById('optionsContainer').innerHTML = '<p style="color: var(--neon-green); font-size: 1.2rem;">Answer locked in! Waiting for round results...</p>';
-        }
-
-        function votePoll(option) {
-            hasVotedPoll = true;
-            socket.emit('poll-vote', option);
-        }
-
-        function renderEmojiBar(emojis) {
-            const container = document.getElementById('emojiBarContainer');
-            const list = emojis && emojis.length > 0 ? emojis : ['🔥', '🍻', '👏', '😂', '🎉', '💡'];
-            container.innerHTML = list.map(e => `
-                <button class="emoji-btn" onclick="sendEmojiButton('${e}')">${e}</button>
-            `).join('');
-        }
-
-        function sendEmojiButton(emoji) {
-            socket.emit('player-reaction', emoji);
-            spawnMobileFloatingEmoji(emoji);
-        }
-
-        function spawnMobileFloatingEmoji(emoji) {
-            const card = document.getElementById('emojiBarContainer');
-            const el = document.createElement('div');
-            el.className = 'mobile-floating-emoji';
-            el.innerText = emoji;
-            el.style.left = Math.random() * 80 + 10 + '%';
-            el.style.bottom = '40px';
-            card.appendChild(el);
-            setTimeout(() => el.remove(), 1500);
-        }
-
-        function sendPlayerChat() {
-            const input = document.getElementById('playerChatInput');
-            const text = input.value.trim();
-            if (!text) return;
-            socket.emit('player-chat', text);
-            input.value = '';
+            document.getElementById('waitingScreen').style.display = 'block';
+            document.getElementById('chatCard').style.display = 'block';
+            document.getElementById('appTitle').innerText = '👤 ' + playerName;
         }
 
         socket.on('state-update', (state) => {
-            if (state.customEmojis) renderEmojiBar(state.customEmojis);
-
-            if (state.activeMobileAdvert) {
-                showMobileAdvert(state.activeMobileAdvert);
-            } else {
-                hideMobileAdvert();
-            }
-
-            const pollCard = document.getElementById('pollCardContainer');
-            const qCard = document.getElementById('questionCardContainer');
-
-            if (state.status === 'IDLE' || state.status === 'PAUSED') {
-                if (state.lobbySettings && state.lobbySettings.showPoll) {
-                    pollCard.style.display = 'block';
-                    document.getElementById('pollQuestionText').innerText = state.lobbySettings.pollQuestion;
-                    
-                    const pOptsContainer = document.getElementById('pollOptionsContainer');
-                    const options = state.lobbySettings.pollOptions || [];
-                    const votes = state.lobbySettings.votes || {};
-                    const myVote = votes[socket.id];
-
-                    if (myVote !== undefined) {
-                        // Show results breakdown once voted
-                        hasVotedPoll = true;
-                        const totalVotes = Object.values(votes).length;
-                        let counts = {};
-                        options.forEach(opt => counts[opt] = 0);
-                        Object.values(votes).forEach(opt => { if (counts[opt] !== undefined) counts[opt]++; });
-
-                        pOptsContainer.innerHTML = options.map(opt => {
-                            const count = counts[opt] || 0;
-                            const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-                            const isMine = opt === myVote ? 'border: 2px solid var(--neon-green);' : '';
-                            return `
-                                <div style="margin-bottom: 0.6rem; text-align: left; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; ${isMine}">
-                                    <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold;">
-                                        <span>${opt} ${opt === myVote ? '✔️' : ''}</span>
-                                        <span>${pct}%</span>
-                                    </div>
-                                    <div class="poll-bar-container">
-                                        <div class="poll-bar-fill" style="width: ${pct}%;"></div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('') + `<p style="color:var(--neon-green); font-size:0.85rem; margin-top:0.5rem;">Thanks for voting!</p>`;
-                    } else {
-                        hasVotedPoll = false;
-                        pOptsContainer.innerHTML = options.map(opt => `
-                            <button class="option-btn" onclick="votePoll('${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                        `).join('');
-                    }
-                } else {
-                    pollCard.style.display = 'none';
-                }
-                qCard.style.display = 'none';
-            } else if (state.status === 'QUESTION') {
-                pollCard.style.display = 'none';
-                qCard.style.display = 'block';
+            if (state.status === 'QUESTION') {
+                document.getElementById('waitingScreen').style.display = 'none';
+                document.getElementById('resultScreen').style.display = 'none';
+                document.getElementById('questionScreen').style.display = 'block';
 
                 const round = state.playlist[state.currentRoundIndex];
-                const q = round && round.questions ? round.questions[state.currentQuestionIndex] : null;
-                
-                document.getElementById('roundNameDisplay').innerText = round ? round.name : 'Trivia Round';
-                
-                if (q) {
-                    document.getElementById('questionDisplay').innerText = q.question;
-                    const optContainer = document.getElementById('optionsContainer');
-                    document.getElementById('feedbackDisplay').innerText = '';
+                if (round && round.questions) {
+                    const q = round.questions[state.currentQuestionIndex];
+                    if (q) {
+                        document.getElementById('qCounter').innerText = `Round ${state.currentRoundIndex + 1} // Q ${state.currentQuestionIndex + 1}`;
+                        document.getElementById('activeQuestionText').innerText = q.question;
 
-                    if (q.options && q.options.length > 0) {
-                        optContainer.innerHTML = q.options.map(opt => `
-                            <button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                        `).join('');
-                    } else {
-                        optContainer.innerHTML = `
-                            <input type="text" id="textAnswerInput" placeholder="Type your answer..." style="margin-bottom:0.75rem;">
-                            <button onclick="submitAnswer(document.getElementById('textAnswerInput').value)">Submit Answer</button>
-                        `;
+                        const container = document.getElementById('questionOptionsContainer');
+                        if (q.options && q.options.length > 0) {
+                            container.innerHTML = q.options.map((opt, idx) => `
+                                <button class="option-btn" id="opt-btn-${idx}" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}', this)">${opt}</button>
+                            `).join('');
+                        } else {
+                            container.innerHTML = `
+                                <input type="text" id="textAnswerInput" placeholder="Type your answer..." style="margin-bottom:0.75rem;">
+                                <button class="btn-green" id="textSubmitBtn" onclick="submitTextAnswer()">Submit Answer</button>
+                            `;
+                        }
                     }
                 }
-            } else if (state.status === 'LEADERBOARD') {
-                pollCard.style.display = 'none';
-                qCard.style.display = 'block';
-                document.getElementById('roundNameDisplay').innerText = 'Game Over';
-                document.getElementById('questionDisplay').innerText = '🎉 Check the main projector screen for final rankings!';
-                document.getElementById('optionsContainer').innerHTML = '';
+            } else if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'LEADERBOARD') {
+                if (playerName) {
+                    document.getElementById('questionScreen').style.display = 'none';
+                    document.getElementById('resultScreen').style.display = 'none';
+                    document.getElementById('waitingScreen').style.display = 'block';
+                    hasAnswered = false;
+                    selectedButtonElement = null;
+                }
+
+                if (state.lobbySettings && state.lobbySettings.showPoll) {
+                    document.getElementById('pollSection').style.display = 'block';
+                    document.getElementById('pollQ').innerText = state.lobbySettings.pollQuestion;
+                    const pollBtns = document.getElementById('pollBtns');
+                    pollBtns.innerHTML = state.lobbySettings.pollOptions.map(opt => `
+                        <button class="btn-blue" style="padding: 0.6rem; font-size: 0.95rem; margin-bottom:0.3rem;" onclick="socket.emit('poll-vote', '${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                    `).join('');
+                } else {
+                    document.getElementById('pollSection').style.display = 'none';
+                }
             }
         });
 
+        function submitAnswer(ans, btnElement) {
+            if (hasAnswered) return;
+            hasAnswered = true;
+            selectedButtonElement = btnElement;
+
+            // Disable all option buttons so answer is locked in immediately
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            const timeRem = 15;
+            socket.emit('submit-answer', { answer: ans, timeRemaining: timeRem });
+        }
+
+        function submitTextAnswer() {
+            const input = document.getElementById('textAnswerInput');
+            const submitBtn = document.getElementById('textSubmitBtn');
+            if (!input || hasAnswered) return;
+            hasAnswered = true;
+            if (submitBtn) submitBtn.disabled = true;
+            if (input) input.disabled = true;
+            
+            socket.emit('submit-answer', { answer: input.value.trim(), timeRemaining: 15 });
+        }
+
+        socket.on('answer-result', (res) => {
+            if (selectedButtonElement) {
+                if (res.correct) {
+                    selectedButtonElement.classList.add('correct');
+                } else {
+                    selectedButtonElement.classList.add('incorrect');
+                    // Find and highlight the correct answer button in green
+                    const allBtns = document.querySelectorAll('.option-btn');
+                    allBtns.forEach(b => {
+                        if (b.innerText.trim().toLowerCase() === res.correctAnswer.trim().toLowerCase()) {
+                            b.classList.add('correct');
+                        }
+                    });
+                }
+            }
+
+            // Briefly show result feedback banner below or switch to result card
+            setTimeout(() => {
+                document.getElementById('questionScreen').style.display = 'none';
+                document.getElementById('resultScreen').style.display = 'block';
+                document.getElementById('resultHeading').innerText = res.correct ? '✅ Correct! (+ ' + res.points + ' pts)' : '❌ Incorrect!';
+                document.getElementById('resultDetails').innerText = `Correct Answer: ${res.correctAnswer} | Streak: 🔥 x${res.streak}`;
+            }, 800);
+        });
+
+        socket.on('timer-tick', (timeLeft) => {
+            const t = document.getElementById('timerDisplay');
+            if (t) t.innerText = `Time: ${timeLeft}s`;
+        });
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            socket.emit('player-chat', msg);
+            input.value = '';
+        }
+
         socket.on('chat-message', (msg) => {
-            const feed = document.getElementById('mobileChatFeed');
+            const feed = document.getElementById('chatFeed');
             if (feed) {
                 feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
                 feed.scrollTop = feed.scrollHeight;
             }
         });
 
-        socket.on('answer-result', (res) => {
-            const fb = document.getElementById('feedbackDisplay');
-            if (res.correct) {
-                fb.style.color = '#00ff66';
-                fb.innerText = `✅ Correct! +${res.points} pts (Streak x${res.streak})`;
-            } else {
-                fb.style.color = '#ff0055';
-                fb.innerText = `❌ Incorrect. Correct answer: ${res.correctAnswer}`;
-            }
+        socket.on('broadcast-advert-mobile', (ad) => {
+            document.getElementById('mobileAdvertText').innerText = ad.text;
+            document.getElementById('mobileAdvertImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 180px; border-radius: 6px; border: 1px solid var(--neon-blue);">` : '';
+            document.getElementById('mobileAdvertOverlay').style.display = 'flex';
         });
 
-        socket.on('broadcast-advert-mobile', (ad) => { showMobileAdvert(ad); });
-        socket.on('hide-advert-mobile', () => { hideMobileAdvert(); });
+        socket.on('hide-advert-mobile', () => {
+            dismissMobileAdvert();
+        });
 
-        function showMobileAdvert(ad) {
-            const overlay = document.getElementById('mobileAdModal');
-            document.getElementById('mobileAdImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 35vh; max-width: 85vw; border-radius: 8px; border: 1px solid #ffee00; margin-bottom: 1rem; object-fit: contain;">` : '';
-            document.getElementById('mobileAdTextContainer').innerText = ad.text;
-            overlay.style.display = 'flex';
+        function dismissMobileAdvert() {
+            document.getElementById('mobileAdvertOverlay').style.display = 'none';
         }
-
-        function hideMobileAdvert() {
-            document.getElementById('mobileAdModal').style.display = 'none';
-        }
-
-        renderEmojiBar();
     </script>
 </body>
 </html>
