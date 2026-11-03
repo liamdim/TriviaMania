@@ -377,6 +377,19 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('update-emojis', (emojisArray) => {
+        if (Array.isArray(emojisArray)) {
+            gameState.customEmojis = emojisArray;
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('player-emoji', (emoji) => {
+        const player = gameState.scores[socket.id];
+        const name = player ? player.name : 'Player';
+        io.emit('chat-message', { name: name, text: emoji });
+    });
+
     socket.on('host-chat-broadcast', (message) => {
         const cleanMsg = sanitizeText(message);
         if (!cleanMsg) return;
