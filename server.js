@@ -42,6 +42,10 @@ let gameState = {
     welcomeHeader: 'Welcome to TriviaMania!',
     mobileWaitingText: 'Waiting for host to start game...',
     customEmojis: ['🔥', '🍻', '👏', '😂', '🎉', '💡'],
+    adverts: [
+        { text: '🍻 Bar Sponsor Special: Enjoy drink deals at the counter tonight!', image: '' },
+        { text: '🎵 Next Week Preview: Don’t miss our special Music Bingo Night!', image: '' }
+    ],
     lobbySettings: {
         showFact: true,
         factText: 'Did you know? The pub record score is 480 points!',
@@ -366,6 +370,13 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('update-adverts-library', (newAdverts) => {
+        if (Array.isArray(newAdverts)) {
+            gameState.adverts = newAdverts;
+            io.emit('state-update', gameState);
+        }
+    });
+
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.slice(0, roundConfig.count || 10);
@@ -481,7 +492,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('player-chat', (message) => {
-        if (gameState.mutedPlayers[socket.id]) return; // Block muted players
+        if (gameState.mutedPlayers[socket.id]) return;
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
         const cleanMsg = sanitizeText(message);
