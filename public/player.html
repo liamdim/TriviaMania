@@ -23,7 +23,7 @@
         button:hover { filter: brightness(1.2); }
         .option-btn { background: rgba(15,23,42,0.9); border: 2px solid var(--neon-blue); color: white; padding: 1.2rem; font-size: 1.1rem; border-radius: 8px; margin-bottom: 0.75rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .option-btn:active { background: var(--neon-blue); color: #000; }
-        .emoji-bar { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin: 1rem 0; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; }
+        .emoji-bar { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; }
         .emoji-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); font-size: 1.4rem; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; width: auto; }
         .emoji-btn:hover { background: rgba(0,243,255,0.3); border-color: var(--neon-blue); }
     </style>
@@ -44,14 +44,19 @@
             <div id="feedbackDisplay" style="margin-top: 1rem; font-size: 1.1rem; font-weight: bold;"></div>
         </div>
 
-        <!-- EMOJI REACTION BAR -->
+        <!-- EMOJI REACTION & CHAT BAR -->
         <div class="card" style="padding: 1rem;">
-            <p style="font-size: 0.85rem; color: #8b9bb4; margin-bottom: 0.5rem;">Send Live Reaction Emojis:</p>
+            <p style="font-size: 0.85rem; color: #8b9bb4; margin-bottom: 0.4rem;">Tap to Send Reactions & Chat:</p>
             <div class="emoji-bar" id="emojiBarContainer"></div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <input type="text" id="playerChatInput" placeholder="Say something..." style="margin-bottom:0; flex:1; padding:0.5rem; font-size:0.9rem; text-align:left;">
+                <button onclick="sendPlayerChat()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem; margin-bottom:0;">Send</button>
+            </div>
+            <div id="mobileChatFeed" style="max-height: 70px; overflow-y: auto; text-align: left; font-size: 0.8rem; color: #8b9bb4; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 6px; margin-top: 0.5rem;"></div>
         </div>
     </div>
 
-    <!-- Mobile Advert Overlay Modal -->
+    <!-- Mobile Advert Modal -->
     <div id="mobileAdModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; text-align:center;">
         <h3 style="color: #ffee00; font-size: 1.5rem; margin-bottom: 1rem;">📢 SPONSOR SPECIAL</h3>
         <div id="mobileAdImageContainer"></div>
@@ -88,10 +93,16 @@
             socket.emit('player-emoji', emoji);
         }
 
+        function sendPlayerChat() {
+            const input = document.getElementById('playerChatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            socket.emit('player-emoji', text);
+            input.value = '';
+        }
+
         socket.on('state-update', (state) => {
-            if (state.customEmojis) {
-                renderEmojiBar(state.customEmojis);
-            }
+            if (state.customEmojis) renderEmojiBar(state.customEmojis);
 
             if (state.activeMobileAdvert) {
                 showMobileAdvert(state.activeMobileAdvert);
@@ -127,6 +138,14 @@
             }
         });
 
+        socket.on('chat-message', (msg) => {
+            const feed = document.getElementById('mobileChatFeed');
+            if (feed) {
+                feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
+                feed.scrollTop = feed.scrollHeight;
+            }
+        });
+
         socket.on('answer-result', (res) => {
             const fb = document.getElementById('feedbackDisplay');
             if (res.correct) {
@@ -143,11 +162,8 @@
 
         function showMobileAdvert(ad) {
             const overlay = document.getElementById('mobileAdModal');
-            const imgContainer = document.getElementById('mobileAdImageContainer');
-            const textContainer = document.getElementById('mobileAdTextContainer');
-
-            imgContainer.innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 35vh; max-width: 85vw; border-radius: 8px; border: 1px solid #ffee00; margin-bottom: 1rem; object-fit: contain;">` : '';
-            textContainer.innerText = ad.text;
+            document.getElementById('mobileAdImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 35vh; max-width: 85vw; border-radius: 8px; border: 1px solid #ffee00; margin-bottom: 1rem; object-fit: contain;">` : '';
+            document.getElementById('mobileAdTextContainer').innerText = ad.text;
             overlay.style.display = 'flex';
         }
 
@@ -155,7 +171,6 @@
             document.getElementById('mobileAdModal').style.display = 'none';
         }
 
-        // Initial render of default emojis
         renderEmojiBar();
     </script>
 </body>
