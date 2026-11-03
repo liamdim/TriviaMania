@@ -72,6 +72,59 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
+// NEW BULK AI QUESTION GENERATOR ENDPOINT
+app.post('/api/generate-bulk-trivia', async (req, res) => {
+    const { categoryName, count = 30 } = req.body;
+    if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
+
+    const seed = Math.floor(Math.random() * 100000);
+    const prompt = `Generate exactly ${count} completely unique, high-quality trivia questions about "${categoryName}" (Random Seed ${seed}).
+    Return ONLY a valid JSON array of objects with keys:
+    - "question": string
+    - "options": array of 4 strings (1 correct answer and 3 clever plausible distractors)
+    - "answer": string (the exact correct option matching one of the options)
+    No markdown formatting, no backticks, just raw JSON array.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        let text = response.text.trim();
+        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
+
+        const items = JSON.parse(text);
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(500).json({ error: 'Failed to generate questions format' });
+        }
+
+        // Format into TriviaMania standard text format (#Q, ^Answer, options)
+        let fileContent = '';
+        items.forEach((item, idx) => {
+            fileContent += `#Q ${item.question}\n`;
+            if (item.options && Array.isArray(item.options)) {
+                item.options.forEach((opt, oIdx) => {
+                    const letters = ['A', 'B', 'C', 'D'];
+                    fileContent += `${letters[oIdx] || 'A'} ${opt}\n`;
+                });
+            }
+            fileContent += `^${item.answer}\n\n`;
+        });
+
+        const categoriesDir = path.join(__dirname, 'categories');
+        if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
+
+        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.txt';
+        fs.writeFileSync(path.join(categoriesDir, fileName), fileContent, 'utf8');
+
+        res.json({ success: true, count: items.length, fileName });
+    } catch (err) {
+        res.status(500).json({ error: 'AI generation failed: ' + err.message });
+    }
+});
+
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
         function findFile(dir, filename) {
