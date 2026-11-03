@@ -85,18 +85,10 @@
         <!-- QUICK ADVERT DISPLAY CONTROLS -->
         <div class="card">
             <h3>Quick Advert Display Controls</h3>
-            <div class="control-row">
-                <button class="btn-yellow" onclick="socket.emit('broadcast-advert-screen', {text: 'Sponsor Special: Enjoy the bar tonight!', image: ''})">📺 Show Default Screen Ad</button>
-                <button class="btn-red" onclick="socket.emit('hide-advert-screen')">🚫 Hide Screen Ad</button>
-                <button class="btn-yellow" onclick="socket.emit('broadcast-advert-mobile', {text: 'Check out special drink deals at the bar!', image: ''})">📱 Show Mobile Ad</button>
-                <button class="btn-red" onclick="socket.emit('hide-advert-mobile')">🚫 Hide Mobile Ad</button>
-            </div>
-
-            <!-- Advert Library Dropdown Bar -->
-            <div style="margin-top: 1rem; border-top: 1px solid rgba(0,243,255,0.2); padding-top: 1rem;">
+            <div style="border-top: 1px solid rgba(0,243,255,0.2); padding-top: 0.5rem;">
                 <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Select Advert from Library:</label>
-                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                    <select id="advertSelect" style="flex: 1; min-width: 250px;">
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                    <select id="advertSelect" style="flex: 1; min-width: 250px; margin-bottom: 0;">
                         <option value="Sponsor Special: Enjoy the bar tonight! Drink deals available at the counter.">🍻 Bar Sponsor Special</option>
                         <option value="Next Week: Don't miss our special 90s Music Bingo Night next Wednesday!">🎵 Next Week Preview (Music Bingo)</option>
                         <option value="Kitchen Specials: Fresh hot food served until 9:00 PM!">🍔 Kitchen Specials</option>
@@ -104,6 +96,8 @@
                     </select>
                     <button class="btn-blue" onclick="broadcastSelectedAd('screen')">📺 Show on Screen</button>
                     <button class="btn-green" onclick="broadcastSelectedAd('mobile')">📱 Show on Mobile</button>
+                    <button class="btn-red" onclick="socket.emit('hide-advert-screen')">🚫 Hide Screen Ad</button>
+                    <button class="btn-red" onclick="socket.emit('hide-advert-mobile')">🚫 Hide Mobile Ad</button>
                 </div>
             </div>
         </div>
