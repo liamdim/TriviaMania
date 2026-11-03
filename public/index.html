@@ -86,13 +86,10 @@
         <div class="card">
             <h3>Quick Advert Display Controls</h3>
             <div style="border-top: 1px solid rgba(0,243,255,0.2); padding-top: 0.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Select Advert from Library:</label>
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Select Advert from Saved Library:</label>
                 <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
                     <select id="advertSelect" style="flex: 1; min-width: 250px; margin-bottom: 0;">
-                        <option value="Sponsor Special: Enjoy the bar tonight! Drink deals available at the counter.">🍻 Bar Sponsor Special</option>
-                        <option value="Next Week: Don't miss our special 90s Music Bingo Night next Wednesday!">🎵 Next Week Preview (Music Bingo)</option>
-                        <option value="Kitchen Specials: Fresh hot food served until 9:00 PM!">🍔 Kitchen Specials</option>
-                        <option value="Connect to Venue Wi-Fi: TriviaMania-Guest | Password: pubtrivia2026">📶 Venue Wi-Fi Details</option>
+                        <option value="">-- No saved adverts found --</option>
                     </select>
                     <button class="btn-blue" onclick="broadcastSelectedAd('screen')">📺 Show on Screen</button>
                     <button class="btn-green" onclick="broadcastSelectedAd('mobile')">📱 Show on Mobile</button>
@@ -124,6 +121,16 @@
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
+
+            // Render Dynamic Saved Adverts Dropdown
+            const advertSelect = document.getElementById('advertSelect');
+            if (state.adverts && state.adverts.length > 0) {
+                advertSelect.innerHTML = state.adverts.map((ad, idx) => `
+                    <option value="${encodeURIComponent(ad.text)}" data-image="${ad.image || ''}">Advert #${idx + 1}: ${ad.text.substring(0, 50)}...</option>
+                `).join('');
+            } else {
+                advertSelect.innerHTML = '<option value="">No saved adverts available</option>';
+            }
 
             // Render Playlist Queue
             const queueContainer = document.getElementById('playlistQueueContainer');
@@ -193,8 +200,12 @@
 
         function broadcastSelectedAd(target) {
             const select = document.getElementById('advertSelect');
-            const text = select.value;
-            const adData = { text: text, image: '' };
+            if (!select.value) return;
+            const text = decodeURIComponent(select.value);
+            const selectedOpt = select.options[select.selectedIndex];
+            const image = selectedOpt ? selectedOpt.getAttribute('data-image') : '';
+            const adData = { text: text, image: image };
+            
             if (target === 'screen') {
                 socket.emit('broadcast-advert-screen', adData);
             } else {
