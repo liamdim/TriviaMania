@@ -229,12 +229,13 @@ function parseCategoryFile(filename) {
 async function generateAIQuestions(type, count) {
     let prompt = '';
     const seed = Date.now() + Math.floor(Math.random() * 100000);
+    
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown.`;
+        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, no introductory text, just raw JSON array.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
+        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown, no introductory text, just raw JSON array.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, no introductory text, just raw JSON array.`;
     }
 
     try {
@@ -243,13 +244,45 @@ async function generateAIQuestions(type, count) {
             contents: prompt,
         });
 
-        let text = response.text.trim();
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
+        let text = response.text ? response.text.trim() : '';
+        
+        if (text.startsWith('```json')) {
+            text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+        } else if (text.startsWith('```')) {
+            text = text.replace(/^```/, '').replace(/```$/, '').trim();
+        }
 
-        return JSON.parse(text);
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+        }
     } catch (err) {
-        return [];
+        console.error('AI generation error:', err.message);
+    }
+
+    // Fallback static items if AI fails or returns empty, so it never breaks your event!
+    if (type === 'scramble') {
+        return [
+            { word: 'BEATLES', scrambled: 'B E A T L E S' },
+            { word: 'LONDON', scrambled: 'L O N D O N' },
+            { word: 'MATRIX', scrambled: 'M A T R I X' },
+            { word: 'DIAMOND', scrambled: 'D I A M O N D' },
+            { word: 'SUNSET', scrambled: 'S U N S E T' }
+        ].slice(0, count);
+    } else if (type === 'lingo') {
+        return [
+            { word: 'SHARK', hint: 'Ocean predator' },
+            { word: 'TIGER', hint: 'Striped big cat' },
+            { word: 'PLANT', hint: 'Green living thing' },
+            { word: 'TRAIN', hint: 'Railway transport' },
+            { word: 'MUSIC', hint: 'Auditory art' }
+        ].slice(0, count);
+    } else {
+        return [
+            { fact: 'Average annual rainfall in London (mm)', options: ['Higher', 'Lower'], answer: 'Lower' },
+            { fact: 'Global population in billions', options: ['Higher', 'Lower'], answer: 'Higher' },
+            { fact: 'Boiling point of water in Fahrenheit', options: ['Higher', 'Lower'], answer: 'Higher' }
+        ].slice(0, count);
     }
 }
 
