@@ -21,10 +21,10 @@
         header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
         header h1 { font-size: 1.5rem; color: var(--neon-blue); }
         .nav-links { display: flex; gap: 0.75rem; }
-        .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
+        .nav-links.nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
         .container { flex: 1; padding: 2rem; max-width: 900px; width: 100%; margin: 0 auto; }
         .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); margin-bottom: 1.5rem; }
-        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); font-weight: 600; }
+        .card h3 { margin-bottom: 1.0rem; color: var(--neon-blue); font-weight: 600; }
         .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
         select, input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; font-size: 1rem; }
@@ -47,12 +47,12 @@
                 <select id="gameTypeSelect">
                     <option value="scramble">🔀 Word Scramble (Unscramble the famous word/band/movie)</option>
                     <option value="lingo">🔤 Lingo (5-letter word guessing with clues)</option>
-                    <option value="higher-lower">⬆️ Higher or Lower (Statistic statistics comparisons)</option>
+                    <option value="higher-lower">⬆️ Higher or Lower (Statistic comparisons)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Custom Round Title:</label>
-                <input type="text" id="roundNameInput" placeholder="e.g., Lightning Word Scramble Round">
+                <input type="text" id="roundNameInput" placeholder="e.g., Lightning Word Scramble">
             </div>
             <div class="form-group">
                 <label>Number of Items/Questions:</label>
@@ -75,14 +75,19 @@
             btn.disabled = true;
 
             socket.emit('add-minigame-round', { type, name, count });
-
-            setTimeout(() => {
-                alert('Mini-game round successfully added to your active playlist!');
-                btn.innerText = '🚀 Generate & Add to Playlist';
-                btn.disabled = false;
-                window.location.href = '/index.html';
-            }, 2500);
         }
+
+        socket.on('minigame-added', (res) => {
+            const btn = document.getElementById('genBtn');
+            btn.disabled = false;
+            btn.innerText = '🚀 Generate & Add to Playlist';
+            if (res.success) {
+                alert('Mini-game round successfully added to your playlist!');
+                window.location.href = '/index.html';
+            } else {
+                alert('Generation failed: ' + (res.error || 'Please try again.'));
+            }
+        });
     </script>
 </body>
 </html>
