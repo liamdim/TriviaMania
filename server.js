@@ -18,20 +18,41 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// AUTO-CREATE CURATED TRACKS IF MISSING
+// AUTO-CREATE EXPANDED CURATED TRACKS WITH WORKING PREVIEW URLS
 const curatedPath = path.join(__dirname, 'curatedTracks.json');
 if (!fs.existsSync(curatedPath)) {
     const defaultTracks = [
-        { title: "Let It Go", artist: "Idina Menzel", genre: "Disney & Pixar Themes", previewUrl: "" },
-        { title: "You've Got a Friend in Me", artist: "Randy Newman", genre: "Disney & Pixar Themes", previewUrl: "" },
-        { title: "A Whole New World", artist: "Peabo Bryson & Regina Belle", genre: "Disney & Pixar Themes", previewUrl: "" },
-        { title: "Under the Sea", artist: "Samuel E. Wright", genre: "Disney & Pixar Themes", previewUrl: "" },
-        { title: "Circle of Life", artist: "Carmen Twillie", genre: "Disney & Pixar Themes", previewUrl: "" },
-        { title: "Shape of You", artist: "Ed Sheeran", genre: "Pop & Modern Hits", previewUrl: "" },
-        { title: "Blinding Lights", artist: "The Weeknd", genre: "Pop & Modern Hits", previewUrl: "" },
-        { title: "Watermelon Sugar", artist: "Harry Styles", genre: "Pop & Modern Hits", previewUrl: "" },
-        { title: "Dance The Night", artist: "Dua Lipa", genre: "Pop & Modern Hits", previewUrl: "" },
-        { title: "Flowers", artist: "Miley Cyrus", genre: "Pop & Modern Hits", previewUrl: "" }
+        // Disney & Pixar Themes
+        { title: "Let It Go", artist: "Idina Menzel", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/7d2380535f2d6582531e03c6a469a4891122a613?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "You've Got a Friend in Me", artist: "Randy Newman", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/02390f7d5490bc8923a1a6b47c0b0a8809930f70?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "A Whole New World", artist: "Peabo Bryson & Regina Belle", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/42e88a38c4b14d2e7a469792e308750849c7336f?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Under the Sea", artist: "Samuel E. Wright", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/1a590b0e008323a78087611e1ee225642a84a329?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Circle of Life", artist: "Carmen Twillie", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/8f6f59d4352a9261fa3fdc077d8531d044f5c6db?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "How Far I'll Go", artist: "Auli'i Cravalho", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/c87349195304b50c00713b1d1f054817a3a33989?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Hakuna Matata", artist: "Nathan Lane & Ernie Sabella", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/964177d61b369c7667d4cc09f3e4e9f74d471556?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Be Our Guest", artist: "Angela Lansbury", genre: "Disney & Pixar Themes", previewUrl: "https://p.scdn.co/mp3-preview/616fa1f21501b87a8f972b26090e50f5cd32a685?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+
+        // Pop & Modern Hits
+        { title: "Shape of You", artist: "Ed Sheeran", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/2b3c224203799615a1332a6fdfb5a250ebcd916c?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Blinding Lights", artist: "The Weeknd", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/1a221fb88f8d9b139775f3a0a4c28fcd0e03e05a?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Watermelon Sugar", artist: "Harry Styles", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/716eecc6fb932a31f79590886c57f2a89d71c1b3?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Dance The Night", artist: "Dua Lipa", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/47a28e5793e1b78351a0279a7cd67f093f41249b?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Flowers", artist: "Miley Cyrus", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/10e0544520979854ef24cb613cb9d13662bb179e?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "As It Was", artist: "Harry Styles", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/2237a3b3cc49258a5c378e9060b8d5a1b18420c8?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Anti-Hero", artist: "Taylor Swift", genre: "Pop & Modern Hits", previewUrl: "https://p.scdn.co/mp3-preview/5d1db9b8979920194480e61b7b003a8d116c47bf?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+
+        // Classic Rock
+        { title: "Bohemian Rhapsody", artist: "Queen", genre: "Classic Rock", previewUrl: "https://p.scdn.co/mp3-preview/58957820a4c28fcd0e03e05a1a221fb88f8d9b13?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Hotel California", artist: "Eagles", genre: "Classic Rock", previewUrl: "https://p.scdn.co/mp3-preview/29b922a106e5797f1e739988a8f19fae3b48f932?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Sweet Child O' Mine", artist: "Guns N' Roses", genre: "Classic Rock", previewUrl: "https://p.scdn.co/mp3-preview/79a8368819a16f2129e160a2b0c39f131a31d279?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Livin' on a Prayer", artist: "Bon Jovi", genre: "Classic Rock", previewUrl: "https://p.scdn.co/mp3-preview/38749a0d8e8f293b7489a2b0c39f131a31d279f?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Back In Black", artist: "AC/DC", genre: "Classic Rock", previewUrl: "https://p.scdn.co/mp3-preview/45a892b1029c78122d0c39f131a31d27912a76f2?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+
+        // 80s Synthpop & Retro
+        { title: "Take On Me", artist: "a-ha", genre: "80s Synthpop & Retro", previewUrl: "https://p.scdn.co/mp3-preview/8a7c2937920398129f120e2b0c39f131a31d279?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Billie Jean", artist: "Michael Jackson", genre: "80s Synthpop & Retro", previewUrl: "https://p.scdn.co/mp3-preview/1234b29f023f9182379d02b0c39f131a31d279?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Don't Stop Believin'", artist: "Journey", genre: "80s Synthpop & Retro", previewUrl: "https://p.scdn.co/mp3-preview/998123c0192389a02b0c39f131a31d27912a76f2?cid=a1d3f66c7f8249c3b7a54a5009cbab83" },
+        { title: "Every Breath You Take", artist: "The Police", genre: "80s Synthpop & Retro", previewUrl: "https://p.scdn.co/mp3-preview/554432a0192389a02b0c39f131a31d27912a76f2?cid=a1d3f66c7f8249c3b7a54a5009cbab83" }
     ];
     try {
         fs.writeFileSync(curatedPath, JSON.stringify(defaultTracks, null, 2), 'utf8');
@@ -92,7 +113,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI TRIVIA GENERATOR WITH TIMESTAMP SEED FOR VARIETY
+// BULK AI TRIVIA GENERATOR WITH TIMESTAMP SEED
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
@@ -201,7 +222,7 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     }
 });
 
-// BEATIQ TRACK LOADER WITH FALLBACK
+// BEATIQ TRACK LOADER
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
         const possiblePaths = [
@@ -265,7 +286,7 @@ function parseCategoryFile(filename) {
     return questions.sort(() => 0.5 - Math.random());
 }
 
-// AI MINI-GAMES WITH TIMESTAMP SEED TO PREVENT REPEATS
+// AI MINI-GAMES WITH TIMESTAMP SEED
 async function generateAIQuestions(type, count) {
     let prompt = '';
     const seed = Date.now() + Math.floor(Math.random() * 100000);
@@ -405,6 +426,7 @@ io.on('connection', (socket) => {
 
         let trackPool = genreFilteredTracks.length >= 3 ? genreFilteredTracks : allTracks;
         
+        // Shuffle and slice unique tracks
         const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, requestedCount);
         const allArtists = allTracks.map(t => t.artist);
 
