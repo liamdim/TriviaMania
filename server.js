@@ -72,7 +72,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI QUESTION GENERATOR ENDPOINT
+// BULK AI GENERATOR WITH GITHUB PERMANENT COMMIT & APPEND
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
@@ -102,25 +102,7 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
             success = true;
         } catch (err) {
             if (attempts >= 3) {
-                // FALLBACK: If AI is busy, write a local template file so you don't get stuck
-                try {
-                    let fileContent = '';
-                    for (let i = 1; i <= count; i++) {
-                        fileContent += `#Q Sample question ${i} about ${categoryName}?\n`;
-                        fileContent += `A Option A\n`;
-                        fileContent += `B Correct Answer ${i}\n`;
-                        fileContent += `C Option C\n`;
-                        fileContent += `D Option D\n`;
-                        fileContent += `^Correct Answer ${i}\n\n`;
-                    }
-                    const categoriesDir = path.join(__dirname, 'categories');
-                    if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
-                    const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.txt';
-                    fs.writeFileSync(path.join(categoriesDir, fileName), fileContent, 'utf8');
-                    return res.json({ success: true, count: count, fileName, message: 'AI busy, created local template file!' });
-                } catch (fallbackErr) {
-                    return res.status(500).json({ error: 'AI generation failed: ' + err.message });
-                }
+                return res.status(500).json({ error: 'AI generation failed due to high demand. Please try again!' });
             }
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
@@ -135,23 +117,68 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
             return res.status(500).json({ error: 'Failed to parse generated questions format' });
         }
 
-        let fileContent = '';
+        let newContent = '';
         items.forEach((item) => {
-            fileContent += `#Q ${item.question}\n`;
+            newContent += `#Q ${item.question}\n`;
             if (item.options && Array.isArray(item.options)) {
                 item.options.forEach((opt, oIdx) => {
                     const letters = ['A', 'B', 'C', 'D'];
-                    fileContent += `${letters[oIdx] || 'A'} ${opt}\n`;
+                    newContent += `${letters[oIdx] || 'A'} ${opt}\n`;
                 });
             }
-            fileContent += `^${item.answer}\n\n`;
+            newContent += `^${item.answer}\n\n`;
         });
 
+        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.txt';
+        const filePath = `categories/${fileName}`;
+
+        // Save locally to Render container immediately for runtime use
         const categoriesDir = path.join(__dirname, 'categories');
         if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
+        const localFullPath = path.join(categoriesDir, fileName);
+        
+        let existingLocal = fs.existsSync(localFullPath) ? fs.readFileSync(localFullPath, 'utf8') : '';
+        const combinedContent = existingLocal + (existingLocal ? '\n' : '') + newContent;
+        fs.writeFileSync(localFullPath, combinedContent, 'utf8');
 
-        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.txt';
-        fs.writeFileSync(path.join(categoriesDir, fileName), fileContent, 'utf8');
+        // Push permanently to GitHub if credentials are set
+        if (process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_REPO) {
+            try {
+                const owner = process.env.GITHUB_OWNER;
+                const repo = process.env.GITHUB_REPO;
+                let sha = null;
+
+                // Check if file already exists on GitHub to get its SHA (required for updating)
+                const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+                    headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN}`, 'User-Agent': 'TriviaMania-Server' }
+                });
+                
+                if (getRes.ok) {
+                    const fileData = await getRes.json();
+                    sha = fileData.sha;
+                    // Decode existing github content to append cleanly
+                    const existingGithubContent = Buffer.from(fileData.content, 'base64').toString('utf8');
+                    newContent = existingGithubContent + '\n' + newContent;
+                }
+
+                // Commit/Push to GitHub
+                await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'TriviaMania-Server'
+                    },
+                    body: JSON.stringify({
+                        message: `Auto-generated/updated category: ${categoryName}`,
+                        content: Buffer.from(newContent).toString('base64'),
+                        sha: sha
+                    })
+                });
+            } catch (gitErr) {
+                console.error('GitHub auto-commit failed:', gitErr.message);
+            }
+        }
 
         res.json({ success: true, count: items.length, fileName });
     } catch (err) {
