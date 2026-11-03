@@ -45,6 +45,7 @@
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
         th { color: var(--neon-blue); }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .quick-ad-row { display: flex; justify-content: space-between; align-items: center; background: rgba(5,10,20,0.6); padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid rgba(255,255,255,0.08); }
     </style>
 </head>
 <body>
@@ -81,6 +82,18 @@
             </div>
         </div>
 
+        <!-- QUICK ADVERTS WITH SEPARATE DISPLAY & MOBILE CONTROLS -->
+        <div class="card" style="background: rgba(10, 15, 30, 0.6);">
+            <h3>📢 Quick Advert Display Controls</h3>
+            <div id="quickAdContainer">
+                <span style="color: var(--text-muted); font-size: 0.9rem;">No saved adverts yet. Add them in the Adverts Manager tab above.</span>
+            </div>
+            <div class="flex-row" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+                <button class="small danger" onclick="socket.emit('hide-advert-screen')">🖥️ Hide Display Ad</button>
+                <button class="small danger" onclick="socket.emit('hide-advert-mobile')">📱 Hide Mobile Ad</button>
+            </div>
+        </div>
+
         <!-- PREVIEW & CHAT -->
         <div class="grid-2">
             <div class="card" style="background: rgba(10, 15, 30, 0.6);">
@@ -97,21 +110,13 @@
             </div>
         </div>
 
-        <!-- QUICK ADVERTS -->
-        <div class="card" style="background: rgba(10, 15, 30, 0.6);">
-            <h3>📢 Quick Advert Display Controls</h3>
-            <div class="flex-row" id="quickAdButtons">
-                <span style="color: var(--text-muted); font-size: 0.9rem;">Manage and view your stored adverts in the Adverts Manager tab above.</span>
-            </div>
-        </div>
-
         <!-- PLAYLIST & LEADERBOARD -->
         <div class="grid-2">
             <div class="card">
                 <h3>Loaded Playlist Queue</h3>
                 <table id="playlistTable">
                     <thead><tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr></thead>
-                    <tbody><tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Add rounds via the Studios above!</td></tr></tbody>
+                    <tbody><tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr></tbody>
                 </table>
                 <div style="margin-top: 1rem;"><button class="danger small" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button></div>
             </div>
@@ -130,19 +135,29 @@
         let savedAdverts = JSON.parse(localStorage.getItem('triviamania_saved_adverts') || '[]');
 
         function renderQuickAds() {
-            const quickBox = document.getElementById('quickAdButtons');
+            const container = document.getElementById('quickAdContainer');
             if (savedAdverts.length === 0) return;
-            quickBox.innerHTML = savedAdverts.map((ad, idx) => `
-                <button class="small warning" onclick="showAdOnScreen(${idx})">📢 ${ad.title}</button>
-            `).join('') + '<button class="small danger" onclick="hideAdOnScreen()">Hide Ad</button>';
+            container.innerHTML = savedAdverts.map((ad, idx) => `
+                <div class="quick-ad-row">
+                    <strong>${ad.title}</strong>
+                    <div class="flex-row" style="gap: 0.4rem;">
+                        <button class="small success" onclick="showDisplayAd(${idx})">🖥️ Show Display</button>
+                        <button class="small warning" onclick="showMobileAd(${idx})">📱 Show Mobile</button>
+                    </div>
+                </div>
+            `).join('');
         }
         renderQuickAds();
 
-        function showAdOnScreen(index) {
+        function showDisplayAd(index) {
             const ad = savedAdverts[index];
             socket.emit('broadcast-advert-screen', { text: ad.title, image: ad.image || null });
         }
-        function hideAdOnScreen() { socket.emit('hide-advert-screen'); }
+
+        function showMobileAd(index) {
+            const ad = savedAdverts[index];
+            socket.emit('broadcast-advert-mobile', { text: ad.title, image: ad.image || null });
+        }
 
         function sendHostChat() {
             const msg = document.getElementById('hostChatInput').value.trim();
