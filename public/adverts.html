@@ -33,6 +33,7 @@
         button.small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
         .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
         .ad-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
+        .ad-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); margin-right: 10px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -72,20 +73,51 @@
             if (fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    savedAdverts.push({ title, image: e.target.result });
-                    localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-                    renderAdverts();
-                    document.getElementById('adTitleInput').value = '';
-                    fileInput.value = '';
-                    alert('Advert saved successfully!');
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        // Compress/resize image to max width 800px to prevent localStorage quota errors
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 800;
+                        if (width > height && width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+                        savedAdverts.push({ title, image: compressedDataUrl });
+                        try {
+                            localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
+                            renderAdverts();
+                            document.getElementById('adTitleInput').value = '';
+                            fileInput.value = '';
+                            alert('Advert with image saved successfully!');
+                        } catch (err) {
+                            alert('Storage error: Image file is still too large. Try a smaller image.');
+                        }
+                    };
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
                 savedAdverts.push({ title, image: null });
-                localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-                renderAdverts();
-                document.getElementById('adTitleInput').value = '';
-                alert('Advert saved successfully!');
+                try {
+                    localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
+                    renderAdverts();
+                    document.getElementById('adTitleInput').value = '';
+                    alert('Advert saved successfully!');
+                } catch (err) {
+                    alert('Storage error: LocalStorage is full.');
+                }
             }
         }
 
@@ -97,7 +129,10 @@
             }
             container.innerHTML = savedAdverts.map((ad, idx) => `
                 <div class="ad-item">
-                    <div><strong>${ad.title}</strong></div>
+                    <div style="display: flex; align-items: center;">
+                        ${ad.image ? `<img src="${ad.image}" class="ad-thumb">` : ''}
+                        <strong>${ad.title}</strong>
+                    </div>
                     <div class="flex-row" style="gap: 0.5rem;">
                         <button class="small" style="background:#00ff66; color:#000;" onclick="showAdOnScreen(${idx})">Show on Display</button>
                         <button class="small danger" onclick="deleteAdvert(${idx})">Delete</button>
@@ -118,7 +153,7 @@
             renderAdverts();
         }
 
-        renderAdverts();
+fn: renderAdverts();
     </script>
 </body>
 </html>
