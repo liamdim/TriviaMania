@@ -39,7 +39,8 @@ let gameState = {
         showFact: true,
         factText: 'Did you know? The pub record score is 480 points!',
         showPoll: true,
-        pollQuestion: 'What is your team’s pre-trivia drink of choice?'
+        pollQuestion: 'What is your team’s pre-trivia drink of choice?',
+        pollOptions: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤']
     },
     announcement: { active: false, text: '' },
     settings: { 
@@ -50,7 +51,28 @@ let gameState = {
 };
 
 let timerInterval = null;
+let pollRandomizerInterval = null;
 let disconnectedPlayers = {};
+
+const samplePolls = [
+    { question: 'What is your team’s pre-trivia drink of choice?', options: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤'] },
+    { question: 'Which decade had the absolute best music?', options: ['70s 🕺', '80s 🎸', '90s 📼', '00s 🎧'] },
+    { question: 'How confident is your team tonight?', options: ['Total Winners 🏆', 'Just for Fun 🍻', ' Clueless 🤷', ' Robbed Last Week 😡'] },
+    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] }
+];
+
+function startPollRandomizer() {
+    if (pollRandomizerInterval) clearInterval(pollRandomizerInterval);
+    pollRandomizerInterval = setInterval(() => {
+        if (gameState.status === 'IDLE' && gameState.lobbySettings && gameState.lobbySettings.showPoll) {
+            const randomPoll = samplePolls[Math.floor(Math.random() * samplePolls.length)];
+            gameState.lobbySettings.pollQuestion = randomPoll.question;
+            gameState.lobbySettings.pollOptions = randomPoll.options;
+            io.emit('state-update', gameState);
+        }
+    }, 12000); // Rotates every 12 seconds automatically
+}
+startPollRandomizer();
 
 const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
 
@@ -301,6 +323,10 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('poll-vote', (option) => {
+        socket.emit('poll-voted', { option, message: `✅ Voted: "${option}"!` });
+    });
+
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.slice(0, roundConfig.count || 10);
@@ -383,11 +409,16 @@ io.on('connection', (socket) => {
     });
 
     socket.on('update-lobby-toolkit', (toolkitSettings) => {
+        let opts = gameState.lobbySettings.pollOptions;
+        if (toolkitSettings.pollOptionsStr) {
+            opts = toolkitSettings.pollOptionsStr.split(',').map(o => o.trim()).filter(o => o.length > 0);
+        }
         gameState.lobbySettings = {
             showFact: !!toolkitSettings.showFact,
             factText: sanitizeText(toolkitSettings.factText),
             showPoll: !!toolkitSettings.showPoll,
-            pollQuestion: sanitizeText(toolkitSettings.pollQuestion)
+            pollQuestion: sanitizeText(toolkitSettings.pollQuestion),
+            pollOptions: opts
         };
         io.emit('state-update', gameState);
     });
@@ -399,7 +430,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Dedicated floating emoji reactions broadcast
     socket.on('player-reaction', (emoji) => {
         const cleanEmoji = sanitizeText(emoji);
         if (cleanEmoji) {
