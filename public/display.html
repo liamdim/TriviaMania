@@ -78,7 +78,7 @@
         });
 
         socket.on('connect', () => {
-            console.log("Projector display connected!");
+            console.log("Projector connected, socket ID:", socket.id);
         });
 
         socket.on('stop-audio', () => {
@@ -111,15 +111,18 @@
         });
 
         socket.on('state-update', (state) => {
+            console.log("State update received on projector:", state);
+
             if (state.venueDetails) document.getElementById('displayVenueDetails').innerText = state.venueDetails;
             if (state.welcomeHeader) {
                 document.getElementById('headerVenueTitle').innerText = state.welcomeHeader;
                 document.getElementById('displayWelcomeHeader').innerText = state.welcomeHeader;
             }
 
+            // Force immediate DOM display change for Projector Advert
             const adOverlay = document.getElementById('advertOverlay');
             if (state.activeScreenAdvert) {
-                adOverlay.style.display = 'flex';
+                adOverlay.style.setProperty('display', 'flex', 'important');
                 document.getElementById('adOverlayTitle').innerText = state.activeScreenAdvert.title;
                 const img = document.getElementById('adOverlayImage');
                 if (state.activeScreenAdvert.image) {
@@ -129,7 +132,7 @@
                     img.style.display = 'none';
                 }
             } else {
-                adOverlay.style.display = 'none';
+                adOverlay.style.setProperty('display', 'none', 'important');
             }
 
             const stage = document.getElementById('displayStage');
