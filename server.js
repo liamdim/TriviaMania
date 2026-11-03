@@ -132,7 +132,6 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
         const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const filePath = `categories/${fileName}`;
 
-        // Save locally to Render container immediately for runtime use
         const categoriesDir = path.join(__dirname, 'categories');
         if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
         const localFullPath = path.join(categoriesDir, fileName);
@@ -141,7 +140,6 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
         const combinedContent = existingLocal + (existingLocal ? '\n' : '') + newContent;
         fs.writeFileSync(localFullPath, combinedContent, 'utf8');
 
-        // Push permanently to GitHub
         if (process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_REPO) {
             try {
                 const owner = process.env.GITHUB_OWNER;
@@ -681,4 +679,5 @@ function advanceToNextQuestion() {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log('TriviaMania
+    console.log('TriviaMania server running on port ' + PORT);
+});
