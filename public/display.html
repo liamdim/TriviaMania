@@ -34,19 +34,52 @@
             border-bottom: 2px solid rgba(255,255,255,0.05);
         }
         h1 { margin: 0; font-size: 1.8rem; color: var(--neon-yellow); }
-        #projectorTimer { font-size: 1.5rem; font-weight: bold; color: var(--neon-blue); }
+        #projectorTimer { font-size: 1.8rem; font-weight: bold; color: var(--neon-blue); }
         #displayStage {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
+            padding: 3rem;
             text-align: center;
+        }
+        .option-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 2rem;
+        }
+        .option-card {
+            background: rgba(19, 27, 46, 0.9);
+            border: 2px solid rgba(0, 210, 255, 0.3);
+            padding: 1.5rem;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #audioUnlockOverlay {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--neon-yellow);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
         }
     </style>
 </head>
 <body>
+
+    <div id="audioUnlockOverlay" onclick="unlockAudio()">🔊 Enable Sound / Audio Ready</div>
 
     <header>
         <h1 id="headerVenueTitle">TriviaMania</h1>
@@ -59,78 +92,56 @@
         <div id="projectorQrContainer" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>
     </div>
 
-    <div id="advertOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999; justify-content:center; align-items:center; flex-direction:column; text-align:center; padding:2rem;">
-        <h2 id="adOverlayTitle" style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 1rem;"></h2>
-        <img id="adOverlayImage" style="max-width:70vw; max-height:60vh; border-radius:12px; display:none;" />
-    </div>
+    <audio id="bgAudio" preload="auto"></audio>
 
     <script>
         const socket = io();
+        let audioCtx = null;
 
-        console.log("Projector client script loaded.");
-
-        socket.on('connect', () => {
-            console.log("Projector connected successfully!");
-        });
+        function unlockAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const audio = document.getElementById('bgAudio');
+                audio.play().catch(() => {});
+                document.getElementById('audioUnlockOverlay').style.display = 'none';
+                console.log("Audio unlocked successfully!");
+            } catch (e) {}
+        }
 
         socket.on('timer-tick', (timeLeft) => {
             const timerEl = document.getElementById('projectorTimer');
             if (timerEl) timerEl.innerText = '⏱️ ' + timeLeft + 's';
         });
 
+        socket.on('stop-audio', () => {
+            const audio = document.getElementById('bgAudio');
+            audio.pause();
+            audio.currentTime = 0;
+        });
+
         socket.on('state-update', (state) => {
-            // Safely update venue details if element exists
-            const venueEl = document.getElementById('displayVenueDetails');
-            if (venueEl && state.venueDetails) venueEl.innerText = state.venueDetails;
-            
-            // Safely update headers if elements exist
+            const stage = document.getElementById('displayStage');
+            if (!stage) return;
+
+            // Header updates
             const headerEl = document.getElementById('headerVenueTitle');
             if (headerEl && state.welcomeHeader) headerEl.innerText = state.welcomeHeader;
 
-            const welH = document.getElementById('displayWelcomeHeader');
-            if (welH && state.welcomeHeader) welH.innerText = state.welcomeHeader;
-
-            // Real-time Projector Advert Toggle
-            const adOverlay = document.getElementById('advertOverlay');
-            if (adOverlay) {
-                if (state.activeScreenAdvert) {
-                    adOverlay.style.display = 'flex';
-                    const adTitle = document.getElementById('adOverlayTitle');
-                    if (adTitle) adTitle.innerText = state.activeScreenAdvert.title || '';
-                    
-                    const img = document.getElementById('adOverlayImage');
-                    if (img) {
-                        if (state.activeScreenAdvert.image) {
-                            img.src = state.activeScreenAdvert.image;
-                            img.style.display = 'block';
-                        } else {
-                            img.style.display = 'none';
-                        }
-                    }
-                } else {
-                    adOverlay.style.display = 'none';
-                }
-            }
-
-            // Handle IDLE / PAUSED stages safely with QR code generation
-            const stage = document.getElementById('displayStage');
-            if (stage && (state.status === 'IDLE' || state.status === 'PAUSED')) {
+            if (state.status === 'IDLE' || state.status === 'PAUSED') {
                 const timerEl2 = document.getElementById('projectorTimer');
                 if (timerEl2) timerEl2.innerText = '⏱️ --';
 
-                if (!document.getElementById('projectorQrContainer') && state.welcomeHeader) {
-                    stage.innerHTML = 
-                        `<h2 style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">${state.welcomeHeader}</h2>` +
-                        `<p style="font-size: 1.3rem; color: var(--text-muted); margin-bottom: 1.5rem;" id="displayVenueDetails">${state.venueDetails || ''}</p>` +
-                        `<div id="projectorQrContainer" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>` +
-                        `<p id="projectorJoinUrlText" style="font-size: 1rem; color: var(--neon-blue); margin-top: 1rem; font-family: monospace;">Join at: ${window.location.origin}</p>`;
-                }
+                stage.innerHTML = 
+                    `<h2 style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">${state.welcomeHeader || 'Welcome to TriviaMania'}</h2>` +
+                    `<p style="font-size: 1.3rem; color: var(--text-muted); margin-bottom: 1.5rem;" id="displayVenueDetails">${state.venueDetails || ''}</p>` +
+                    `<div id="projectorQrContainer" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>` +
+                    `<p style="font-size: 1rem; color: var(--neon-blue); margin-top: 1rem; font-family: monospace;">Join at: ${window.location.origin}</p>`;
 
-                // Render QR code
                 const qrEl = document.getElementById('projectorQrContainer');
                 if (qrEl && window.QRCode && qrEl.childElementCount === 0) {
                     new QRCode(qrEl, {
-                        text: window.location.origin,
+                        text: window.location.origin + '/player.html',
                         width: 160,
                         height: 160,
                         colorDark: "#000000",
@@ -138,6 +149,40 @@
                         correctLevel: QRCode.CorrectLevel.H
                     });
                 }
+            } else if (state.status === 'QUESTION') {
+                const currentRound = state.playlist[state.currentRoundIndex];
+                if (!currentRound || !currentRound.questions) return;
+                const currentQ = currentRound.questions[state.currentQuestionIndex];
+                if (!currentQ) return;
+
+                // Play audio preview if available
+                if (currentQ.audioPreviewUrl) {
+                    const audio = document.getElementById('bgAudio');
+                    if (audio.src !== currentQ.audioPreviewUrl) {
+                        audio.src = currentQ.audioPreviewUrl;
+                        audio.play().catch(e => console.log("Audio play prevented:", e));
+                    }
+                }
+
+                let optionsHtml = '';
+                if (currentQ.options && currentQ.options.length > 0) {
+                    optionsHtml = '<div class="option-grid">' + 
+                        currentQ.options.map((opt, idx) => {
+                            const letters = ['A', 'B', 'C', 'D'];
+                            return `<div class="option-card"><strong>${letters[idx]}:</strong> ${opt}</div>`;
+                        }).join('') + '</div>';
+                }
+
+                stage.innerHTML = `
+                    <div style="font-size: 1rem; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">Round: ${currentRound.name} (Q${state.currentQuestionIndex + 1}/${currentRound.questions.length})</div>
+                    <h2 style="font-size: 2.2rem; color: #fff; margin-bottom: 1.5rem; max-width: 1000px;">${currentQ.question}</h2>
+                    ${optionsHtml}
+                `;
+            } else if (state.status === 'LEADERBOARD') {
+                stage.innerHTML = `
+                    <h2 style="font-size: 3rem; color: var(--neon-yellow); margin-bottom: 1rem;">🏆 Final Leaderboard 🏆</h2>
+                    <p style="font-size: 1.5rem; color: var(--text-muted);">Great game everyone! Check your devices for final standings.</p>
+                `;
             }
         });
     </script>
