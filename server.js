@@ -87,7 +87,7 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: prompt,
         });
 
@@ -206,7 +206,7 @@ async function generateAIQuestions(type, count) {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: prompt,
         });
 
