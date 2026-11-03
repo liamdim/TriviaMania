@@ -60,11 +60,7 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
         .player-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 243, 255, 0.08); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.4rem 0.8rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
-        .ad-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
-        .quick-ad-box { background: rgba(5, 10, 20, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.8rem; border-radius: 8px; flex: 1; min-width: 260px; }
-        
-        .hidden-preview { filter: blur(8px); user-select: none; transition: filter 0.3s; }
-        .hidden-preview:hover { filter: blur(4px); }
+        .clip-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
     </style>
 </head>
 <body>
@@ -112,48 +108,8 @@
                         </select>
                     </div>
                     <div>
-                        <label>Intermission / Break:</label>
-                        <select id="intermissionTimerSelect" onchange="updateSettings()" style="width: 140px;">
-                            <option value="5" selected>5 Seconds</option>
-                            <option value="10">10 Seconds</option>
-                            <option value="20">20 Seconds</option>
-                            <option value="30">30 Seconds</option>
-                        </select>
-                    </div>
-                    <div>
                         <label>Status:</label>
                         <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--neon-yellow); text-shadow: 0 0 8px rgba(255,238,0,0.4); font-size: 1.1rem;">IDLE</strong></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
-                    <h3>🎛️ Live Host Soundboard</h3>
-                    <div class="flex-row" style="gap: 0.5rem;">
-                        <button class="small warning" onclick="playHostSound('applause')">👏 Applause</button>
-                        <button class="small danger" onclick="playHostSound('buzzer')">🚨 Buzzer</button>
-                        <button class="small warning" onclick="playHostSound('drumroll')">🥁 Drumroll</button>
-                        <button class="small success" onclick="playHostSound('fanfare')">🎺 Fanfare</button>
-                    </div>
-                </div>
-
-                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
-                    <h3>📢 Live Ticker & Moderation</h3>
-                    <div class="form-group" style="margin-bottom: 0.5rem;">
-                        <div class="flex-row" style="gap: 0.4rem;">
-                            <input type="text" id="announcementInput" placeholder="Broadcast ticker message..." style="margin-bottom: 0; flex: 1; padding: 0.4rem; font-size: 0.85rem;">
-                            <button class="success small" onclick="sendAnnouncement()">Send</button>
-                            <button class="danger small" onclick="clearAnnouncement()">Clear</button>
-                        </div>
-                    </div>
-                    <div class="flex-row" style="gap: 1rem; font-size: 0.85rem;">
-                        <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; color: var(--text); margin-bottom: 0;">
-                            <input type="checkbox" id="countdownSoundToggle" checked onchange="updateSettings()" style="width: auto; margin-bottom: 0;"> Chime
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer; color: var(--text); margin-bottom: 0;">
-                            <input type="checkbox" id="globalChatToggle" checked onchange="toggleGlobalChat()" style="width: auto; margin-bottom: 0;"> Chat & Emojis
-                        </label>
                     </div>
                 </div>
             </div>
@@ -193,7 +149,7 @@
             <div class="card">
                 <h3>Add New Quiz Round</h3>
                 <div class="form-group">
-                    <label>Select Category (Auto-loaded from GitHub):</label>
+                    <label>Select Category:</label>
                     <select id="triviaGenreSelect">
                         <option value="">Loading categories...</option>
                     </select>
@@ -213,100 +169,84 @@
                 </div>
                 <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
             </div>
-
-            <div class="card" style="border: 2px solid var(--neon-blue); margin-top: 1.5rem;">
-                <h3 style="color: var(--neon-blue);">✨ Bulk AI Category Generator</h3>
-                <p style="color: var(--text-muted); margin-bottom: 1rem;">Instantly generate and save 20 to 100 fresh questions for any custom topic directly to your server categories!</p>
-                <div class="form-group">
-                    <label>Topic / Category Name:</label>
-                    <input type="text" id="bulkCategoryInput" placeholder="e.g. 90s Blockbuster Movies, World Capitals">
-                </div>
-                <div class="form-group">
-                    <label>Number of Questions to Generate:</label>
-                    <select id="bulkCountSelect">
-                        <option value="20">20 Questions</option>
-                        <option value="50" selected>50 Questions</option>
-                        <option value="100">100 Questions</option>
-                    </select>
-                </div>
-                <button class="success" onclick="generateBulkCategory()">⚡ Generate & Save Category</button>
-            </div>
         </div>
 
-        <!-- TAB 3: MUSIC QUIZ STUDIO (URL / Track Paste) -->
+        <!-- TAB 3: MUSIC QUIZ STUDIO & SAVED EDITABLE PLAYLISTS -->
         <div id="music" class="tab-content">
             <div class="card" style="border: 2px solid var(--neon-green); background: rgba(0, 255, 102, 0.03);">
-                <h3 style="color: var(--neon-green);">🎵 Music Quiz Studio (URL / Song Paste)</h3>
+                <h3 style="color: var(--neon-green);">🎵 Music Quiz Studio & Editable Playlists</h3>
                 <p style="color: var(--text-muted); margin-bottom: 1rem;">
-                    Paste a song title, artist reference, or music link below. AI will instantly generate a multiple-choice trivia question for your playlist!
+                    Paste a batch of song titles, artist references, or playlist links. Generate questions, edit out any clips you don't want, and save your custom playlist to reuse anytime!
                 </p>
                 <div class="form-group">
-                    <label>Round Name:</label>
-                    <input type="text" id="customMusicRoundName" value="Tonight's Hit Music Round">
+                    <label>Playlist / Round Title:</label>
+                    <input type="text" id="customMusicRoundName" value="80s Party Hits Round">
                 </div>
                 <div class="form-group">
-                    <label>Song Title, Artist, or Link:</label>
-                    <input type="text" id="songQueryInput" placeholder="e.g. Queen - Bohemian Rhapsody or https://youtube.com/...">
+                    <label>Songs / Links (Paste multiple separated by commas or lines):</label>
+                    <textarea id="songQueryInput" rows="3" placeholder="e.g. Queen - Bohemian Rhapsody, Michael Jackson - Billie Jean, Take On Me - a-ha"></textarea>
                 </div>
-                <button class="success" onclick="addSongQuizToPlaylist()">➕ Generate & Add Song Question</button>
+                <button class="success" onclick="generateMusicClips()">⚡ Generate Clips for Review</button>
+            </div>
+
+            <!-- EDITABLE DRAFT CLIP LIST -->
+            <div class="card" id="draftEditorCard" style="display:none; border: 2px dashed var(--neon-blue);">
+                <h3 style="color: var(--neon-blue);">✏️ Review & Edit Generated Clips (<span id="draftCount">0</span>)</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Uncheck or delete any clips you don't want before saving or sending to the game queue.</p>
+                
+                <div id="draftClipsContainer" style="max-height: 350px; overflow-y: auto; margin-bottom: 1rem;"></div>
+
+                <div class="flex-row">
+                    <button class="success" onclick="saveCustomMusicPlaylist()">💾 Save Playlist for Future Use</button>
+                    <button class="success" onclick="pushDraftToActiveGame()">🚀 Send to Active Game Queue</button>
+                </div>
+            </div>
+
+            <!-- SAVED REUSABLE PLAYLISTS LIBRARY -->
+            <div class="card">
+                <h3>📂 Saved Reusable Music Playlists</h3>
+                <div id="savedPlaylistsContainer">
+                    <p style="color: var(--text-muted);">No saved custom music playlists yet. Generate and save one above!</p>
+                </div>
             </div>
         </div>
 
-        <!-- TAB 4: MINI-GAMES & GAME SHOWS STUDIO -->
+        <!-- TAB 4: MINI-GAMES -->
         <div id="minigames" class="tab-content">
             <div class="card" style="border: 2px solid var(--neon-pink); background: rgba(255, 0, 85, 0.03);">
                 <h3 style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games Studio</h3>
                 <div class="form-group">
                     <label>Select Game Mode:</label>
-                    <select id="miniGameTypeSelect" onchange="updateMiniGameLabels()">
+                    <select id="miniGameTypeSelect">
                         <option value="lingo">🔤 Lingo (Wordle-style 5-letter guessing game)</option>
                         <option value="scramble">🔀 Word Scramble (Anagram speed race)</option>
                         <option value="higher-lower">⬆️ Higher or Lower (Statistics prediction game)</option>
-                        <option value="tenable">🔟 Tenable (Top 10 list challenge)</option>
-                        <option value="one-percent">🧠 The 1% Club (Logic & brainteasers)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Round Name:</label>
                     <input type="text" id="miniGameRoundName" value="Lingo Word Game Round">
                 </div>
-                <div class="form-group">
-                    <label>Number of Puzzles / Questions:</label>
-                    <select id="miniGameCount">
-                        <option value="3">3 Puzzles</option>
-                        <option value="5" selected>5 Puzzles</option>
-                        <option value="8">8 Puzzles</option>
-                    </select>
-                </div>
-                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Round to Main Playlist</button>
+                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Round to Playlist</button>
             </div>
         </div>
 
-        <!-- TAB 5: ADVERTS & SPONSORS -->
+        <!-- TAB 5: ADVERTS -->
         <div id="adverts" class="tab-content">
             <div class="card">
                 <h3>Advert & Sponsor Library</h3>
                 <div class="form-group">
-                    <label>Advert Title / Message:</label>
-                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
+                    <label>Advert Title:</label>
+                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special">
                 </div>
-                <div class="form-group">
-                    <label>Upload Image:</label>
-                    <input type="file" id="adImageInput" accept="image/*">
-                </div>
-                <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
+                <button onclick="saveNewAdvert()">💾 Save Advert</button>
             </div>
         </div>
 
-        <!-- TAB 6: LOBBY & QR -->
+        <!-- TAB 6: LOBBY -->
         <div id="lobby" class="tab-content">
             <div class="card" style="text-align: center;">
-                <h3>Lobby Screen & Customizer</h3>
-                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
-                    <label>Projector Screen Welcome Header:</label>
-                    <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!" oninput="saveWelcomeHeader()">
-                </div>
-                <p style="color: var(--text-muted); margin-bottom: 1rem;">Player Mobile Join QR Code:</p>
+                <h3>Lobby Screen & QR</h3>
                 <div id="qr-container"></div>
                 <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
             </div>
@@ -315,12 +255,9 @@
     </div>
 
     <script>
-        const socket = io({
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 500
-        });
+        const socket = io({ transports: ['websocket', 'polling'] });
+        let currentDraftClips = [];
+        let savedPlaylists = JSON.parse(localStorage.getItem('triviamania_saved_music_playlists') || '[]');
 
         function switchTab(tabId, element) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -331,11 +268,7 @@
 
         const playerUrl = window.location.origin + '/player.html';
         document.getElementById('playerJoinUrl').innerText = playerUrl;
-        new QRCode(document.getElementById("qr-container"), {
-            text: playerUrl,
-            width: 200,
-            height: 200
-        });
+        new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 200, height: 200 });
 
         async function loadCategories() {
             try {
@@ -343,39 +276,118 @@
                 const categories = await res.json();
                 const select = document.getElementById('triviaGenreSelect');
                 if (categories.length > 0) {
-                    select.innerHTML = categories.map(cat => 
-                        '<option value="' + cat + '">' + cat.replace(/-/g, ' ').toUpperCase() + '</option>'
-                    ).join('');
+                    select.innerHTML = categories.map(cat => '<option value="' + cat + '">' + cat.replace(/-/g, ' ').toUpperCase() + '</option>').join('');
                 }
             } catch (err) {}
         }
         loadCategories();
 
-        async function addSongQuizToPlaylist() {
-            const songQuery = document.getElementById('songQueryInput').value.trim();
-            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Music Quiz Round';
-            if (!songQuery) { alert('Please enter a song title or link!'); return; }
+        async function generateMusicClips() {
+            const queryText = document.getElementById('songQueryInput').value.trim();
+            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Music Round';
+            if (!queryText) { alert('Please enter song titles or links!'); return; }
 
-            alert('Generating multiple choice question from song input...');
+            alert('Generating questions for your clips...');
             try {
                 const res = await fetch('/api/add-track-quiz', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ songQuery, roundName })
+                    body: JSON.stringify({ songQuery: queryText, roundName })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    alert('Successfully added question to playlist!');
-                    document.getElementById('songQueryInput').value = '';
-                    switchTab('controls');
+                if (data.success && data.questions) {
+                    currentDraftClips = data.questions;
+                    renderDraftEditor();
+                    document.getElementById('draftEditorCard').style.display = 'block';
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to generate'));
+                    alert('Error generating clips.');
                 }
             } catch (err) {
-                alert('Network error while generating question.');
+                alert('Network error while generating clips.');
             }
         }
 
+        function renderDraftEditor() {
+            const container = document.getElementById('draftClipsContainer');
+            document.getElementById('draftCount').innerText = currentDraftClips.length;
+
+            if (currentDraftClips.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No clips in draft.</p>';
+                return;
+            }
+
+            container.innerHTML = currentDraftClips.map((clip, idx) => `
+                <div class="clip-item">
+                    <div>
+                        <strong>#${idx + 1} - ${clip.question}</strong>
+                        <div style="font-size: 0.85rem; color: var(--neon-green);">Answer: ${clip.answer}</div>
+                    </div>
+                    <div>
+                        <button class="small danger" onclick="removeDraftClip(${idx})">🗑️ Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeDraftClip(index) {
+            currentDraftClips.splice(index, 1);
+            renderDraftEditor();
+        }
+
+        function saveCustomMusicPlaylist() {
+            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Playlist';
+            if (currentDraftClips.length === 0) { alert('No clips to save!'); return; }
+
+            savedPlaylists.push({ name: roundName, questions: currentDraftClips });
+            localStorage.setItem('triviamania_saved_music_playlists', JSON.stringify(savedPlaylists));
+            renderSavedPlaylists();
+            alert('Playlist saved successfully!');
+        }
+
+        function renderSavedPlaylists() {
+            const container = document.getElementById('savedPlaylistsContainer');
+            if (savedPlaylists.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No saved custom music playlists yet. Generate and save one above!</p>';
+                return;
+            }
+
+            container.innerHTML = savedPlaylists.map((pl, idx) => `
+                <div class="clip-item">
+                    <div>
+                        <strong>${pl.name}</strong> (${pl.questions.length} questions)
+                    </div>
+                    <div class="flex-row" style="gap: 0.5rem;">
+                        <button class="small success" onclick="loadSavedPlaylist(${idx})">🚀 Add to Game</button>
+                        <button class="small danger" onclick="deleteSavedPlaylist(${idx})">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadSavedPlaylist(index) {
+            const pl = savedPlaylists[index];
+            socket.emit('add-custom-playlist', pl);
+            alert('Added "' + pl.name + '" to your game playlist queue!');
+            switchTab('controls');
+        }
+
+        function deleteSavedPlaylist(index) {
+            savedPlaylists.splice(index, 1);
+            localStorage.setItem('triviamania_saved_music_playlists', JSON.stringify(savedPlaylists));
+            renderSavedPlaylists();
+        }
+
+        function pushDraftToActiveGame() {
+            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Music Round';
+            if (currentDraftClips.length === 0) { alert('No clips to add!'); return; }
+            socket.emit('add-custom-playlist', { name: roundName, questions: currentDraftClips });
+            alert('Added round to active game queue!');
+            switchTab('controls');
+        }
+
+        renderSavedPlaylists();
+
+        // Standard helpers
         function addRoundToPlaylist() {
             const genre = document.getElementById('triviaGenreSelect').value;
             const name = document.getElementById('roundNameInput').value;
@@ -386,59 +398,32 @@
             switchTab('controls');
         }
 
-        function updateMiniGameLabels() {
-            const type = document.getElementById('miniGameTypeSelect').value;
-            const nameInput = document.getElementById('miniGameRoundName');
-            if (type === 'lingo') nameInput.value = 'Lingo Word Game Round';
-            else if (type === 'scramble') nameInput.value = 'Word Scramble Anagram Round';
-            else if (type === 'higher-lower') nameInput.value = 'Higher or Lower Prediction Round';
-            else if (type === 'tenable') nameInput.value = 'Tenable List Challenge Round';
-            else if (type === 'one-percent') nameInput.value = 'The 1% Club Brainteaser Round';
-        }
-
         function addMiniGameRoundToPlaylist() {
             const type = document.getElementById('miniGameTypeSelect').value;
             const name = document.getElementById('miniGameRoundName').value;
-            const count = parseInt(document.getElementById('miniGameCount').value);
-            socket.emit('add-minigame-round', { type, name, count });
-            alert('Successfully added round to playlist!');
+            socket.emit('add-minigame-round', { type, name, count: 5 });
+            alert('Round added to playlist!');
             switchTab('controls');
         }
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
-            
             const tbody = document.querySelector('#playlistTable tbody');
             if (!state.playlist || state.playlist.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>';
             } else {
-                tbody.innerHTML = state.playlist.map((r, idx) => 
-                    '<tr>' +
-                        '<td>' + (idx + 1) + '</td>' +
-                        '<td>' + r.name + '</td>' +
-                        '<td>' + r.genre + ' (' + (r.questions ? r.questions.length : 0) + ' Qs)</td>' +
-                        '<td>' +
-                            '<button class="small" onclick="socket.emit(\'move-round\', { index: ' + idx + ', direction: \'up\' })">⬆</button>' +
-                            '<button class="small" onclick="socket.emit(\'move-round\', { index: ' + idx + ', direction: \'down\' })">⬇</button>' +
-                            '<button class="small danger" onclick="socket.emit(\'delete-round\', ' + idx + ')">❌</button>' +
-                        '</td>' +
-                    '</tr>'
-                ).join('');
-            }
-
-            const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
-            const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
-            if (sortedPlayers.length === 0) {
-                lbTbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>';
-            } else {
-                lbTbody.innerHTML = sortedPlayers.map((p, idx) => 
-                    '<tr>' +
-                        '<td>' + (idx + 1) + '</td>' +
-                        '<td>' + p.name + '</td>' +
-                        '<td>🔥 x' + (p.streak || 0) + '</td>' +
-                        '<td><strong>' + p.score + '</strong></td>' +
-                    '</tr>'
-                ).join('');
+                tbody.innerHTML = state.playlist.map((r, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${r.name}</td>
+                        <td>${r.genre} (${r.questions ? r.questions.length : 0} Qs)</td>
+                        <td>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'up' })">⬆</button>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'down' })">⬇</button>
+                            <button class="small danger" onclick="socket.emit('delete-round', ${idx})">❌</button>
+                        </td>
+                    </tr>
+                `).join('');
             }
         });
     </script>
