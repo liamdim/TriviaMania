@@ -69,9 +69,36 @@
         <div class="card half">
             <h3>Loaded Playlist Queue</h3>
             <div id="playlistQueueContainer" style="max-height: 280px; overflow-y: auto;">
-                <p style="color: var(--text-muted);">No rounds loaded yet. Add rounds via the Quiz Builder, Music Studio, or Mini-Games tab!</p>
+                <p style="color: var(--text-muted);">No rounds loaded yet.</p>
             </div>
             <button class="btn-red" style="margin-top: 1rem; width: 100%;" onclick="socket.emit('clear-playlist')">🗑️ Clear Entire Playlist</button>
+        </div>
+
+        <!-- NEXT QUESTION PREVIEW -->
+        <div class="card half">
+            <h3>Next Question Preview</h3>
+            <div id="nextQuestionPreviewBox" style="background: rgba(5,10,20,0.8); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2); min-height: 120px;">
+                <p style="color: var(--text-muted);">No active question or preview available.</p>
+            </div>
+        </div>
+
+        <!-- QUICK ADVERT DISPLAY CONTROLS -->
+        <div class="card">
+            <h3>Quick Advert Display Controls</h3>
+            <div class="control-row">
+                <button class="btn-yellow" onclick="socket.emit('broadcast-advert-screen', {text: 'Sponsor Special: Enjoy the bar tonight!', image: ''})">📺 Show Default Screen Ad</button>
+                <button class="btn-red" onclick="socket.emit('hide-advert-screen')">🚫 Hide Screen Ad</button>
+                <button class="btn-yellow" onclick="socket.emit('broadcast-advert-mobile', {text: 'Check out special drink deals at the bar!', image: ''})">📱 Show Mobile Ad</button>
+                <button class="btn-red" onclick="socket.emit('hide-advert-mobile')">🚫 Hide Mobile Ad</button>
+            </div>
+        </div>
+
+        <!-- CONNECTED PLAYERS & MUTE CONTROLS -->
+        <div class="card half">
+            <h3>Connected Players & Chat Mute</h3>
+            <div id="connectedPlayersContainer" style="max-height: 180px; overflow-y: auto;">
+                <p style="color: var(--text-muted);">No players connected.</p>
+            </div>
         </div>
 
         <!-- HOST CHAT & ANNOUNCEMENTS -->
@@ -79,15 +106,7 @@
             <h3>Host Announcement & Chat Broadcast</h3>
             <input type="text" id="hostAnnouncementInput" placeholder="Send announcement to mobile phones...">
             <button class="btn-green" style="width: 100%;" onclick="sendHostAnnouncement()">📢 Broadcast to All Players</button>
-            <div id="hostChatFeed" style="margin-top: 1rem; max-height: 140px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.85rem; color: var(--text-muted);"></div>
-        </div>
-
-        <!-- LIVE LEADERBOARD PREVIEW -->
-        <div class="card">
-            <h3>Live Leaderboard Preview</h3>
-            <div id="liveLeaderboardContainer" style="max-height: 200px; overflow-y: auto;">
-                <p style="color: var(--text-muted);">No players joined yet.</p>
-            </div>
+            <div id="hostChatFeed" style="margin-top: 1rem; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.85rem; color: var(--text-muted);"></div>
         </div>
     </div>
 
@@ -114,21 +133,44 @@
                     </div>
                 `).join('');
             } else {
-                queueContainer.innerHTML = '<p style="color: var(--text-muted);">No rounds loaded yet. Add rounds via the Quiz Builder, Music Studio, or Mini-Games tab!</p>';
+                queueContainer.innerHTML = '<p style="color: var(--text-muted);">No rounds loaded yet.</p>';
             }
 
-            // Render Live Leaderboard Preview
-            const lbContainer = document.getElementById('liveLeaderboardContainer');
-            const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
-            if (sortedPlayers.length > 0) {
-                lbContainer.innerHTML = sortedPlayers.map((p, idx) => `
-                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0.75rem; background:rgba(5,10,20,0.6); border-radius:6px; margin-bottom:0.3rem;">
-                        <span><strong>#${idx + 1}</strong> ${p.name}</span>
-                        <span>🔥 x${p.streak || 0} | <strong>${p.score} pts</strong></span>
-                    </div>
-                `).join('');
+            // Next Question Preview
+            const previewBox = document.getElementById('nextQuestionPreviewBox');
+            if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
+                const round = state.playlist[state.currentRoundIndex];
+                const nextQIndex = state.currentQuestionIndex + 1;
+                const nextQ = round.questions[nextQIndex] || round.questions[state.currentQuestionIndex];
+                previewBox.innerHTML = `
+                    <p style="color:var(--neon-green); font-weight:bold; margin-bottom:0.3rem;">Current / Next Q (${nextQIndex + 1}/${round.questions.length}):</p>
+                    <p style="font-size:0.95rem;">${nextQ ? nextQ.question : 'End of round'}</p>
+                    <p style="color:var(--neon-yellow); margin-top:0.3rem; font-size:0.85rem;">Answer: ${nextQ ? nextQ.answer : '-'}</p>
+                `;
             } else {
-                lbContainer.innerHTML = '<p style="color: var(--text-muted);">No players joined yet.</p>';
+                previewBox.innerHTML = '<p style="color: var(--text-muted);">Quiz is idle or paused.</p>';
+            }
+
+            // Connected Players & Mute Buttons
+            const playersContainer = document.getElementById('connectedPlayersContainer');
+            const scoresEntries = Object.entries(state.scores || {});
+            if (scoresEntries.length > 0) {
+                playersContainer.innerHTML = scoresEntries.map(([id, p]) => {
+                    const isMuted = state.mutedPlayers && state.mutedPlayers[id];
+                    return `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0.6rem; background:rgba(5,10,20,0.6); border-radius:6px; margin-bottom:0.3rem;">
+                            <span>${p.name} (${p.score} pts)</span>
+                            <div>
+                                ${isMuted ? 
+                                    `<button class="btn-green" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="socket.emit('unmute-player', '${id}')">Unmute</button>` : 
+                                    `<button class="btn-red" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="socket.emit('mute-player', '${id}')">Mute</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                playersContainer.innerHTML = '<p style="color: var(--text-muted);">No players connected.</p>';
             }
         });
 
