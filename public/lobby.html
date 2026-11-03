@@ -23,22 +23,25 @@
         .nav-links { display: flex; gap: 0.75rem; }
         .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
         .container { flex: 1; padding: 2rem; max-width: 800px; width: 100%; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); margin-bottom: 1.5rem; }
         .card h3 { margin-bottom: 1.5rem; color: var(--neon-blue); font-weight: 600; }
         .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
         input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; }
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
     <header>
-        <h1>🌐 Lobby & QR Code Customizer</h1>
+        <h1>🌐 Lobby, QR & Emoji Customizer</h1>
         <div class="nav-links">
             <a href="/index.html">⚡ Live Controls</a>
         </div>
     </header>
     <div class="container">
+        <!-- LOBBY SETTINGS -->
         <div class="card">
             <h3>Customize Projector Lobby</h3>
             <div class="form-group">
@@ -53,6 +56,16 @@
             <div id="qr-container"></div>
             <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--neon-blue);"></p>
         </div>
+
+        <!-- EMOJI EDITOR -->
+        <div class="card">
+            <h3>🎭 Live Emoji Reactions Editor</h3>
+            <div class="form-group">
+                <label>Custom Emojis (comma separated):</label>
+                <input type="text" id="emojisInput" value="🔥, 🍻, 👏, 😂, 🎉, 💡">
+            </div>
+            <button onclick="saveEmojis()">Update Emojis Live</button>
+        </div>
     </div>
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
@@ -62,8 +75,8 @@
 
         const headerInput = document.getElementById('welcomeHeaderInput');
         const venueInput = document.getElementById('venueDetailsInput');
+        const emojisInput = document.getElementById('emojisInput');
 
-        // Populate fields initially from server state
         socket.on('state-update', (state) => {
             if (state.welcomeHeader && document.activeElement !== headerInput) {
                 headerInput.value = state.welcomeHeader;
@@ -71,9 +84,11 @@
             if (state.venueDetails && document.activeElement !== venueInput) {
                 venueInput.value = state.venueDetails;
             }
+            if (state.customEmojis && document.activeElement !== emojisInput) {
+                emojisInput.value = state.customEmojis.join(', ');
+            }
         });
 
-        // Send updates live as you type
         headerInput.addEventListener('input', () => {
             socket.emit('update-welcome-header', headerInput.value);
         });
@@ -81,6 +96,13 @@
         venueInput.addEventListener('input', () => {
             socket.emit('update-venue-details', venueInput.value);
         });
+
+        function saveEmojis() {
+            const raw = emojisInput.value;
+            const emojis = raw.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            socket.emit('update-emojis', emojis);
+            alert('Emojis updated live for all players!');
+        }
     </script>
 </body>
 </html>
