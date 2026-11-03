@@ -6,519 +6,147 @@
     <link rel="icon" href="data:,">
     <title>TriviaMania - Master Host Dashboard</title>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
             --panel-bg: rgba(15, 23, 42, 0.75);
             --neon-blue: #00f3ff;
-            --neon-pink: #ff0055;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
             --text: #ffffff;
             --text-muted: #8b9bb4;
-            --border-glow: 0 0 15px rgba(0, 243, 255, 0.25);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
         
-        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
-        header h1 { font-size: 1.5rem; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); letter-spacing: 1px; }
+        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
+        header h1 { font-size: 1.5rem; color: var(--neon-blue); }
         .header-links { display: flex; gap: 1rem; align-items: center; }
-        .header-links a { color: var(--neon-blue); text-decoration: none; font-size: 0.9rem; background: rgba(0, 243, 255, 0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.4); transition: 0.3s; }
-        .header-links a:hover { background: rgba(0, 243, 255, 0.25); box-shadow: var(--border-glow); }
+        .header-links a { color: var(--neon-blue); text-decoration: none; font-size: 0.9rem; background: rgba(0, 243, 255, 0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.4); }
         
-        .nav-tabs { display: flex; gap: 0.75rem; background: rgba(10, 15, 30, 0.8); padding: 0.75rem 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap; backdrop-filter: blur(10px); }
-        .tab-btn { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 0.5rem 1.2rem; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.3s; }
-        .tab-btn.active, .tab-btn:hover { background: rgba(0, 243, 255, 0.15); color: var(--neon-blue); border-color: var(--neon-blue); box-shadow: var(--border-glow); }
+        .studio-nav { display: flex; gap: 0.75rem; background: rgba(10, 15, 30, 0.8); padding: 0.75rem 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap; }
+        .studio-nav a { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text); text-decoration: none; padding: 0.5rem 1.2rem; font-weight: 600; border-radius: 6px; font-size: 0.9rem; transition: 0.3s; }
+        .studio-nav a:hover { background: rgba(0, 243, 255, 0.2); border-color: var(--neon-blue); color: var(--neon-blue); }
 
         .container { flex: 1; padding: 2rem; max-width: 1200px; width: 100%; margin: 0 auto; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); font-weight: 600; }
 
-        .card { background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
-        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); display: flex; justify-content: space-between; align-items: center; font-weight: 600; text-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
-
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        select, input, textarea { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; margin-bottom: 0.5rem; transition: 0.3s; }
-        select:focus, input:focus, textarea:focus { outline: none; border-color: var(--neon-blue); box-shadow: var(--border-glow); }
-        
-        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); }
-        button:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); transform: translateY(-1px); }
-        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055); box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3); }
-        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
-        button.warning { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; box-shadow: 0 4px 15px rgba(255, 238, 0, 0.3); }
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        button:hover { filter: brightness(1.2); }
+        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055); }
+        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; }
+        button.warning { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; }
         button.small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
 
         .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-        th { color: var(--neon-blue); font-weight: 600; }
-
+        th { color: var(--neon-blue); }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
-        .clip-item, .ad-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>TRIVIAMANIA // HOST CONTROL</h1>
+        <h1>⚡ TRIVIAMANIA // LIVE CONTROL ROOM</h1>
         <div class="header-links">
-            <span id="connectionStatus" style="color: var(--neon-green); text-shadow: 0 0 8px rgba(0,255,102,0.5);">● ONLINE</span>
-            <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
+            <span style="color: var(--neon-green);">● ONLINE</span>
             <a href="/display.html" target="_blank">Projector Display ↗</a>
         </div>
     </header>
 
-    <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('controls', this)">⚡ Live Controls & Game</button>
-        <button class="tab-btn" onclick="switchTab('playlist', this)">📂 Playlist Builder</button>
-        <button class="tab-btn" onclick="switchTab('music', this)" style="color: var(--neon-green);">🎵 Music Quiz Studio</button>
-        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games</button>
-        <button class="tab-btn" onclick="switchTab('adverts', this)">📢 Adverts & Sponsors</button>
-        <button class="tab-btn" onclick="switchTab('lobby', this)">🌐 Lobby & QR</button>
+    <div class="studio-nav">
+        <a href="/music.html" style="color: var(--neon-green); border-color: rgba(0,255,102,0.4);">🎵 Music Quiz Studio</a>
+        <a href="/minigames.html" style="color: var(--neon-pink); border-color: rgba(255,0,85,0.4);">🎮 Mini-Games Studio</a>
+        <a href="/adverts.html" style="color: var(--neon-yellow); border-color: rgba(255,238,0,0.4);">📢 Adverts Manager</a>
+        <a href="/lobby.html" style="color: var(--neon-blue); border-color: rgba(0,243,255,0.4);">🌐 Lobby & QR</a>
     </div>
 
     <div class="container">
-
-        <!-- TAB 1: CONTROLS & LIVE GAME -->
-        <div id="controls" class="tab-content active">
-            <div class="card" style="border: 2px solid var(--neon-blue); box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);">
-                <h3>Live Game Master Controls</h3>
-                <div class="flex-row" style="margin-bottom: 1rem;">
-                    <button class="success" onclick="socket.emit('start-round')">▶ Start Game / First Question</button>
-                    <button onclick="socket.emit('next-question')">Next Question ⏭</button>
-                    <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
-                    <button class="warning" onclick="socket.emit('restart-game')">🔄 Restart Game (Keep Players)</button>
-                    <button class="danger" onclick="if(confirm('Are you sure you want to completely reset?')) socket.emit('stop-reset')">⚠️ Full Reset</button>
-                </div>
-
-                <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; align-items: flex-start;">
-                    <div>
-                        <label>Status:</label>
-                        <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--neon-yellow); font-size: 1.1rem;">IDLE</strong></p>
-                    </div>
-                </div>
+        <!-- LIVE GAME CONTROLS -->
+        <div class="card" style="border: 2px solid var(--neon-blue);">
+            <h3>Live Game Master Controls</h3>
+            <div class="flex-row" style="margin-bottom: 1rem;">
+                <button class="success" onclick="socket.emit('start-round')">▶ Start Game / First Question</button>
+                <button onclick="socket.emit('next-question')">Next Question ⏭</button>
+                <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
+                <button class="warning" onclick="socket.emit('restart-game')">🔄 Restart Game</button>
+                <button class="danger" onclick="if(confirm('Full reset?')) socket.emit('stop-reset')">⚠️ Full Reset</button>
             </div>
-
-            <!-- DASHBOARD EXTRA PANELS -->
-            <div class="grid-2">
-                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
-                    <h3>👀 Next Question Preview</h3>
-                    <div id="nextQuestionPreview" style="font-size: 0.95rem; color: var(--text-muted);">No question active or queued yet.</div>
-                </div>
-
-                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
-                    <h3>💬 Host to Mobile Chat & Emojis</h3>
-                    <div class="form-group" style="margin-bottom: 0.5rem;">
-                        <div class="flex-row" style="gap: 0.4rem;">
-                            <input type="text" id="hostChatInput" placeholder="Send announcement to mobile phones..." style="margin-bottom: 0; flex: 1; padding: 0.4rem; font-size: 0.85rem;">
-                            <button class="success small" onclick="sendHostChat()">Send</button>
-                        </div>
-                    </div>
-                    <div id="liveChatStream" style="max-height: 100px; overflow-y: auto; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;">Player chat feed will appear here...</div>
-                </div>
+            <div>
+                <label>Status: <strong id="statusDisplay" style="color: var(--neon-yellow); font-size: 1.1rem;">IDLE</strong></label>
             </div>
+        </div>
 
-            <!-- ADVERT QUICK CONTROLS ON MAIN DASH -->
+        <!-- PREVIEW & CHAT -->
+        <div class="grid-2">
             <div class="card" style="background: rgba(10, 15, 30, 0.6);">
-                <h3>📢 Quick Advert Display Controls</h3>
-                <div class="flex-row" id="quickAdButtons">
-                    <span style="color: var(--text-muted); font-size: 0.9rem;">No saved adverts yet. Add them in the Adverts tab!</span>
-                </div>
+                <h3>👀 Next Question Preview</h3>
+                <div id="nextQuestionPreview" style="font-size: 0.95rem; color: var(--text-muted);">No question active or queued yet.</div>
             </div>
-
-            <div class="grid-2">
-                <div class="card">
-                    <h3>Loaded Playlist Queue</h3>
-                    <table id="playlistTable">
-                        <thead>
-                            <tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>
-                        </tbody>
-                    </table>
-                    <div style="margin-top: 1rem;">
-                        <button class="danger small" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button>
-                    </div>
+            <div class="card" style="background: rgba(10, 15, 30, 0.6);">
+                <h3>💬 Host to Mobile Chat</h3>
+                <div class="flex-row" style="gap: 0.4rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="hostChatInput" placeholder="Send announcement to mobile phones..." style="flex:1; padding:0.4rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:4px;">
+                    <button class="success small" onclick="sendHostChat()">Send</button>
                 </div>
-
-                <div class="card">
-                    <h3>Live Leaderboard</h3>
-                    <table id="hostLeaderboardTable">
-                        <thead>
-                            <tr><th>Rank</th><th>Player Name</th><th>Streak</th><th>Score</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                <div id="liveChatStream" style="max-height: 80px; overflow-y: auto; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;">Player feed...</div>
             </div>
         </div>
 
-        <!-- TAB 2: PLAYLIST BUILDER -->
-        <div id="playlist" class="tab-content">
+        <!-- QUICK ADVERTS -->
+        <div class="card" style="background: rgba(10, 15, 30, 0.6);">
+            <h3>📢 Quick Advert Display Controls</h3>
+            <div class="flex-row" id="quickAdButtons">
+                <span style="color: var(--text-muted); font-size: 0.9rem;">Manage and view your stored adverts in the Adverts Manager tab above.</span>
+            </div>
+        </div>
+
+        <!-- PLAYLIST & LEADERBOARD -->
+        <div class="grid-2">
             <div class="card">
-                <h3>Add New Quiz Round</h3>
-                <div class="form-group">
-                    <label>Select Category:</label>
-                    <select id="triviaGenreSelect"><option value="">Loading categories...</option></select>
-                </div>
-                <div class="form-group">
-                    <label>Round Custom Name:</label>
-                    <input type="text" id="roundNameInput" value="General Knowledge Round">
-                </div>
-                <div class="form-group">
-                    <label>Question Count:</label>
-                    <select id="questionCountSelect">
-                        <option value="5">5 Questions</option>
-                        <option value="10" selected>10 Questions</option>
-                        <option value="15">15 Questions</option>
-                        <option value="20">20 Questions</option>
-                    </select>
-                </div>
-                <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
-            </div>
-        </div>
-
-        <!-- TAB 3: MUSIC QUIZ STUDIO -->
-        <div id="music" class="tab-content">
-            <div class="card" style="border: 2px solid var(--neon-green); background: rgba(0, 255, 102, 0.03);">
-                <h3 style="color: var(--neon-green);">🎵 Music Quiz Studio & Editable Playlists</h3>
-                <div class="form-group">
-                    <label>Playlist / Round Title:</label>
-                    <input type="text" id="customMusicRoundName" value="80s Party Hits Round">
-                </div>
-                <div class="form-group">
-                    <label>Songs / Links (Comma or newline separated):</label>
-                    <textarea id="songQueryInput" rows="3" placeholder="e.g. Queen - Bohemian Rhapsody, Michael Jackson - Billie Jean"></textarea>
-                </div>
-                <button class="success" onclick="generateMusicClips()">⚡ Generate Clips for Review</button>
-            </div>
-
-            <div class="card" id="draftEditorCard" style="display:none; border: 2px dashed var(--neon-blue);">
-                <h3 style="color: var(--neon-blue);">✏️ Review & Edit Generated Clips (<span id="draftCount">0</span>)</h3>
-                <div id="draftClipsContainer" style="max-height: 350px; overflow-y: auto; margin-bottom: 1rem;"></div>
-                <div class="flex-row">
-                    <button class="success" onclick="saveCustomMusicPlaylist()">💾 Save Playlist</button>
-                    <button class="success" onclick="pushDraftToActiveGame()">🚀 Send to Active Game Queue</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>📂 Saved Reusable Music Playlists</h3>
-                <div id="savedPlaylistsContainer"><p style="color: var(--text-muted);">No saved custom music playlists yet.</p></div>
-            </div>
-        </div>
-
-        <!-- TAB 4: MINI-GAMES -->
-        <div id="minigames" class="tab-content">
-            <div class="card" style="border: 2px solid var(--neon-pink); background: rgba(255, 0, 85, 0.03);">
-                <h3 style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games Studio</h3>
-                <div class="form-group">
-                    <label>Select Game Mode:</label>
-                    <select id="miniGameTypeSelect">
-                        <option value="lingo">🔤 LINGO (5-Letter Word Guessing Game)</option>
-                        <option value="scramble">🔀 WORD SCRAMBLE (Anagram Speed Race)</option>
-                        <option value="higher-lower">⬆️ HIGHER OR LOWER (Statistics Prediction)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Round Name:</label>
-                    <input type="text" id="miniGameRoundName" value="Lingo Word Game Round">
-                </div>
-                <div class="form-group">
-                    <label>Number of Puzzles:</label>
-                    <select id="miniGameCount">
-                        <option value="3">3 Puzzles</option>
-                        <option value="5" selected>5 Puzzles</option>
-                        <option value="8">8 Puzzles</option>
-                    </select>
-                </div>
-                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Mini-Game Round to Playlist</button>
-            </div>
-        </div>
-
-        <!-- TAB 5: ADVERTS & SPONSORS WITH IMAGE UPLOAD -->
-        <div id="adverts" class="tab-content">
-            <div class="card">
-                <h3>📢 Advert & Sponsor Library</h3>
-                <div class="form-group">
-                    <label>Advert Title / Message:</label>
-                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
-                </div>
-                <div class="form-group">
-                    <label>Upload Sponsor Image / Graphic:</label>
-                    <input type="file" id="adImageInput" accept="image/*">
-                </div>
-                <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
+                <h3>Loaded Playlist Queue</h3>
+                <table id="playlistTable">
+                    <thead><tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr></thead>
+                    <tbody><tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Add rounds via the Studios above!</td></tr></tbody>
+                </table>
+                <div style="margin-top: 1rem;"><button class="danger small" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button></div>
             </div>
             <div class="card">
-                <h3>Stored Adverts Manager</h3>
-                <div id="storedAdvertsContainer"><p style="color: var(--text-muted);">No adverts stored yet.</p></div>
+                <h3>Live Leaderboard</h3>
+                <table id="hostLeaderboardTable">
+                    <thead><tr><th>Rank</th><th>Player Name</th><th>Streak</th><th>Score</th></tr></thead>
+                    <tbody><tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr></tbody>
+                </table>
             </div>
         </div>
-
-        <!-- TAB 6: LOBBY & QR WITH SAVE BUTTON -->
-        <div id="lobby" class="tab-content">
-            <div class="card" style="text-align: center;">
-                <h3>🌐 Lobby & QR Code Customizer</h3>
-                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1rem auto;">
-                    <label>Projector Welcome Header:</label>
-                    <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!">
-                </div>
-                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
-                    <label>Venue Details / Subtitle:</label>
-                    <input type="text" id="venueDetailsInput" placeholder="Tonight's Pub Trivia Night">
-                </div>
-                <button class="success" onclick="saveLobbySettings()" style="margin-bottom: 1.5rem;">💾 Save Lobby Settings</button>
-                <p style="color: var(--text-muted); margin-bottom: 1rem;">Player Mobile Join QR Code:</p>
-                <div id="qr-container"></div>
-                <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
-            </div>
-        </div>
-
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        let currentDraftClips = [];
-        let savedPlaylists = JSON.parse(localStorage.getItem('triviamania_saved_music_playlists') || '[]');
         let savedAdverts = JSON.parse(localStorage.getItem('triviamania_saved_adverts') || '[]');
 
-        function switchTab(tabId, element) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            if (element) element.classList.add('active');
+        function renderQuickAds() {
+            const quickBox = document.getElementById('quickAdButtons');
+            if (savedAdverts.length === 0) return;
+            quickBox.innerHTML = savedAdverts.map((ad, idx) => `
+                <button class="small warning" onclick="showAdOnScreen(${idx})">📢 ${ad.title}</button>
+            `).join('') + '<button class="small danger" onclick="hideAdOnScreen()">Hide Ad</button>';
         }
+        renderQuickAds();
 
-        const playerUrl = window.location.origin + '/player.html';
-        document.getElementById('playerJoinUrl').innerText = playerUrl;
-        new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 200, height: 200 });
-
-        function copyPlayerLink() {
-            navigator.clipboard.writeText(playerUrl);
-            alert('Player mobile join link copied to clipboard!');
+        function showAdOnScreen(index) {
+            const ad = savedAdverts[index];
+            socket.emit('broadcast-advert-screen', { text: ad.title, image: ad.image || null });
         }
-
-        async function loadCategories() {
-            try {
-                const res = await fetch('/api/categories');
-                const categories = await res.json();
-                const select = document.getElementById('triviaGenreSelect');
-                if (categories.length > 0) {
-                    select.innerHTML = categories.map(cat => '<option value="' + cat + '">' + cat.replace(/-/g, ' ').toUpperCase() + '</option>').join('');
-                }
-            } catch (err) {}
-        }
-        loadCategories();
-
-        function saveLobbySettings() {
-            const headerText = document.getElementById('welcomeHeaderInput').value;
-            const detailsText = document.getElementById('venueDetailsInput').value;
-            socket.emit('update-welcome-header', headerText);
-            socket.emit('update-venue-details', detailsText);
-            alert('Lobby settings saved and broadcasted to projector!');
-        }
+        function hideAdOnScreen() { socket.emit('hide-advert-screen'); }
 
         function sendHostChat() {
             const msg = document.getElementById('hostChatInput').value.trim();
             if (!msg) return;
             socket.emit('host-chat-broadcast', msg);
             document.getElementById('hostChatInput').value = '';
-        }
-
-        function saveNewAdvert() {
-            const title = document.getElementById('adTitleInput').value.trim();
-            const fileInput = document.getElementById('adImageInput');
-            if (!title) { alert('Please enter an advert title!'); return; }
-
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    savedAdverts.push({ title, image: e.target.result });
-                    localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-                    renderAdverts();
-                    document.getElementById('adTitleInput').value = '';
-                    fileInput.value = '';
-                    alert('Advert with image saved successfully!');
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                savedAdverts.push({ title, image: null });
-                localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-                renderAdverts();
-                document.getElementById('adTitleInput').value = '';
-                alert('Advert saved successfully!');
-            }
-        }
-
-        function renderAdverts() {
-            const container = document.getElementById('storedAdvertsContainer');
-            const quickBox = document.getElementById('quickAdButtons');
-            if (savedAdverts.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted);">No adverts stored yet.</p>';
-                quickBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.9rem;">No saved adverts yet. Add them in the Adverts tab!</span>';
-                return;
-            }
-
-            container.innerHTML = savedAdverts.map((ad, idx) => `
-                <div class="ad-item">
-                    <div>
-                        <strong>${ad.title}</strong>
-                        ${ad.image ? '<br><span style="font-size:0.8rem; color:var(--neon-blue);">[Has Image]</span>' : ''}
-                    </div>
-                    <div class="flex-row" style="gap: 0.5rem;">
-                        <button class="small success" onclick="showAdOnScreen(${idx})">Show on Display</button>
-                        <button class="small danger" onclick="deleteAdvert(${idx})">Delete</button>
-                    </div>
-                </div>
-            `).join('');
-
-            quickBox.innerHTML = savedAdverts.map((ad, idx) => `
-                <button class="small warning" onclick="showAdOnScreen(${idx})">📢 ${ad.title}</button>
-            `).join('') + '<button class="small danger" onclick="hideAdOnScreen()">Hide Ad</button>';
-        }
-
-        function showAdOnScreen(indexOrTitle) {
-            let ad = typeof indexOrTitle === 'number' ? savedAdverts[indexOrTitle] : savedAdverts.find(a => a.title === indexOrTitle);
-            if (ad) {
-                socket.emit('broadcast-advert-screen', { text: ad.title, image: ad.image || null });
-                alert('Broadcasting ad to projector display!');
-            }
-        }
-
-        function hideAdOnScreen() {
-            socket.emit('hide-advert-screen');
-            alert('Advert hidden from display.');
-        }
-
-        function deleteAdvert(index) {
-            savedAdverts.splice(index, 1);
-            localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-            renderAdverts();
-        }
-
-        renderAdverts();
-
-        async function generateMusicClips() {
-            const queryText = document.getElementById('songQueryInput').value.trim();
-            if (!queryText) { alert('Please enter song titles or links!'); return; }
-
-            alert('Generating questions for your clips...');
-            try {
-                const res = await fetch('/api/add-track-quiz', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ songQuery: queryText })
-                });
-                const data = await res.json();
-                if (data.success && data.questions) {
-                    currentDraftClips = data.questions;
-                    renderDraftEditor();
-                    document.getElementById('draftEditorCard').style.display = 'block';
-                } else {
-                    alert('Error generating clips.');
-                }
-            } catch (err) {
-                alert('Network error while generating clips.');
-            }
-        }
-
-        function renderDraftEditor() {
-            const container = document.getElementById('draftClipsContainer');
-            document.getElementById('draftCount').innerText = currentDraftClips.length;
-            if (currentDraftClips.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted);">No clips in draft.</p>';
-                return;
-            }
-            container.innerHTML = currentDraftClips.map((clip, idx) => `
-                <div class="clip-item">
-                    <div>
-                        <strong>#${idx + 1} - ${clip.question}</strong>
-                        <div style="font-size: 0.85rem; color: var(--neon-green);">Answer: ${clip.answer}</div>
-                    </div>
-                    <div><button class="small danger" onclick="removeDraftClip(${idx})">🗑️ Remove</button></div>
-                </div>
-            `).join('');
-        }
-
-        function removeDraftClip(index) {
-            currentDraftClips.splice(index, 1);
-            renderDraftEditor();
-        }
-
-        function saveCustomMusicPlaylist() {
-            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Playlist';
-            if (currentDraftClips.length === 0) { alert('No clips to save!'); return; }
-            savedPlaylists.push({ name: roundName, questions: currentDraftClips });
-            localStorage.setItem('triviamania_saved_music_playlists', JSON.stringify(savedPlaylists));
-            renderSavedPlaylists();
-            alert('Playlist saved successfully!');
-        }
-
-        function renderSavedPlaylists() {
-            const container = document.getElementById('savedPlaylistsContainer');
-            if (savedPlaylists.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted);">No saved custom music playlists yet.</p>';
-                return;
-            }
-            container.innerHTML = savedPlaylists.map((pl, idx) => `
-                <div class="clip-item">
-                    <div><strong>${pl.name}</strong> (${pl.questions.length} questions)</div>
-                    <div class="flex-row" style="gap: 0.5rem;">
-                        <button class="small success" onclick="loadSavedPlaylist(${idx})">🚀 Add to Game</button>
-                        <button class="small danger" onclick="deleteSavedPlaylist(${idx})">🗑️ Delete</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadSavedPlaylist(index) {
-            const pl = savedPlaylists[index];
-            socket.emit('add-custom-playlist', pl);
-            alert('Added "' + pl.name + '" to your game playlist queue!');
-            switchTab('controls');
-        }
-
-        function deleteSavedPlaylist(index) {
-            savedPlaylists.splice(index, 1);
-            localStorage.setItem('triviamania_saved_music_playlists', JSON.stringify(savedPlaylists));
-            renderSavedPlaylists();
-        }
-
-        function pushDraftToActiveGame() {
-            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Music Round';
-            if (currentDraftClips.length === 0) { alert('No clips to add!'); return; }
-            socket.emit('add-custom-playlist', { name: roundName, questions: currentDraftClips });
-            alert('Added round to active game queue!');
-            switchTab('controls');
-        }
-
-        renderSavedPlaylists();
-
-        function addRoundToPlaylist() {
-            const genre = document.getElementById('triviaGenreSelect').value;
-            const name = document.getElementById('roundNameInput').value;
-            const count = parseInt(document.getElementById('questionCountSelect').value);
-            if (!genre) { alert('Please select a category!'); return; }
-            socket.emit('add-round', { genre, name, count });
-            alert('Round added to playlist!');
-            switchTab('controls');
-        }
-
-        function addMiniGameRoundToPlaylist() {
-            const type = document.getElementById('miniGameTypeSelect').value;
-            const name = document.getElementById('miniGameRoundName').value;
-            const count = parseInt(document.getElementById('miniGameCount').value);
-            socket.emit('add-minigame-round', { type, name, count });
-            alert('Mini-game round added to playlist!');
-            switchTab('controls');
         }
 
         socket.on('chat-message', (msg) => {
@@ -531,7 +159,6 @@
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
-            
             const previewEl = document.getElementById('nextQuestionPreview');
             const currentRound = state.playlist[state.currentRoundIndex];
             if (currentRound && currentRound.questions && currentRound.questions[state.currentQuestionIndex]) {
