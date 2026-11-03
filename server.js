@@ -233,7 +233,7 @@ async function generateAIQuestions(type, count) {
     if (type === 'lingo') {
         prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, no introductory text, just raw JSON array.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown, no introductory text, just raw JSON array.`;
+        prompt = `Generate exactly ${count} famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. For each item, provide the correct answer ("word") AND 3 tricky multiple-choice options ("options" array containing 4 strings total: the correct answer and 3 deceptive decoy words that share similar letters or spelling patterns). Return ONLY a valid JSON array of objects with keys "word", "scrambled" (randomly jumbled letters separated by spaces like "L E A B T S E"), "options" (array of 4 strings including the word), and "answer" (the correct word). No markdown, just raw JSON array.`;
     } else if (type === 'higher-lower') {
         prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, no introductory text, just raw JSON array.`;
     }
@@ -260,28 +260,23 @@ async function generateAIQuestions(type, count) {
         console.error('AI generation error:', err.message);
     }
 
-    // Fallback static items if AI fails or returns empty, so it never breaks your event!
+    // Robust Fallbacks
     if (type === 'scramble') {
         return [
-            { word: 'BEATLES', scrambled: 'B E A T L E S' },
-            { word: 'LONDON', scrambled: 'L O N D O N' },
-            { word: 'MATRIX', scrambled: 'M A T R I X' },
-            { word: 'DIAMOND', scrambled: 'D I A M O N D' },
-            { word: 'SUNSET', scrambled: 'S U N S E T' }
+            { word: 'BEATLES', scrambled: 'S E T A E B L', options: ['BEATLES', 'BALTEES', 'BASTLES', 'BEALTES'], answer: 'BEATLES' },
+            { word: 'MATRIX', scrambled: 'X I R T A M', options: ['MATRIX', 'MARTIX', 'MATRXI', 'MITRAX'], answer: 'MATRIX' },
+            { word: 'DIAMOND', scrambled: 'D N O M A I D', options: ['DIAMOND', 'DAMIOND', 'DIMANOV', 'DOMIAND'], answer: 'DIAMOND' }
         ].slice(0, count);
     } else if (type === 'lingo') {
         return [
             { word: 'SHARK', hint: 'Ocean predator' },
             { word: 'TIGER', hint: 'Striped big cat' },
-            { word: 'PLANT', hint: 'Green living thing' },
-            { word: 'TRAIN', hint: 'Railway transport' },
-            { word: 'MUSIC', hint: 'Auditory art' }
+            { word: 'PLANT', hint: 'Green living thing' }
         ].slice(0, count);
     } else {
         return [
             { fact: 'Average annual rainfall in London (mm)', options: ['Higher', 'Lower'], answer: 'Lower' },
-            { fact: 'Global population in billions', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Boiling point of water in Fahrenheit', options: ['Higher', 'Lower'], answer: 'Higher' }
+            { fact: 'Global population in billions', options: ['Higher', 'Lower'], answer: 'Higher' }
         ].slice(0, count);
     }
 }
@@ -361,6 +356,16 @@ io.on('connection', (socket) => {
         triggerNewPoll();
     });
 
+    socket.on('mute-player', (targetId) => {
+        gameState.mutedPlayers[targetId] = true;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('unmute-player', (targetId) => {
+        delete gameState.mutedPlayers[targetId];
+        io.emit('state-update', gameState);
+    });
+
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.slice(0, roundConfig.count || 10);
@@ -401,13 +406,13 @@ io.on('connection', (socket) => {
         } else if (config.type === 'scramble') {
             questions = rawItems.map(item => {
                 const ans = (item.word || 'BEATLES').toUpperCase();
-                const scrambled = item.scrambled || ans.split('').join(' ');
-                const options = [ans, 'MUSIC', 'BAND', 'STAGE'].sort(() => 0.5 - Math.random());
+                const scrambled = item.scrambled || ans.split('').sort(() => 0.5 - Math.random()).join(' ');
+                const opts = item.options ? [...item.options].sort(() => 0.5 - Math.random()) : [ans, 'BAND', 'MUSIC', 'STAGE'].sort(() => 0.5 - Math.random());
                 return {
                     gameType: 'scramble',
                     question: '🔀 WORD SCRAMBLE: [ ' + scrambled + ' ]',
                     answer: ans,
-                    options: options,
+                    options: opts,
                     fastestPlayerId: null
                 };
             });
@@ -476,12 +481,19 @@ io.on('connection', (socket) => {
     });
 
     socket.on('player-chat', (message) => {
+        if (gameState.mutedPlayers[socket.id]) return; // Block muted players
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
         const cleanMsg = sanitizeText(message);
         if (cleanMsg) {
             io.emit('chat-message', { name: name, text: cleanMsg });
         }
+    });
+
+    socket.on('host-chat-broadcast', (message) => {
+        const cleanMsg = sanitizeText(message);
+        if (!cleanMsg) return;
+        io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
     });
 
     socket.on('broadcast-advert-screen', (adData) => {
