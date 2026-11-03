@@ -72,7 +72,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI QUESTION GENERATOR ENDPOINT
+// BULK AI QUESTION GENERATOR WITH RETRY LOGIC
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 50 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
@@ -85,19 +85,35 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     - "answer": string (the exact correct option matching one of the options)
     No markdown formatting, no backticks, just raw JSON array.`;
 
+    let attempts = 0;
+    let success = false;
+    let responseText = '';
+
+    while (attempts < 3 && !success) {
+        try {
+            attempts++;
+            const response = await ai.models.generateContent({
+                model: 'gemini-3.8-flash',
+                contents: prompt,
+            });
+            responseText = response.text.trim();
+            success = true;
+        } catch (err) {
+            if (attempts >= 3) {
+                return res.status(500).json({ error: 'AI generation failed after 3 attempts: ' + err.message });
+            }
+            // Wait 2 seconds before retrying if server is busy
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
-            contents: prompt,
-        });
+        if (responseText.startsWith('```json')) responseText = responseText.replace(/^```json/, '').replace(/```$/, '').trim();
+        else if (responseText.startsWith('```')) responseText = responseText.replace(/^```/, '').replace(/```$/, '').trim();
 
-        let text = response.text.trim();
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
-
-        const items = JSON.parse(text);
+        const items = JSON.parse(responseText);
         if (!Array.isArray(items) || items.length === 0) {
-            return res.status(500).json({ error: 'Failed to generate questions format' });
+            return res.status(500).json({ error: 'Failed to parse generated questions format' });
         }
 
         let fileContent = '';
@@ -120,7 +136,7 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
 
         res.json({ success: true, count: items.length, fileName });
     } catch (err) {
-        res.status(500).json({ error: 'AI generation failed: ' + err.message });
+        res.status(500).json({ error: 'Failed to process AI response: ' + err.message });
     }
 });
 
