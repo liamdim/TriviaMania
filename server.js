@@ -57,7 +57,7 @@ let gameState = {
     announcement: { active: false, text: '' },
     settings: { 
         questionTime: 15,
-        intermissionTime: 5,
+        intermissionTime: 0, // 0 = manual start next round, or seconds for auto intermission
         countdownSound: true 
     }
 };
@@ -162,12 +162,9 @@ app.post('/api/add-track-quiz', async (req, res) => {
     const { songQuery } = req.body;
     if (!songQuery) return res.status(400).json({ error: 'Song input is required' });
 
-    // Extract YouTube ID if a YouTube link was provided
     let youtubeId = null;
     const ytMatch = songQuery.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    if (ytMatch) {
-        youtubeId = ytMatch[1];
-    }
+    if (ytMatch) youtubeId = ytMatch[1];
 
     const seed = Date.now() + Math.floor(Math.random() * 100000);
     const prompt = `Create a list of multiple-choice music trivia questions based on: "${songQuery}" (Timestamp Seed ${seed}).
@@ -202,7 +199,6 @@ app.post('/api/add-track-quiz', async (req, res) => {
         console.error('Music Quiz AI error:', err.message);
     }
 
-    // Dynamic Fallback tailored to the query/URL
     const fallbackQuestions = [
         { question: `Music Quiz Round based on: "${songQuery.substring(0, 30)}..." - Who is the primary artist or performer?`, options: ['Primary Artist', 'Featured Guest', 'Band Member', 'Producer'], answer: 'Primary Artist', youtubeId: youtubeId },
         { question: `In what year was this track or album most famously released / charted?`, options: ['1985', '1992', '2004', '2012'], answer: '1992', youtubeId: youtubeId },
@@ -267,17 +263,11 @@ async function generateAIQuestions(type, count) {
         });
 
         let text = response.text ? response.text.trim() : '';
-        
-        if (text.startsWith('```json')) {
-            text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        } else if (text.startsWith('```')) {
-            text = text.replace(/^```/, '').replace(/```$/, '').trim();
-        }
+        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
 
         const parsed = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.slice(0, count);
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.slice(0, count);
     } catch (err) {
         console.error('AI generation error:', err.message);
     }
@@ -336,7 +326,7 @@ async function generateAIQuestions(type, count) {
 
 function getCurrentRoundTimer() {
     const round = gameState.playlist[gameState.currentRoundIndex];
-    if (round && round.timer) return round.timer;
+    if (round && round.timer) return parseInt(round.timer);
     return gameState.settings.questionTime || 15;
 }
 
@@ -426,6 +416,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('update-round-timer', ({ index, timer }) => {
+        if (gameState.playlist[index]) {
+            gameState.playlist[index].timer = parseInt(timer);
+            io.emit('state-update', gameState);
+        }
+    });
+
     socket.on('add-round', (roundConfig) => {
         const questions = parseCategoryFile(roundConfig.genre);
         const selectedQuestions = questions.slice(0, roundConfig.count || 10);
@@ -433,7 +430,7 @@ io.on('connection', (socket) => {
         gameState.playlist.push({
             name: roundConfig.name || roundConfig.genre,
             genre: roundConfig.genre,
-            timer: roundConfig.timer ? parseInt(roundConfig.timer) : null,
+            timer: 15, // default timer
             questions: selectedQuestions
         });
         io.emit('state-update', gameState);
@@ -444,7 +441,7 @@ io.on('connection', (socket) => {
         gameState.playlist.push({
             name: playlistObj.name || 'Custom Playlist',
             genre: 'Saved Music Playlist',
-            timer: 20,
+            timer: 15,
             questions: playlistObj.questions
         });
         io.emit('state-update', gameState);
@@ -490,7 +487,7 @@ io.on('connection', (socket) => {
             gameState.playlist.push({
                 name: config.name || '🎮 AI Game Show: ' + config.type.toUpperCase(),
                 genre: 'AI Gen (' + config.type + ')',
-                timer: 25,
+                timer: 20,
                 questions: questions
             });
             io.emit('state-update', gameState);
@@ -535,9 +532,7 @@ io.on('connection', (socket) => {
 
     socket.on('player-reaction', (emoji) => {
         const cleanEmoji = sanitizeText(emoji);
-        if (cleanEmoji) {
-            io.emit('trigger-floating-emoji', cleanEmoji);
-        }
+        if (cleanEmoji) io.emit('trigger-floating-emoji', cleanEmoji);
     });
 
     socket.on('player-chat', (message) => {
@@ -545,9 +540,7 @@ io.on('connection', (socket) => {
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
         const cleanMsg = sanitizeText(message);
-        if (cleanMsg) {
-            io.emit('chat-message', { name: name, text: cleanMsg });
-        }
+        if (cleanMsg) io.emit('chat-message', { name: name, text: cleanMsg });
     });
 
     socket.on('host-chat-broadcast', (message) => {
@@ -581,7 +574,6 @@ io.on('connection', (socket) => {
     socket.on('move-round', ({ index, direction }) => {
         if (!gameState.playlist || gameState.playlist.length === 0) return;
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        
         if (targetIndex >= 0 && targetIndex < gameState.playlist.length) {
             const item = gameState.playlist.splice(index, 1)[0];
             gameState.playlist.splice(targetIndex, 0, item);
@@ -618,6 +610,24 @@ io.on('connection', (socket) => {
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
         io.emit('state-update', gameState);
         startQuestionTimer();
+    });
+
+    socket.on('start-next-round', () => {
+        if (timerInterval) clearInterval(timerInterval);
+        if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
+            gameState.currentRoundIndex++;
+            gameState.currentQuestionIndex = 0;
+            gameState.status = 'QUESTION';
+            gameState.timerMax = getCurrentRoundTimer();
+            gameState.timer = gameState.timerMax;
+            Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
+            triggerNewPoll();
+            io.emit('state-update', gameState);
+            startQuestionTimer();
+        } else {
+            gameState.status = 'LEADERBOARD';
+            io.emit('state-update', gameState);
+        }
     });
 
     socket.on('next-question', () => {
@@ -693,17 +703,12 @@ function advanceToNextQuestion() {
     gameState.currentQuestionIndex++;
 
     if (gameState.currentQuestionIndex >= round.questions.length) {
-        if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
-            gameState.currentRoundIndex++;
-            gameState.currentQuestionIndex = 0;
-            triggerNewPoll();
-        } else {
-            gameState.status = 'LEADERBOARD';
-            triggerNewPoll();
-            io.emit('stop-audio');
-            io.emit('state-update', gameState);
-            return;
-        }
+        // End of round reached! Wait for host to press "Start Next Round" or auto-advance if intermission is set
+        gameState.status = 'INTERMISSION';
+        triggerNewPoll();
+        io.emit('stop-audio');
+        io.emit('state-update', gameState);
+        return;
     }
 
     gameState.status = 'QUESTION';
