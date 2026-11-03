@@ -1,556 +1,597 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const fs = require('fs');
-const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" },
-    transports: ['websocket', 'polling']
-});
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-let gameState = {
-    status: 'IDLE',
-    currentRoundIndex: 0,
-    playlist: [],
-    currentQuestionIndex: 0,
-    timer: 0,
-    timerMax: 15,
-    scores: {},
-    mutedPlayers: {},
-    chatEnabled: true,
-    chatHistory: [],
-    activeScreenAdvert: null,
-    activeMobileAdvert: null,
-    venueDetails: 'Welcome to Trivia Night!',
-    welcomeHeader: 'Welcome to TriviaMania!',
-    mobileWaitingText: 'Waiting for host to start game...',
-    customEmojis: ['🔥', '🍻', '👏', '😂', '🎉', '💡'],
-    announcement: { active: false, text: '' },
-    settings: { 
-        questionTime: 15,
-        intermissionTime: 5,
-        countdownSound: true 
-    }
-};
-
-let timerInterval = null;
-let disconnectedPlayers = {};
-
-const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
-
-function sanitizeText(text) {
-    if (!text) return '';
-    let clean = text.trim();
-    badWords.forEach(word => {
-        const regex = new RegExp('\\b' + word + '\\b', 'gi');
-        clean = clean.replace(regex, '****');
-    });
-    return clean;
-}
-
-app.get('/api/categories', (req, res) => {
-    const categoriesDir = path.join(__dirname, 'categories');
-    if (!fs.existsSync(categoriesDir)) return res.json([]);
-    try {
-        const files = fs.readdirSync(categoriesDir);
-        const categories = files
-            .filter(file => fs.statSync(path.join(categoriesDir, file)).isFile())
-            .map(file => file.replace(/\.[^/.]+$/, ''));
-        res.json(categories);
-    } catch (err) {
-        res.json([]);
-    }
-});
-
-// BULK AI TRIVIA GENERATOR WITH TIMESTAMP SEED
-app.post('/api/generate-bulk-trivia', async (req, res) => {
-    const { categoryName, count = 20 } = req.body;
-    if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
-
-    const seed = Date.now() + Math.floor(Math.random() * 100000);
-    const prompt = `Generate exactly ${count} completely unique, varied, and fresh trivia questions about "${categoryName}" (Timestamp Seed ${seed}).
-    Return ONLY a valid JSON array of objects with keys:
-    - "question": string
-    - "options": array of 4 strings (1 correct answer and 3 clever plausible distractors)
-    - "answer": string (the exact correct option matching one of the options)
-    No markdown formatting, no backticks, just raw JSON array.`;
-
-    let attempts = 0;
-    let success = false;
-    let responseText = '';
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-3.8-flash'];
-
-    while (attempts < 3 && !success) {
-        try {
-            attempts++;
-            const activeModel = modelsToTry[(attempts - 1) % modelsToTry.length];
-            const response = await ai.models.generateContent({
-                model: activeModel,
-                contents: prompt,
-            });
-            responseText = response.text.trim();
-            success = true;
-        } catch (err) {
-            if (attempts >= 3) {
-                return res.status(500).json({ error: 'AI server is currently experiencing high demand. Please wait 10 seconds and try generating again!' });
-            }
-            await new Promise(resolve => setTimeout(resolve, 3000));
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>TriviaMania - Master Host Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #05050a;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffee00;
+            --text: #ffffff;
+            --text-muted: #8b9bb4;
+            --border-glow: 0 0 15px rgba(0, 243, 255, 0.25);
+            --pink-glow: 0 0 15px rgba(255, 0, 85, 0.25);
         }
-    }
-
-    try {
-        if (responseText.startsWith('```json')) responseText = responseText.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (responseText.startsWith('```')) responseText = responseText.replace(/^```/, '').replace(/```$/, '').trim();
-
-        const items = JSON.parse(responseText);
-        if (!Array.isArray(items) || items.length === 0) {
-            return res.status(500).json({ error: 'Failed to parse generated questions format from AI.' });
-        }
-
-        let newContent = '';
-        items.forEach((item) => {
-            newContent += `#Q ${item.question}\n`;
-            if (item.options && Array.isArray(item.options)) {
-                item.options.forEach((opt, oIdx) => {
-                    const letters = ['A', 'B', 'C', 'D'];
-                    newContent += `${letters[oIdx] || 'A'} ${opt}\n`;
-                });
-            }
-            newContent += `^${item.answer}\n\n`;
-        });
-
-        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const filePath = `categories/${fileName}`;
-
-        const categoriesDir = path.join(__dirname, 'categories');
-        if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
-        const localFullPath = path.join(categoriesDir, fileName);
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
         
-        let existingLocal = fs.existsSync(localFullPath) ? fs.readFileSync(localFullPath, 'utf8') : '';
-        const combinedContent = existingLocal + (existingLocal ? '\n' : '') + newContent;
-        fs.writeFileSync(localFullPath, combinedContent, 'utf8');
+        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+        header h1 { font-size: 1.5rem; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); letter-spacing: 1px; }
+        .header-links { display: flex; gap: 1rem; align-items: center; }
+        .header-links a { color: var(--neon-blue); text-decoration: none; font-size: 0.9rem; background: rgba(0, 243, 255, 0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.4); transition: 0.3s; }
+        .header-links a:hover { background: rgba(0, 243, 255, 0.25); box-shadow: var(--border-glow); }
+        
+        .nav-tabs { display: flex; gap: 0.75rem; background: rgba(10, 15, 30, 0.8); padding: 0.75rem 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap; backdrop-filter: blur(10px); }
+        .tab-btn { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 0.5rem 1.2rem; cursor: pointer; font-weight: 600; border-radius: 6px; transition: 0.3s; }
+        .tab-btn.active, .tab-btn:hover { background: rgba(0, 243, 255, 0.15); color: var(--neon-blue); border-color: var(--neon-blue); box-shadow: var(--border-glow); }
 
-        if (process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_REPO) {
-            try {
-                const owner = process.env.GITHUB_OWNER;
-                const repo = process.env.GITHUB_REPO;
-                let sha = null;
+        .container { flex: 1; padding: 2rem; max-width: 1200px; width: 100%; margin: 0 auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-                const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-                    headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN}`, 'User-Agent': 'TriviaMania-Server' }
-                });
+        .card { background: var(--panel-bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); display: flex; justify-content: space-between; align-items: center; font-weight: 600; text-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
+
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        select, input, textarea { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; margin-bottom: 0.5rem; transition: 0.3s; }
+        select:focus, input:focus, textarea:focus { outline: none; border-color: var(--neon-blue); box-shadow: var(--border-glow); }
+        
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); }
+        button:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); transform: translateY(-1px); }
+        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055); box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3); }
+        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 102, 0.3); }
+        button.warning { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; box-shadow: 0 4px 15px rgba(255, 238, 0, 0.3); }
+        button.small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+
+        .flex-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        th { color: var(--neon-blue); font-weight: 600; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
+        .player-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 243, 255, 0.08); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.4rem 0.8rem; border-radius: 20px; margin: 0.25rem; font-size: 0.9rem; }
+        .clip-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
+        .ad-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TRIVIAMANIA // HOST CONTROL</h1>
+        <div class="header-links">
+            <span id="connectionStatus" style="color: var(--neon-green); text-shadow: 0 0 8px rgba(0,255,102,0.5);">● ONLINE</span>
+            <a href="#" onclick="copyPlayerLink(); return false;">📋 Copy Mobile Link</a>
+            <a href="/display.html" target="_blank">Projector Display ↗</a>
+        </div>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('controls', this)">⚡ Live Controls & Game</button>
+        <button class="tab-btn" onclick="switchTab('playlist', this)">📂 Playlist Builder</button>
+        <button class="tab-btn" onclick="switchTab('music', this)" style="color: var(--neon-green);">🎵 Music Quiz Studio</button>
+        <button class="tab-btn" onclick="switchTab('minigames', this)" style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games</button>
+        <button class="tab-btn" onclick="switchTab('adverts', this)">📢 Adverts & Sponsors</button>
+        <button class="tab-btn" onclick="switchTab('lobby', this)">🌐 Lobby & QR</button>
+    </div>
+
+    <div class="container">
+
+        <!-- TAB 1: CONTROLS & LIVE GAME -->
+        <div id="controls" class="tab-content active">
+            <div class="card" style="border: 2px solid var(--neon-blue); box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);">
+                <h3>Live Game Master Controls</h3>
+                <div class="flex-row" style="margin-bottom: 1rem;">
+                    <button class="success" onclick="playSound('success'); socket.emit('start-round')">▶ Start Game / First Question</button>
+                    <button onclick="playSound('tick'); socket.emit('next-question')">Next Question ⏭</button>
+                    <button class="warning" onclick="socket.emit('stop-game')">⏸ Pause / Stop</button>
+                    <button class="warning" onclick="socket.emit('restart-game')">🔄 Restart Game (Keep Players)</button>
+                    <button class="danger" onclick="if(confirm('Are you sure you want to completely reset and disconnect all players?')) socket.emit('stop-reset')">⚠️ Full Reset</button>
+                </div>
+
+                <div class="flex-row" style="margin-top: 1rem; gap: 2rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; align-items: flex-start;">
+                    <div>
+                        <label>Global Default Timer:</label>
+                        <select id="questionTimerSelect" onchange="updateSettings()" style="width: 140px;">
+                            <option value="10">10 Seconds</option>
+                            <option value="15" selected>15 Seconds</option>
+                            <option value="20">20 Seconds</option>
+                            <option value="30">30 Seconds</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Status:</label>
+                        <p style="padding-top: 0.4rem;"><strong id="statusDisplay" style="color: var(--neon-yellow); text-shadow: 0 0 8px rgba(255,238,0,0.4); font-size: 1.1rem;">IDLE</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD EXTRA PANELS: Next Question Preview, Host to Mobile Chat & Adverts Controls -->
+            <div class="grid-2">
+                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
+                    <h3>👀 Next Question Preview</h3>
+                    <div id="nextQuestionPreview" style="font-size: 0.95rem; color: var(--text-muted);">
+                        No question active or queued yet.
+                    </div>
+                </div>
+
+                <div class="card" style="background: rgba(10, 15, 30, 0.6);">
+                    <h3>💬 Host to Mobile Chat & Emojis</h3>
+                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                        <div class="flex-row" style="gap: 0.4rem;">
+                            <input type="text" id="hostChatInput" placeholder="Send announcement to mobile phones..." style="margin-bottom: 0; flex: 1; padding: 0.4rem; font-size: 0.85rem;">
+                            <button class="success small" onclick="sendHostChat()">Send</button>
+                        </div>
+                    </div>
+                    <div id="liveChatStream" style="max-height: 100px; overflow-y: auto; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;">
+                        Player chat feed will appear here...
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADVERT QUICK CONTROLS ON MAIN DASH -->
+            <div class="card" style="background: rgba(10, 15, 30, 0.6);">
+                <h3>📢 Quick Advert Display Controls</h3>
+                <div class="flex-row" id="quickAdButtons">
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">No saved adverts yet. Add them in the Adverts tab!</span>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Loaded Playlist Queue</h3>
+                    <table id="playlistTable">
+                        <thead>
+                            <tr><th>#</th><th>Round Name</th><th>Category</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet. Use Playlist Builder, Music Quiz Studio, or Game Shows.</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 1rem;">
+                        <button class="danger small" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Live Leaderboard</h3>
+                    <table id="hostLeaderboardTable">
+                        <thead>
+                            <tr><th>Rank</th><th>Player Name</th><th>Streak</th><th>Score</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: PLAYLIST BUILDER -->
+        <div id="playlist" class="tab-content">
+            <div class="card">
+                <h3>Add New Quiz Round</h3>
+                <div class="form-group">
+                    <label>Select Category:</label>
+                    <select id="triviaGenreSelect">
+                        <option value="">Loading categories...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Round Custom Name:</label>
+                    <input type="text" id="roundNameInput" value="General Knowledge Round">
+                </div>
+                <div class="form-group">
+                    <label>Question Count:</label>
+                    <select id="questionCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <button onclick="addRoundToPlaylist()">➕ Add Round to Playlist</button>
+            </div>
+        </div>
+
+        <!-- TAB 3: MUSIC QUIZ STUDIO & SAVED EDITABLE PLAYLISTS -->
+        <div id="music" class="tab-content">
+            <div class="card" style="border: 2px solid var(--neon-green); background: rgba(0, 255, 102, 0.03);">
+                <h3 style="color: var(--neon-green);">🎵 Music Quiz Studio & Editable Playlists</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                    Paste a batch of song titles, artist references, or playlist links. Generate questions, edit out any clips you don't want, and save your custom playlist to reuse anytime!
+                </p>
+                <div class="form-group">
+                    <label>Playlist / Round Title:</label>
+                    <input type="text" id="customMusicRoundName" value="80s Party Hits Round">
+                </div>
+                <div class="form-group">
+                    <label>Songs / Links (Paste multiple separated by commas or lines):</label>
+                    <textarea id="songQueryInput" rows="3" placeholder="e.g. Queen - Bohemian Rhapsody, Michael Jackson - Billie Jean, Take On Me - a-ha"></textarea>
+                </div>
+                <button class="success" onclick="generateMusicClips()">⚡ Generate Clips for Review</button>
+            </div>
+
+            <!-- EDITABLE DRAFT CLIP LIST -->
+            <div class="card" id="draftEditorCard" style="display:none; border: 2px dashed var(--neon-blue);">
+                <h3 style="color: var(--neon-blue);">✏️ Review & Edit Generated Clips (<span id="draftCount">0</span>)</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Uncheck or delete any clips you don't want before saving or sending to the game queue.</p>
                 
-                if (getRes.ok) {
-                    const fileData = await getRes.json();
-                    sha = fileData.sha;
-                    const existingGithubContent = Buffer.from(fileData.content, 'base64').toString('utf8');
-                    newContent = existingGithubContent + '\n' + newContent;
+                <div id="draftClipsContainer" style="max-height: 350px; overflow-y: auto; margin-bottom: 1rem;"></div>
+
+                <div class="flex-row">
+                    <button class="success" onclick="saveCustomMusicPlaylist()">💾 Save Playlist for Future Use</button>
+                    <button class="success" onclick="pushDraftToActiveGame()">🚀 Send to Active Game Queue</button>
+                </div>
+            </div>
+
+            <!-- SAVED REUSABLE PLAYLISTS LIBRARY -->
+            <div class="card">
+                <h3>📂 Saved Reusable Music Playlists</h3>
+                <div id="savedPlaylistsContainer">
+                    <p style="color: var(--text-muted);">No saved custom music playlists yet. Generate and save one above!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: MINI-GAMES -->
+        <div id="minigames" class="tab-content">
+            <div class="card" style="border: 2px solid var(--neon-pink); background: rgba(255, 0, 85, 0.03);">
+                <h3 style="color: var(--neon-pink);">🎮 Game Shows & Mini-Games Studio</h3>
+                <div class="form-group">
+                    <label>Select Game Mode:</label>
+                    <select id="miniGameTypeSelect">
+                        <option value="lingo">🔤 LINGO (5-Letter Word Guessing Game)</option>
+                        <option value="scramble">🔀 WORD SCRAMBLE (Anagram Speed Race)</option>
+                        <option value="higher-lower">⬆️ HIGHER OR LOWER (Statistics Prediction)</option>
+                        <option value="tenable">🔟 TENABLE (Top 10 List Challenge)</option>
+                        <option value="one-percent">🧠 THE 1% CLUB (Logic & Brainteasers)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Round Name:</label>
+                    <input type="text" id="miniGameRoundName" value="Lingo Word Game Round">
+                </div>
+                <div class="form-group">
+                    <label>Number of Puzzles:</label>
+                    <select id="miniGameCount">
+                        <option value="3">3 Puzzles</option>
+                        <option value="5" selected>5 Puzzles</option>
+                        <option value="8">8 Puzzles</option>
+                    </select>
+                </div>
+                <button class="success" onclick="addMiniGameRoundToPlaylist()">➕ Add Mini-Game Round to Playlist</button>
+            </div>
+        </div>
+
+        <!-- TAB 5: ADVERTS & SPONSORS -->
+        <div id="adverts" class="tab-content">
+            <div class="card">
+                <h3>📢 Advert & Sponsor Library</h3>
+                <div class="form-group">
+                    <label>Advert Title / Message:</label>
+                    <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
+                </div>
+                <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
+            </div>
+            <div class="card">
+                <h3>Stored Adverts Manager</h3>
+                <div id="storedAdvertsContainer">
+                    <p style="color: var(--text-muted);">No adverts stored yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: LOBBY & QR -->
+        <div id="lobby" class="tab-content">
+            <div class="card" style="text-align: center;">
+                <h3>🌐 Lobby & QR Code Customizer</h3>
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Projector Welcome Header:</label>
+                    <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!" oninput="saveWelcomeHeader()">
+                </div>
+                <div class="form-group" style="text-align: left; max-width: 600px; margin: 0 auto 1.5rem auto;">
+                    <label>Venue Details / Subtitle:</label>
+                    <input type="text" id="venueDetailsInput" placeholder="Tonight's Pub Trivia Night" oninput="saveVenueDetails()">
+                </div>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Player Mobile Join QR Code:</p>
+                <div id="qr-container"></div>
+                <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace;"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const socket = io({ transports: ['websocket', 'polling'] });
+        let currentDraftClips = [];
+        let savedPlaylists = JSON.parse(localStorage.getItem('triviamania_saved_music_playlists') || '[]');
+        let savedAdverts = JSON.parse(localStorage.getItem('triviamania_saved_adverts') || '[]');
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (element) element.classList.add('active');
+        }
+
+        const playerUrl = window.location.origin + '/player.html';
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 200, height: 200 });
+
+        function copyPlayerLink() {
+            navigator.clipboard.writeText(playerUrl);
+            alert('Player mobile join link copied to clipboard!');
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                const categories = await res.json();
+                const select = document.getElementById('triviaGenreSelect');
+                if (categories.length > 0) {
+                    select.innerHTML = categories.map(cat => '<option value="' + cat + '">' + cat.replace(/-/g, ' ').toUpperCase() + '</option>').join('');
                 }
+            } catch (err) {}
+        }
+        loadCategories();
 
-                await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'TriviaMania-Server'
-                    },
-                    body: JSON.stringify({
-                        message: `Auto-generated category: ${categoryName}`,
-                        content: Buffer.from(newContent).toString('base64'),
-                        sha: sha
-                    })
+        function saveWelcomeHeader() {
+            const headerText = document.getElementById('welcomeHeaderInput').value;
+            socket.emit('update-welcome-header', headerText);
+        }
+
+        function saveVenueDetails() {
+            const detailsText = document.getElementById('venueDetailsInput').value;
+            socket.emit('update-venue-details', detailsText);
+        }
+
+        function sendHostChat() {
+            const msg = document.getElementById('hostChatInput').value.trim();
+            if (!msg) return;
+            socket.emit('player-chat', '[HOST]: ' + msg);
+            document.getElementById('hostChatInput').value = '';
+        }
+
+        function saveNewAdvert() {
+            const title = document.getElementById('adTitleInput').value.trim();
+            if (!title) { alert('Please enter an advert title!'); return; }
+            savedAdverts.push({ title });
+            localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
+            renderAdverts();
+            document.getElementById('adTitleInput').value = '';
+            alert('Advert saved successfully!');
+        }
+
+        function renderAdverts() {
+            const container = document.getElementById('storedAdvertsContainer');
+            const quickBox = document.getElementById('quickAdButtons');
+            if (savedAdverts.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No adverts stored yet.</p>';
+                quickBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.9rem;">No saved adverts yet. Add them in the Adverts tab!</span>';
+                return;
+            }
+
+            container.innerHTML = savedAdverts.map((ad, idx) => `
+                <div class="ad-item">
+                    <span>${ad.title}</span>
+                    <div class="flex-row" style="gap: 0.5rem;">
+                        <button class="small success" onclick="showAdOnScreen('${ad.title}')">Show on Display</button>
+                        <button class="small danger" onclick="deleteAdvert(${idx})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            quickBox.innerHTML = savedAdverts.map(ad => `
+                <button class="small warning" onclick="showAdOnScreen('${ad.title}')">📢 ${ad.title}</button>
+            `).join('') + '<button class="small danger" onclick="hideAdOnScreen()">Hide Ad</button>';
+        }
+
+        function showAdOnScreen(title) {
+            socket.emit('broadcast-advert-screen', { text: title });
+            alert('Broadcasting ad to projector display!');
+        }
+
+        function hideAdOnScreen() {
+            socket.emit('hide-advert-screen');
+            alert('Advert hidden from display.');
+        }
+
+        function deleteAdvert(index) {
+            savedAdverts.splice(index, 1);
+            localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
+            renderAdverts();
+        }
+
+        renderAdverts();
+
+        async function generateMusicClips() {
+            const queryText = document.getElementById('songQueryInput').value.trim();
+            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Music Round';
+            if (!queryText) { alert('Please enter song titles or links!'); return; }
+
+            alert('Generating questions for your clips...');
+            try {
+                const res = await fetch('/api/add-track-quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ songQuery: queryText, roundName })
                 });
-            } catch (gitErr) {
-                console.error('GitHub auto-commit failed:', gitErr.message);
+                const data = await res.json();
+                if (data.success && data.questions) {
+                    currentDraftClips = data.questions;
+                    renderDraftEditor();
+                    document.getElementById('draftEditorCard').style.display = 'block';
+                } else {
+                    alert('Error generating clips.');
+                }
+            } catch (err) {
+                alert('Network error while generating clips.');
             }
         }
 
-        res.json({ success: true, count: items.length, fileName });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to process AI response: ' + err.message });
-    }
-});
+        function renderDraftEditor() {
+            const container = document.getElementById('draftClipsContainer');
+            document.getElementById('draftCount').innerText = currentDraftClips.length;
 
-// MUSIC QUIZ STUDIO: SONG / URL TO MULTIPLE CHOICE QUESTIONS
-app.post('/api/add-track-quiz', async (req, res) => {
-    const { songQuery } = req.body;
-    if (!songQuery) return res.status(400).json({ error: 'Song input is required' });
+            if (currentDraftClips.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No clips in draft.</p>';
+                return;
+            }
 
-    const seed = Date.now() + Math.floor(Math.random() * 100000);
-    const prompt = `Create a list of multiple-choice trivia questions based on these songs, artists, or links: "${songQuery}" (Timestamp Seed ${seed}).
-    Return ONLY a valid JSON array of objects with keys:
-    - "question": string
-    - "options": array of 4 strings
-    - "answer": string
-    No markdown, just raw JSON array.`;
+            container.innerHTML = currentDraftClips.map((clip, idx) => `
+                <div class="clip-item">
+                    <div>
+                        <strong>#${idx + 1} - ${clip.question}</strong>
+                        <div style="font-size: 0.85rem; color: var(--neon-green);">Answer: ${clip.answer}</div>
+                    </div>
+                    <div>
+                        <button class="small danger" onclick="removeDraftClip(${idx})">🗑️ Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
+        function removeDraftClip(index) {
+            currentDraftClips.splice(index, 1);
+            renderDraftEditor();
+        }
+
+        function saveCustomMusicPlaylist() {
+            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Playlist';
+            if (currentDraftClips.length === 0) { alert('No clips to save!'); return; }
+
+            savedPlaylists.push({ name: roundName, questions: currentDraftClips });
+            localStorage.setItem('triviamania_saved_music_playlists', JSON.stringify(savedPlaylists));
+            renderSavedPlaylists();
+            alert('Playlist saved successfully!');
+        }
+
+        function renderSavedPlaylists() {
+            const container = document.getElementById('savedPlaylistsContainer');
+            if (savedPlaylists.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No saved custom music playlists yet. Generate and save one above!</p>';
+                return;
+            }
+
+            container.innerHTML = savedPlaylists.map((pl, idx) => `
+                <div class="clip-item">
+                    <div>
+                        <strong>${pl.name}</strong> (${pl.questions.length} questions)
+                    </div>
+                    <div class="flex-row" style="gap: 0.5rem;">
+                        <button class="small success" onclick="loadSavedPlaylist(${idx})">🚀 Add to Game</button>
+                        <button class="small danger" onclick="deleteSavedPlaylist(${idx})">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadSavedPlaylist(index) {
+            const pl = savedPlaylists[index];
+            socket.emit('add-custom-playlist', pl);
+            alert('Added "' + pl.name + '" to your game playlist queue!');
+            switchTab('controls');
+        }
+
+        function deleteSavedPlaylist(index) {
+            savedPlaylists.splice(index, 1);
+            localStorage.setItem('triviamania_saved_music_playlists', JSON.stringify(savedPlaylists));
+            renderSavedPlaylists();
+        }
+
+        function pushDraftToActiveGame() {
+            const roundName = document.getElementById('customMusicRoundName').value.trim() || 'Custom Music Round';
+            if (currentDraftClips.length === 0) { alert('No clips to add!'); return; }
+            socket.emit('add-custom-playlist', { name: roundName, questions: currentDraftClips });
+            alert('Added round to active game queue!');
+            switchTab('controls');
+        }
+
+        renderSavedPlaylists();
+
+        function addRoundToPlaylist() {
+            const genre = document.getElementById('triviaGenreSelect').value;
+            const name = document.getElementById('roundNameInput').value;
+            const count = parseInt(document.getElementById('questionCountSelect').value);
+            if (!genre) { alert('Please select a category!'); return; }
+            socket.emit('add-round', { genre, name, count });
+            alert('Round added to playlist!');
+            switchTab('controls');
+        }
+
+        function addMiniGameRoundToPlaylist() {
+            const type = document.getElementById('miniGameTypeSelect').value;
+            const name = document.getElementById('miniGameRoundName').value;
+            const count = parseInt(document.getElementById('miniGameCount').value);
+            socket.emit('add-minigame-round', { type, name, count });
+            alert('Mini-game round added to playlist!');
+            switchTab('controls');
+        }
+
+        socket.on('chat-message', (msg) => {
+            const chatStream = document.getElementById('liveChatStream');
+            if (chatStream) {
+                chatStream.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
+                chatStream.scrollTop = chatStream.scrollHeight;
+            }
         });
 
-        let text = response.text.trim();
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
-
-        const items = JSON.parse(text);
-        const questions = items.map(item => ({
-            question: item.question,
-            options: (item.options || []).sort(() => 0.5 - Math.random()),
-            answer: item.answer,
-            fastestPlayerId: null
-        }));
-
-        res.json({ success: true, questions });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to generate quiz: ' + err.message });
-    }
-});
-
-function parseCategoryFile(filename) {
-    const categoriesDir = path.join(__dirname, 'categories');
-    let filePath = path.join(categoriesDir, filename);
-    if (!fs.existsSync(filePath)) filePath = path.join(categoriesDir, filename + '.txt');
-    if (!fs.existsSync(filePath)) return [];
-
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    const lines = fileContent.split(/\r?\n/);
-    const questions = [];
-    let currentQ = null;
-
-    for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
-        if (line.startsWith('#Q')) {
-            if (currentQ) {
-                currentQ.options.sort(() => 0.5 - Math.random());
-                questions.push(currentQ);
-            }
-            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '', fastestPlayerId: null };
-        } else if (line.startsWith('^')) {
-            if (currentQ) currentQ.answer = line.replace('^', '').trim();
-        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
-            if (currentQ) {
-                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
-                currentQ.options.push(optText);
-            }
-        }
-    }
-    if (currentQ) {
-        currentQ.options.sort(() => 0.5 - Math.random());
-        questions.push(currentQ);
-    }
-    return questions.sort(() => 0.5 - Math.random());
-}
-
-async function generateAIQuestions(type, count) {
-    let prompt = '';
-    const seed = Date.now() + Math.floor(Math.random() * 100000);
-    if (type === 'lingo') {
-        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown.`;
-    } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
-    } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
-    }
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
-            contents: prompt,
-        });
-
-        let text = response.text.trim();
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
-
-        return JSON.parse(text);
-    } catch (err) {
-        return [];
-    }
-}
-
-function getCurrentRoundTimer() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (round && round.timer) return round.timer;
-    return gameState.settings.questionTime || 15;
-}
-
-io.on('connection', (socket) => {
-    socket.emit('state-update', gameState);
-    socket.emit('announcement-update', gameState.announcement);
-
-    socket.on('player-join', (playerName) => {
-        const cleanName = sanitizeText(playerName) || 'Anonymous';
-        if (disconnectedPlayers[cleanName]) {
-            clearTimeout(disconnectedPlayers[cleanName].timeout);
-            gameState.scores[socket.id] = disconnectedPlayers[cleanName].playerData;
-            delete disconnectedPlayers[cleanName];
-        } else {
-            gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
-        }
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('submit-answer', ({ answer, timeRemaining }) => {
-        if (gameState.status !== 'QUESTION') return;
-        const player = gameState.scores[socket.id];
-        if (!player) return;
-
-        const currentRound = gameState.playlist[gameState.currentRoundIndex];
-        if (!currentRound || !currentRound.questions) return;
-
-        const currentQ = currentRound.questions[gameState.currentQuestionIndex];
-        if (!currentQ) return;
-
-        if (player.hasAnsweredCurrent) return;
-
-        let isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
-        let pointsEarned = 0;
-
-        if (isCorrect) {
-            if (!currentQ.fastestPlayerId) currentQ.fastestPlayerId = socket.id;
-            const isFastest = currentQ.fastestPlayerId === socket.id;
-
-            player.streak = (player.streak || 0) + 1;
-            const streakMultiplier = player.streak >= 3 ? 1.5 : (player.streak >= 2 ? 1.25 : 1.0);
+        socket.on('state-update', (state) => {
+            document.getElementById('statusDisplay').innerText = state.status;
             
-            const timeBonus = Math.floor((timeRemaining / gameState.timerMax) * 40);
-            const speedBonus = isFastest ? 25 : 0;
-            
-            pointsEarned = Math.round((50 + Math.max(0, timeBonus) + speedBonus) * streakMultiplier);
-            player.score += pointsEarned;
-        } else {
-            player.streak = 0;
-        }
-
-        player.hasAnsweredCurrent = true;
-
-        socket.emit('answer-result', { 
-            correct: isCorrect, 
-            points: pointsEarned, 
-            streak: player.streak, 
-            correctAnswer: currentQ.answer,
-            isFastest: currentQ.fastestPlayerId === socket.id 
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('add-round', (roundConfig) => {
-        const questions = parseCategoryFile(roundConfig.genre);
-        const selectedQuestions = questions.slice(0, roundConfig.count || 10);
-        
-        gameState.playlist.push({
-            name: roundConfig.name || roundConfig.genre,
-            genre: roundConfig.genre,
-            timer: roundConfig.timer ? parseInt(roundConfig.timer) : null,
-            questions: selectedQuestions
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('add-custom-playlist', (playlistObj) => {
-        if (!playlistObj || !playlistObj.questions || playlistObj.questions.length === 0) return;
-        gameState.playlist.push({
-            name: playlistObj.name || 'Custom Playlist',
-            genre: 'Saved Music Playlist',
-            timer: 20,
-            questions: playlistObj.questions
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('add-minigame-round', async (config) => {
-        const count = parseInt(config.count || 5);
-        const rawItems = await generateAIQuestions(config.type, count);
-        let questions = [];
-
-        if (config.type === 'lingo') {
-            questions = rawItems.map(item => ({
-                gameType: 'lingo',
-                question: '🔤 LINGO: Guess 5-letter word! Hint: ' + (item.hint || 'Clue'),
-                answer: (item.word || 'SHARK').toUpperCase(),
-                options: [],
-                fastestPlayerId: null
-            }));
-        } else if (config.type === 'scramble') {
-            questions = rawItems.map(item => {
-                const ans = (item.word || 'BEATLES').toUpperCase();
-                const scrambled = item.scrambled || ans.split('').join(' ');
-                const options = [ans, 'MUSIC', 'BAND', 'STAGE'].sort(() => 0.5 - Math.random());
-                return {
-                    gameType: 'scramble',
-                    question: '🔀 WORD SCRAMBLE: [ ' + scrambled + ' ]',
-                    answer: ans,
-                    options: options,
-                    fastestPlayerId: null
-                };
-            });
-        } else if (config.type === 'higher-lower') {
-            questions = rawItems.map(item => ({
-                gameType: 'higher-lower',
-                question: '⬆️ HIGHER OR LOWER: ' + (item.fact || 'Statistic'),
-                answer: item.answer || 'Higher',
-                options: ['Higher', 'Lower'],
-                fastestPlayerId: null
-            }));
-        }
-
-        if (questions.length > 0) {
-            gameState.playlist.push({
-                name: config.name || '🎮 AI Game Show: ' + config.type.toUpperCase(),
-                genre: 'AI Gen (' + config.type + ')',
-                timer: 25,
-                questions: questions
-            });
-            io.emit('state-update', gameState);
-        }
-    });
-
-    // PLAYLIST QUEUE MANAGEMENT
-    socket.on('move-round', ({ index, direction }) => {
-        if (!gameState.playlist || gameState.playlist.length === 0) return;
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        
-        if (targetIndex >= 0 && targetIndex < gameState.playlist.length) {
-            const item = gameState.playlist.splice(index, 1)[0];
-            gameState.playlist.splice(targetIndex, 0, item);
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('delete-round', (index) => {
-        if (!gameState.playlist) return;
-        gameState.playlist.splice(index, 1);
-        if (gameState.currentRoundIndex >= gameState.playlist.length) {
-            gameState.currentRoundIndex = Math.max(0, gameState.playlist.length - 1);
-        }
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('clear-playlist', () => {
-        gameState.playlist = [];
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('start-round', () => {
-        if (gameState.playlist.length === 0) return;
-        if (timerInterval) clearInterval(timerInterval);
-
-        gameState.status = 'QUESTION';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.timerMax = getCurrentRoundTimer();
-        gameState.timer = gameState.timerMax;
-        
-        Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-        io.emit('state-update', gameState);
-        startQuestionTimer();
-    });
-
-    socket.on('next-question', () => {
-        advanceToNextQuestion();
-    });
-
-    socket.on('stop-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'PAUSED';
-        io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('restart-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        Object.values(gameState.scores).forEach(p => {
-            p.score = 0; p.streak = 0; p.hasAnsweredCurrent = false;
-        });
-        io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('stop-reset', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.activeScreenAdvert = null;
-        gameState.activeMobileAdvert = null;
-        gameState.scores = {};
-        gameState.mutedPlayers = {};
-        disconnectedPlayers = {};
-        io.emit('stop-audio');
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('disconnect', () => {
-        delete gameState.mutedPlayers[socket.id];
-        io.emit('state-update', gameState);
-    });
-});
-
-function startQuestionTimer() {
-    if (timerInterval) clearInterval(timerIntenterval || timerInterval);
-
-    timerInterval = setInterval(() => {
-        if (gameState.status === 'QUESTION') {
-            gameState.timer--;
-            io.emit('timer-tick', gameState.timer);
-
-            if (gameState.timer <= 0) {
-                clearInterval(timerInterval);
-                advanceToNextQuestion();
+            // Next question preview
+            const previewEl = document.getElementById('nextQuestionPreview');
+            const currentRound = state.playlist[state.currentRoundIndex];
+            if (currentRound && currentRound.questions && currentRound.questions[state.currentQuestionIndex]) {
+                const q = currentRound.questions[state.currentQuestionIndex];
+                previewEl.innerHTML = `<strong>Q:</strong> ${q.question}<br><span style="color: var(--neon-green);">Answer: ${q.answer}</span>`;
+            } else {
+                previewEl.innerHTML = 'No active question.';
             }
-        }
-    }, 1000);
-}
 
-function advanceToNextQuestion() {
-    if (timerInterval) clearInterval(timerInterval);
+            const tbody = document.querySelector('#playlistTable tbody');
+            if (!state.playlist || state.playlist.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No rounds added yet.</td></tr>';
+            } else {
+                tbody.innerHTML = state.playlist.map((r, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${r.name}</td>
+                        <td>${r.genre} (${r.questions ? r.questions.length : 0} Qs)</td>
+                        <td>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'up' })">⬆</button>
+                            <button class="small" onclick="socket.emit('move-round', { index: ${idx}, direction: 'down' })">⬇</button>
+                            <button class="small danger" onclick="socket.emit('delete-round', ${idx})">❌</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
 
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (!round || !round.questions) return;
-
-    Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-
-    gameState.currentQuestionIndex++;
-
-    if (gameState.currentQuestionIndex >= round.questions.length) {
-        if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
-            gameState.currentRoundIndex++;
-            gameState.currentQuestionIndex = 0;
-        } else {
-            gameState.status = 'LEADERBOARD';
-            io.emit('stop-audio');
-            io.emit('state-update', gameState);
-            return;
-        }
-    }
-
-    gameState.status = 'QUESTION';
-    gameState.timerMax = getCurrentRoundTimer();
-    gameState.timer =gameState.timerMax;
-    
-    io.emit('state-update', gameState);
-    startQuestionTimer();
-}
-
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => {
-    console.log('TriviaMania server running on port ' + PORT);
-});
+            const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+            const lbTbody = document.querySelector('#hostLeaderboardTable tbody');
+            if (sortedPlayers.length === 0) {
+                lbTbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No scores recorded yet.</td></tr>';
+            } else {
+                lbTbody.innerHTML = sortedPlayers.map((p, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${p.name}</td>
+                        <td>🔥 x${p.streak || 0}</td>
+                        <td><strong>${p.score}</strong></td>
+                    </tr>
+                `).join('');
+            }
+        });
+    </script>
+</body>
+</html>
