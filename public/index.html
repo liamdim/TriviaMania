@@ -282,6 +282,25 @@
                     <button class="danger" onclick="socket.emit('clear-playlist')">Clear Entire Playlist</button>
                 </div>
             </div>
+
+            <!-- ✨ BULK AI CATEGORY GENERATOR CARD -->
+            <div class="card" style="border: 2px solid var(--neon-blue); margin-top: 1.5rem;">
+                <h3 style="color: var(--neon-blue);">✨ Bulk AI Category Generator</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Instantly generate and save 20 to 100 fresh questions for any custom topic directly to your server categories!</p>
+                <div class="form-group">
+                    <label>Topic / Category Name:</label>
+                    <input type="text" id="bulkCategoryInput" placeholder="e.g. 90s Blockbuster Movies, World Capitals">
+                </div>
+                <div class="form-group">
+                    <label>Number of Questions to Generate:</label>
+                    <select id="bulkCountSelect">
+                        <option value="20">20 Questions</option>
+                        <option value="50" selected>50 Questions</option>
+                        <option value="100">100 Questions</option>
+                    </select>
+                </div>
+                <button class="success" onclick="generateBulkCategory()">⚡ Generate & Save Category</button>
+            </div>
         </div>
 
         <!-- TAB 3: BEATIQ MUSIC STUDIO -->
@@ -712,6 +731,31 @@
             } catch (err) {}
         }
         loadCategories();
+
+        async function generateBulkCategory() {
+            const categoryName = document.getElementById('bulkCategoryInput').value.trim();
+            const count = parseInt(document.getElementById('bulkCountSelect').value);
+            if (!categoryName) { alert('Please enter a category name!'); return; }
+
+            alert('Generating ' + count + ' questions with AI... This may take a few seconds.');
+            try {
+                const res = await fetch('/api/generate-bulk-trivia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ categoryName, count })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Successfully generated ' + data.count + ' questions and saved to ' + data.fileName + '!');
+                    document.getElementById('bulkCategoryInput').value = '';
+                    loadCategories(); // Reload category dropdown
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to generate'));
+                }
+            } catch (err) {
+                alert('Network error while generating bulk questions.');
+            }
+        }
 
         function updateSettings() {
             const questionTime = document.getElementById('questionTimerSelect').value;
