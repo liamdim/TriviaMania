@@ -40,11 +40,10 @@ let gameState = {
     activeMobileAdvert: null,
     venueDetails: 'Get your phones ready to play!',
     welcomeHeader: 'Welcome to TriviaMania!',
-    mobileWaitingText: 'Waiting for host to start game...',
     customEmojis: ['🔥', '🍻', '👏', '😂', '🎉', '💡'],
     adverts: [
         { text: '🍻 Bar Sponsor Special: Enjoy drink deals at the counter tonight!', image: '' },
-        { text: '🎵 Next Week Preview: Don’t miss our special Music Bingo Night!', image: '' }
+        { text: '🎵 Next Week Preview: Don’t miss our special Quiz Night!', image: '' }
     ],
     lobbySettings: {
         showFact: true,
@@ -54,12 +53,7 @@ let gameState = {
         pollOptions: samplePolls[0].options,
         votes: {}
     },
-    announcement: { active: false, text: '' },
-    settings: { 
-        questionTime: 15,
-        intermissionTime: 0, // 0 = manual start next round, or seconds for auto intermission
-        countdownSound: true 
-    }
+    settings: { questionTime: 15 }
 };
 
 let timerInterval = null;
@@ -83,6 +77,42 @@ function sanitizeText(text) {
         clean = clean.replace(regex, '****');
     });
     return clean;
+}
+
+// Simple Levenshtein Distance Fuzzy Matcher for text answers
+function calculateSimilarity(s1, s2) {
+    let longer = s1;
+    let shorter = s2;
+    if (s1.length < s2.length) {
+        longer = s2;
+        shorter = s1;
+    }
+    let longerLength = longer.length;
+    if (longerLength === 0) return 1.0;
+    return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+}
+
+function editDistance(s1, s2) {
+    s1 = s1.toLowerCase();
+    s2 = s2.toLowerCase();
+    let costs = new Array();
+    for (let i = 0; i <= s1.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= s2.length; j++) {
+            if (i === 0) costs[j] = j;
+            else {
+                if (j > 0) {
+                    let newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
+                }
+            }
+        }
+        if (s1.length > 0) costs[s2.length] = lastValue;
+    }
+    return costs[s2.length];
 }
 
 app.get('/api/categories', (req, res) => {
@@ -158,56 +188,6 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     }
 });
 
-app.post('/api/add-track-quiz', async (req, res) => {
-    const { songQuery } = req.body;
-    if (!songQuery) return res.status(400).json({ error: 'Song input is required' });
-
-    let youtubeId = null;
-    const ytMatch = songQuery.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    if (ytMatch) youtubeId = ytMatch[1];
-
-    const seed = Date.now() + Math.floor(Math.random() * 100000);
-    const prompt = `Create a list of multiple-choice music trivia questions based on: "${songQuery}" (Timestamp Seed ${seed}).
-    Return ONLY a valid JSON array of objects with keys:
-    - "question": string
-    - "options": array of 4 strings
-    - "answer": string
-    No markdown, just raw JSON array.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-
-        let text = response.text ? response.text.trim() : '';
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/`{3}$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^`{3}/, '').replace(/`{3}$/, '').trim();
-
-        const items = JSON.parse(text);
-        if (Array.isArray(items) && items.length > 0) {
-            const questions = items.map(item => ({
-                question: item.question,
-                options: (item.options || []).sort(() => 0.5 - Math.random()),
-                answer: item.answer,
-                youtubeId: youtubeId,
-                fastestPlayerId: null
-            }));
-            return res.json({ success: true, questions });
-        }
-    } catch (err) {
-        console.error('Music Quiz AI error:', err.message);
-    }
-
-    const fallbackQuestions = [
-        { question: `Music Quiz Round based on: "${songQuery.substring(0, 30)}..." - Who is the primary artist or performer?`, options: ['Primary Artist', 'Featured Guest', 'Band Member', 'Producer'], answer: 'Primary Artist', youtubeId: youtubeId },
-        { question: `In what year was this track or album most famously released / charted?`, options: ['1985', '1992', '2004', '2012'], answer: '1992', youtubeId: youtubeId },
-        { question: `Which genre best classifies this music selection?`, options: ['Pop / Rock', 'Electronic', 'Hip Hop', 'Alternative'], answer: 'Pop / Rock', youtubeId: youtubeId }
-    ];
-
-    res.json({ success: true, questions: fallbackQuestions });
-});
-
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
@@ -249,11 +229,11 @@ async function generateAIQuestions(type, count) {
     const seed = Date.now() + Math.floor(Math.random() * 100000);
     
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of exactly ${count} objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, no introductory text, just raw JSON array.`;
+        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of exactly ${count} objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, just raw JSON array.`;
     } else if (type === 'scramble') {
         prompt = `Generate exactly ${count} famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. For each item, provide the correct answer ("word") AND 3 tricky multiple-choice options ("options" array containing 4 strings total: the correct answer and 3 deceptive decoy words that share similar letters or spelling patterns). Return ONLY a valid JSON array of exactly ${count} objects with keys "word", "scrambled" (randomly jumbled letters separated by spaces like "L E A B T S E"), "options" (array of 4 strings including the word), and "answer" (the correct word). No markdown, just raw JSON array.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of exactly ${count} objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, no introductory text, just raw JSON array.`;
+        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of exactly ${count} objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, just raw JSON array.`;
     }
 
     try {
@@ -271,57 +251,7 @@ async function generateAIQuestions(type, count) {
     } catch (err) {
         console.error('AI generation error:', err.message);
     }
-
-    if (type === 'scramble') {
-        return [
-            { word: 'BEATLES', scrambled: 'S E T A E B L', options: ['BEATLES', 'BALTEES', 'BASTLES', 'BEALTES'], answer: 'BEATLES' },
-            { word: 'MATRIX', scrambled: 'X I R T A M', options: ['MATRIX', 'MARTIX', 'MATRXI', 'MITRAX'], answer: 'MATRIX' },
-            { word: 'DIAMOND', scrambled: 'D N O M A I D', options: ['DIAMOND', 'DAMIOND', 'DIMANOV', 'DOMIAND'], answer: 'DIAMOND' },
-            { word: 'SUNSET', scrambled: 'T E N S U S', options: ['SUNSET', 'SNUSET', 'SUENST', 'SUTNES'], answer: 'SUNSET' },
-            { word: 'PYTHON', scrambled: 'N O H T Y P', options: ['PYTHON', 'PIYTHON', 'PYTINOH', 'PITHYON'], answer: 'PYTHON' },
-            { word: 'GALAXY', scrambled: 'Y X A L A G', options: ['GALAXY', 'GLAXYA', 'GAALXY', 'GALAYX'], answer: 'GALAXY' },
-            { word: 'ROCKET', scrambled: 'T E C K O R', options: ['ROCKET', 'ROCCET', 'ROKET', 'ROTCET'], answer: 'ROCKET' },
-            { word: 'VOLCANO', scrambled: 'O N A C L O V', options: ['VOLCANO', 'VOCALNO', 'VOLCAN', 'VALCONO'], answer: 'VOLCANO' },
-            { word: 'WHISKEY', scrambled: 'Y E K S I H W', options: ['WHISKEY', 'WISKEY', 'WHISKY', 'WISHKEY'], answer: 'WHISKEY' },
-            { word: 'CRYSTAL', scrambled: 'L A T S Y R C', options: ['CRYSTAL', 'CRISTAL', 'CRISTALL', 'CRYSATL'], answer: 'CRYSTAL' },
-            { word: 'DRAGON', scrambled: 'N O G A R D', options: ['DRAGON', 'DARGON', 'DRAGON', 'DRAGONE'], answer: 'DRAGON' },
-            { word: 'PLANET', scrambled: 'T E N A L P', options: ['PLANET', 'PLANETT', 'PLANTET', 'PALLENT'], answer: 'PLANET' },
-            { word: 'THUNDER', scrambled: 'R E D N U H T', options: ['THUNDER', 'THUNER', 'TUNDHER', 'THUDNER'], answer: 'THUNDER' },
-            { word: 'FESTIVAL', scrambled: 'L A V I T S E F', options: ['FESTIVAL', 'FESTIVALL', 'FESTAVAL', 'FESTVIL'], answer: 'FESTIVAL' },
-            { word: 'MONSTER', scrambled: 'R E T S N O M', options: ['MONSTER', 'MONSTAR', 'MONSTRE', 'MOSTER'], answer: 'MONSTER' }
-        ].slice(0, count);
-    } else if (type === 'lingo') {
-        return [
-            { word: 'SHARK', hint: 'Ocean predator' },
-            { word: 'TIGER', hint: 'Striped big cat' },
-            { word: 'PLANT', hint: 'Green living thing' },
-            { word: 'TRAIN', hint: 'Railway transport' },
-            { word: 'MUSIC', hint: 'Auditory art' },
-            { word: 'BRAIN', hint: 'Thinking organ' },
-            { word: 'LIGHT', hint: 'Illumination source' },
-            { word: 'WATER', hint: 'Essential liquid' },
-            { word: 'EARTH', hint: 'Our home planet' },
-            { word: 'CHAIR', hint: 'Seating furniture' },
-            { word: 'BEACH', hint: 'Sandy shore' },
-            { word: 'HOUSE', hint: 'Living building' },
-            { word: 'CLOUD', hint: 'Sky vapor' },
-            { word: 'APPLE', hint: 'Crisp fruit' },
-            { word: 'SPACE', hint: 'Vast cosmos' }
-        ].slice(0, count);
-    } else {
-        return [
-            { fact: 'Average annual rainfall in London (mm)', options: ['Higher', 'Lower'], answer: 'Lower' },
-            { fact: 'Global population in billions', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Speed of light in miles per second', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Height of Mount Everest in meters', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Number of bones in an adult human body', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Boiling point of water in Fahrenheit', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Distance from Earth to the Moon in miles', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Total number of keys on a standard piano', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Age of the universe in billions of years', options: ['Higher', 'Lower'], answer: 'Higher' },
-            { fact: 'Number of states in the United States', options: ['Higher', 'Lower'], answer: 'Higher' }
-        ].slice(0, count);
-    }
+    return [];
 }
 
 function getCurrentRoundTimer() {
@@ -358,9 +288,20 @@ io.on('connection', (socket) => {
 
         if (player.hasAnsweredCurrent) return;
 
-        let isCorrect = answer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase();
-        let pointsEarned = 0;
+        let isCorrect = false;
+        const cleanAns = (answer || '').trim().toLowerCase();
+        const correctAnswer = (currentQ.answer || '').trim().toLowerCase();
 
+        if (currentQ.options && currentQ.options.length > 0) {
+            // Multiple choice exact match
+            isCorrect = cleanAns === correctAnswer;
+        } else {
+            // Text answer with fuzzy matching (allows minor typos or close spellings > 78% similarity)
+            const similarity = calculateSimilarity(cleanAns, correctAnswer);
+            isCorrect = similarity >= 0.78 || cleanAns === correctAnswer;
+        }
+
+        let pointsEarned = 0;
         if (isCorrect) {
             if (!currentQ.fastestPlayerId) currentQ.fastestPlayerId = socket.id;
             const isFastest = currentQ.fastestPlayerId === socket.id;
@@ -430,19 +371,19 @@ io.on('connection', (socket) => {
         gameState.playlist.push({
             name: roundConfig.name || roundConfig.genre,
             genre: roundConfig.genre,
-            timer: 15, // default timer
+            timer: 15,
             questions: selectedQuestions
         });
         io.emit('state-update', gameState);
     });
 
-    socket.on('add-custom-playlist', (playlistObj) => {
-        if (!playlistObj || !playlistObj.questions || playlistObj.questions.length === 0) return;
+    socket.on('add-custom-picture-round', (roundObj) => {
+        if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
         gameState.playlist.push({
-            name: playlistObj.name || 'Custom Playlist',
-            genre: 'Saved Music Playlist',
-            timer: 15,
-            questions: playlistObj.questions
+            name: roundObj.name || '🖼️ Picture Round',
+            genre: 'Picture Round',
+            timer: 20,
+            questions: roundObj.questions
         });
         io.emit('state-update', gameState);
     });
@@ -638,7 +579,6 @@ io.on('connection', (socket) => {
         if (timerInterval) clearInterval(timerInterval);
         gameState.status = 'PAUSED';
         triggerNewPoll();
-        io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
 
@@ -651,7 +591,6 @@ io.on('connection', (socket) => {
         Object.values(gameState.scores).forEach(p => {
             p.score = 0; p.streak = 0; p.hasAnsweredCurrent = false;
         });
-        io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
 
@@ -666,7 +605,6 @@ io.on('connection', (socket) => {
         gameState.mutedPlayers = {};
         disconnectedPlayers = {};
         triggerNewPoll();
-        io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
 
@@ -703,10 +641,8 @@ function advanceToNextQuestion() {
     gameState.currentQuestionIndex++;
 
     if (gameState.currentQuestionIndex >= round.questions.length) {
-        // End of round reached! Wait for host to press "Start Next Round" or auto-advance if intermission is set
         gameState.status = 'INTERMISSION';
         triggerNewPoll();
-        io.emit('stop-audio');
         io.emit('state-update', gameState);
         return;
     }
