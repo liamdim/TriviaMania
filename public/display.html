@@ -6,6 +6,7 @@
     <link rel="icon" href="data:,">
     <title>TriviaMania - Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
@@ -25,34 +26,63 @@
         table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; background: rgba(15,23,42,0.8); border-radius: 12px; overflow: hidden; }
         th, td { padding: 1.2rem; text-align: center; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
         th { background: rgba(0,243,255,0.2); color: var(--neon-blue); }
+        
+        /* Lobby QR & Layout styling */
+        .lobby-layout { display: flex; align-items: center; justify-content: center; gap: 4rem; margin-top: 2rem; }
+        .qr-box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 0 25px rgba(255,255,255,0.2); display: inline-block; }
+        
+        /* Corner QR on Adverts */
+        .corner-qr { position: absolute; bottom: 30px; right: 30px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(255,255,255,0.3); display: flex; flex-direction: column; align-items: center; }
+        .corner-qr span { font-size: 0.8rem; color: #000; font-weight: bold; margin-top: 4px; }
     </style>
 </head>
 <body>
 
     <div class="container" id="displayContainer">
-        <h1 id="displayTitle">TriviaMania</h1>
-        <h2 id="displaySubtitle">Waiting for host to start game...</h2>
-        <div id="displayContent"></div>
+        <h1 id="displayTitle">Welcome to TriviaMania!</h1>
+        <h2 id="displaySubtitle">Get your phones ready to play!</h2>
+        <div id="displayContent">
+            <div class="lobby-layout">
+                <div>
+                    <p style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--neon-blue);">Scan to join on your mobile phone:</p>
+                    <p id="playerJoinUrl" style="font-family: monospace; color: var(--neon-yellow); font-size: 1.2rem; margin-bottom: 1rem;"></p>
+                </div>
+                <div class="qr-box" id="projectorMainQr"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- Projector Advert Overlay Modal -->
+    <!-- Projector Advert Overlay Modal with Corner QR -->
     <div id="adOverlayModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
         <h2 style="color: #ffee00; font-size: 3rem; margin-bottom: 1.5rem; text-shadow: 0 0 20px rgba(255,238,0,0.5);">📢 SPONSOR MESSAGE</h2>
         <div id="adImageContainer"></div>
         <p id="adTextContainer" style="color: #ffffff; font-size: 2.2rem; font-weight: bold; max-width: 900px; line-height: 1.4;"></p>
+        
+        <!-- Bottom Corner QR Code -->
+        <div class="corner-qr">
+            <div id="projectorCornerQr"></div>
+            <span>SCAN TO JOIN</span>
+        </div>
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
+        const playerUrl = window.location.origin + '/player.html';
 
-        // Web Audio API Sound Generator for countdown ticks
+        // Render Lobby QR Code on load
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("projectorMainQr"), { text: playerUrl, width: 220, height: 220 });
+        
+        // Render Corner QR Code for Adverts
+        new QRCode(document.getElementById("projectorCornerQr"), { text: playerUrl, width: 100, height: 100 });
+
         function playChime() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 note
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
                 gain.gain.setValueAtTime(0.15, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
                 osc.connect(gain);
@@ -76,7 +106,22 @@
             if (state.status === 'IDLE' || state.status === 'PAUSED') {
                 titleEl.innerText = state.welcomeHeader || 'Welcome to TriviaMania!';
                 subtitleEl.innerText = state.venueDetails || 'Get your phones ready to play!';
-                contentEl.innerHTML = `<p style="font-size: 1.5rem; color: #8b9bb4;">Scan the QR code on your table or visit the join link to play.</p>`;
+                contentEl.innerHTML = `
+                    <div class="lobby-layout">
+                        <div>
+                            <p style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--neon-blue);">Scan to join on your mobile phone:</p>
+                            <p style="font-family: monospace; color: var(--neon-yellow); font-size: 1.2rem; margin-bottom: 1rem;">${playerUrl}</p>
+                        </div>
+                        <div class="qr-box" id="projectorMainQr"></div>
+                    </div>
+                `;
+                // Re-initialize QR code since innerHTML wiped it
+                setTimeout(() => {
+                    const qrEl = document.getElementById('projectorMainQr');
+                    if (qrEl && qrEl.innerHTML === '') {
+                        new QRCode(qrEl, { text: playerUrl, width: 220, height: 220 });
+                    }
+                }, 50);
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round && round.questions ? round.questions[state.currentQuestionIndex] : null;
