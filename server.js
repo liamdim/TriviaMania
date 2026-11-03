@@ -497,6 +497,34 @@ io.on('connection', (socket) => {
         }
     });
 
+    // PLAYLIST QUEUE MANAGEMENT FIXES
+    socket.on('move-round', ({ index, direction }) => {
+        if (!gameState.playlist || gameState.playlist.length === 0) return;
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        if (targetIndex >= 0 && targetIndex < gameState.playlist.length) {
+            const item = gameState.playlist.splice(index, 1)[0];
+            gameState.playlist.splice(targetIndex, 0, item);
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('delete-round', (index) => {
+        if (!gameState.playlist) return;
+        gameState.playlist.splice(index, 1);
+        if (gameState.currentRoundIndex >= gameState.playlist.length) {
+            gameState.currentRoundIndex = Math.max(0, gameState.playlist.length - 1);
+        }
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('clear-playlist', () => {
+        gameState.playlist = [];
+        gameState.currentRoundIndex = 0;
+        gameState.currentQuestionIndex = 0;
+        io.emit('state-update', gameState);
+    });
+
     socket.on('update-venue-details', (details) => {
         gameState.venueDetails = sanitizeText(details);
         io.emit('state-update', gameState);
