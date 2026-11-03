@@ -181,29 +181,28 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     }
 });
 
+// DIRECT BEATIQ TRACK LOADER (CHECKS MULTIPLE COMMON PATHS)
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
-        function findFile(dir, filename) {
-            if (!fs.existsSync(dir)) return null;
-            const files = fs.readdirSync(dir);
-            for (const file of files) {
-                const fullPath = path.join(dir, file);
-                try {
-                    const stat = fs.statSync(fullPath);
-                    if (stat.isDirectory()) {
-                        if (file === 'node_modules' || file === '.git') continue;
-                        const found = findFile(fullPath, filename);
-                        if (found) return found;
-                    } else if (file === filename) return fullPath;
-                } catch (e) {}
+        const possiblePaths = [
+            path.join(__dirname, 'curatedTracks.json'),
+            path.join(__dirname, 'public', 'curatedTracks.json'),
+            path.join(__dirname, 'data', 'curatedTracks.json')
+        ];
+
+        let foundPath = null;
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                foundPath = p;
+                break;
             }
-            return null;
         }
-        const foundPath = findFile(__dirname, 'curatedTracks.json');
+
         if (foundPath) {
             const rawData = fs.readFileSync(foundPath, 'utf8');
             return res.json(JSON.parse(rawData));
         }
+
         return res.json([]);
     } catch (err) {
         return res.json([]);
@@ -359,23 +358,18 @@ io.on('connection', (socket) => {
     socket.on('add-beatiq-round', (roundConfig) => {
         let allTracks = [];
         try {
-            function findFile(dir, filename) {
-                if (!fs.existsSync(dir)) return null;
-                const files = fs.readdirSync(dir);
-                for (const file of files) {
-                    const fullPath = path.join(dir, file);
-                    try {
-                        const stat = fs.statSync(fullPath);
-                        if (stat.isDirectory()) {
-                            if (file === 'node_modules' || file === '.git') continue;
-                            const found = findFile(fullPath, filename);
-                            if (found) return found;
-                        } else if (file === filename) return fullPath;
-                    } catch (e) {}
+            const possiblePaths = [
+                path.join(__dirname, 'curatedTracks.json'),
+                path.join(__dirname, 'public', 'curatedTracks.json'),
+                path.join(__dirname, 'data', 'curatedTracks.json')
+            ];
+            let foundPath = null;
+            for (const p of possiblePaths) {
+                if (fs.existsSync(p)) {
+                    foundPath = p;
+                    break;
                 }
-                return null;
             }
-            const foundPath = findFile(__dirname, 'curatedTracks.json');
             if (foundPath) allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
         } catch (err) {}
 
