@@ -92,13 +92,13 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI GENERATOR WITH GITHUB PERMANENT COMMIT (CLEAN FILENAMES, NO .TXT)
+// BULK AI TRIVIA GENERATOR WITH TIMESTAMP SEED FOR VARIETY
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
 
-    const seed = Math.floor(Math.random() * 100000);
-    const prompt = `Generate exactly ${count} completely unique, high-quality trivia questions about "${categoryName}" (Random Seed ${seed}).
+    const seed = Date.now() + Math.floor(Math.random() * 100000);
+    const prompt = `Generate exactly ${count} completely unique, varied, and fresh trivia questions about "${categoryName}" (Timestamp Seed ${seed}).
     Return ONLY a valid JSON array of objects with keys:
     - "question": string
     - "options": array of 4 strings (1 correct answer and 3 clever plausible distractors)
@@ -201,7 +201,7 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     }
 });
 
-// BEATIQ TRACK LOADER WITH AUTOMATIC FALLBACK
+// BEATIQ TRACK LOADER WITH FALLBACK
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
         const possiblePaths = [
@@ -265,19 +265,20 @@ function parseCategoryFile(filename) {
     return questions.sort(() => 0.5 - Math.random());
 }
 
+// AI MINI-GAMES WITH TIMESTAMP SEED TO PREVENT REPEATS
 async function generateAIQuestions(type, count) {
     let prompt = '';
-    const seed = Math.floor(Math.random() * 100000);
+    const seed = Date.now() + Math.floor(Math.random() * 100000);
     if (type === 'lingo') {
-        prompt = `Generate exactly ${count} completely unique and randomized 5-letter English words (Random Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown.`;
+        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown.`;
     } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Random Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
+        prompt = `Generate exactly ${count} completely unique and randomized famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. Return ONLY a valid JSON array of objects with keys "word" (uppercase answer) and "scrambled" (letters spaced out like "S E T A E B L"). No markdown.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Random Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown.`;
     } else if (type === 'tenable') {
-        prompt = `Generate exactly ${count} completely randomized Tenable top list challenges (Random Seed ${seed}). Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized Tenable top list challenges (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "category" (list description) and "answer" (correct top item). No markdown.`;
     } else if (type === 'one-percent') {
-        prompt = `Generate exactly ${count} completely randomized 1% Club logic brainteasers (Random Seed ${seed}). Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
+        prompt = `Generate exactly ${count} completely randomized 1% Club logic brainteasers (Timestamp Seed ${seed}). Return ONLY a valid JSON array of objects with keys "q" (question), "answer" (short answer), and "options" (array of 4 choices including correct answer). No markdown.`;
     }
 
     try {
@@ -375,6 +376,7 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // BEATIQ SMART GENRE MATCHING & UNIQUE SHUFFLING
     socket.on('add-beatiq-round', (roundConfig) => {
         let allTracks = [];
         try {
@@ -393,10 +395,14 @@ io.on('connection', (socket) => {
             if (foundPath) allTracks = JSON.parse(fs.readFileSync(foundPath, 'utf8'));
         } catch (err) {}
 
-        const targetGenre = roundConfig.genre;
+        const targetGenre = (roundConfig.genre || '').toLowerCase();
         const requestedCount = parseInt(roundConfig.questionCount || roundConfig.count || 10);
         
-        let genreFilteredTracks = allTracks.filter(t => t.genre && t.genre.toLowerCase() === targetGenre.toLowerCase());
+        let genreFilteredTracks = allTracks.filter(t => {
+            const g = (t.genre || '').toLowerCase();
+            return g.includes(targetGenre) || targetGenre.includes(g);
+        });
+
         let trackPool = genreFilteredTracks.length >= 3 ? genreFilteredTracks : allTracks;
         
         const selectedTracks = [...trackPool].sort(() => 0.5 - Math.random()).slice(0, requestedCount);
@@ -497,7 +503,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // PLAYLIST QUEUE MANAGEMENT FIXES
+    // PLAYLIST QUEUE MANAGEMENT
     socket.on('move-round', ({ index, direction }) => {
         if (!gameState.playlist || gameState.playlist.length === 0) return;
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
