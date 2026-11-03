@@ -6,6 +6,7 @@
     <link rel="icon" href="data:,">
     <title>TriviaMania - Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
@@ -26,7 +27,7 @@
         #projectorTimer { font-size: 2.5rem; font-weight: bold; color: var(--neon-yellow); text-shadow: 0 0 15px rgba(255, 238, 0, 0.5); }
 
         .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; }
-        .card { background: var(--panel-bg); backdrop-filter: blur(15px); border-radius: 16px; padding: 3rem; width: 100%; max-width: 900px; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+        .card { background: var(--panel-bg); backdrop-filter: blur(15px); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 900px; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
 
         .question-text { font-size: 2.2rem; font-weight: bold; margin-bottom: 2rem; line-height: 1.4; color: var(--text); }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%; }
@@ -45,6 +46,7 @@
         }
 
         #advertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; text-align: center; }
+        #projectorQrContainer { display: flex; justify-content: center; padding: 0.75rem; background: white; border-radius: 10px; width: fit-content; margin: 1rem auto 0.5rem auto; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
@@ -64,8 +66,10 @@
     <div class="main-stage">
         <div id="announcementBanner"></div>
         <div id="displayStage" class="card">
-            <h2 style="font-size: 2.5rem; color: var(--neon-yellow);" id="displayWelcomeHeader">Welcome to TriviaMania!</h2>
-            <p style="font-size: 1.3rem; color: var(--text-muted); margin-top: 1rem;" id="displayVenueDetails">Waiting for host to start game...</p>
+            <h2 style="font-size: 2.2rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">Welcome to TriviaMania!</h2>
+            <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1rem;" id="displayVenueDetails">Scan QR code below on your mobile device to join!</p>
+            <div id="projectorQrContainer"></div>
+            <p id="projectorJoinUrlText" style="font-size: 0.9rem; font-family: monospace; color: var(--neon-blue); margin-top: 0.5rem;"></p>
         </div>
     </div>
 
@@ -77,8 +81,19 @@
             reconnectionDelay: 500
         });
 
+        const playerUrl = window.location.origin + '/player.html';
+        const qrEl = document.getElementById('projectorQrContainer');
+        if (qrEl) {
+            new QRCode(qrEl, {
+                text: playerUrl,
+                width: 160,
+                height: 160
+            });
+            document.getElementById('projectorJoinUrlText').innerText = playerUrl;
+        }
+
         socket.on('connect', () => {
-            console.log("Projector connected, socket ID:", socket.id);
+            console.log("Projector connected successfully!");
         });
 
         socket.on('stop-audio', () => {
@@ -111,18 +126,19 @@
         });
 
         socket.on('state-update', (state) => {
-            console.log("State update received on projector:", state);
+            console.log("Projector state-update received:", state);
 
             if (state.venueDetails) document.getElementById('displayVenueDetails').innerText = state.venueDetails;
             if (state.welcomeHeader) {
                 document.getElementById('headerVenueTitle').innerText = state.welcomeHeader;
-                document.getElementById('displayWelcomeHeader').innerText = state.welcomeHeader;
+                const welH = document.getElementById('displayWelcomeHeader');
+                if (welH) welH.innerText = state.welcomeHeader;
             }
 
-            // Force immediate DOM display change for Projector Advert
+            // Real-time Projector Advert Toggle
             const adOverlay = document.getElementById('advertOverlay');
             if (state.activeScreenAdvert) {
-                adOverlay.style.setProperty('display', 'flex', 'important');
+                adOverlay.style.display = 'flex';
                 document.getElementById('adOverlayTitle').innerText = state.activeScreenAdvert.title;
                 const img = document.getElementById('adOverlayImage');
                 if (state.activeScreenAdvert.image) {
@@ -132,16 +148,27 @@
                     img.style.display = 'none';
                 }
             } else {
-                adOverlay.style.setProperty('display', 'none', 'important');
+                adOverlay.style.display = 'none';
             }
 
             const stage = document.getElementById('displayStage');
 
             if (state.status === 'IDLE' || state.status === 'PAUSED') {
                 document.getElementById('projectorTimer').innerText = '⏱ --';
-                stage.innerHTML = 
-                    '<h2 style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 1rem;">' + (state.welcomeHeader || 'Welcome to TriviaMania!') + '</h2>' +
-                    '<p style="font-size: 1.4rem; color: var(--text-muted);">' + (state.venueDetails || 'Scan QR code on mobile to join!') + '</p>';
+                // Keep the welcome card with QR code intact during IDLE state
+                if (!document.getElementById('projectorQrContainer')) {
+                    stage.innerHTML = 
+                        '<h2 style="font-size: 2.2rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">' + (state.welcomeHeader || 'Welcome to TriviaMania!') + '</h2>' +
+                        '<p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1rem;" id="displayVenueDetails">' + (state.venueDetails || 'Scan QR code below on your mobile device to join!') + '</p>' +
+                        '<div id="projectorQrContainer"></div>' +
+                        '<p id="projectorJoinUrlText" style="font-size: 0.9rem; font-family: monospace; color: var(--neon-blue); margin-top: 0.5rem;"></p>';
+                    
+                    const newQrEl = document.getElementById('projectorQrContainer');
+                    if (newQrEl) {
+                        new QRCode(newQrEl, { text: playerUrl, width: 160, height: 160 });
+                        document.getElementById('projectorJoinUrlText').innerText = playerUrl;
+                    }
+                }
             } else if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round ? round.questions[state.currentQuestionIndex] : null;
