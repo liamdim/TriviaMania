@@ -162,8 +162,15 @@ app.post('/api/add-track-quiz', async (req, res) => {
     const { songQuery } = req.body;
     if (!songQuery) return res.status(400).json({ error: 'Song input is required' });
 
+    // Extract YouTube ID if a YouTube link was provided
+    let youtubeId = null;
+    const ytMatch = songQuery.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch) {
+        youtubeId = ytMatch[1];
+    }
+
     const seed = Date.now() + Math.floor(Math.random() * 100000);
-    const prompt = `Create a list of 5-10 multiple-choice music trivia questions based on these songs, artists, or playlist theme: "${songQuery}" (Timestamp Seed ${seed}).
+    const prompt = `Create a list of multiple-choice music trivia questions based on: "${songQuery}" (Timestamp Seed ${seed}).
     Return ONLY a valid JSON array of objects with keys:
     - "question": string
     - "options": array of 4 strings
@@ -186,6 +193,7 @@ app.post('/api/add-track-quiz', async (req, res) => {
                 question: item.question,
                 options: (item.options || []).sort(() => 0.5 - Math.random()),
                 answer: item.answer,
+                youtubeId: youtubeId,
                 fastestPlayerId: null
             }));
             return res.json({ success: true, questions });
@@ -194,13 +202,11 @@ app.post('/api/add-track-quiz', async (req, res) => {
         console.error('Music Quiz AI error:', err.message);
     }
 
-    // Fallback music quiz questions so it never fails even if a URL is pasted
+    // Dynamic Fallback tailored to the query/URL
     const fallbackQuestions = [
-        { question: 'Which iconic 80s band released the smash hit "Take On Me"?', options: ['A-ha', 'Duran Duran', 'Tears for Fears', 'Spandau Ballet'], answer: 'A-ha' },
-        { question: 'Who sang the 1983 global hit "Billie Jean"?', options: ['Michael Jackson', 'Prince', 'Lionel Richie', 'George Michael'], answer: 'Michael Jackson' },
-        { question: 'Which rock band performed the legendary 1985 Live Aid set featuring "Bohemian Rhapsody"?', options: ['Queen', 'U2', 'The Police', 'Dire Straits'], answer: 'Queen' },
-        { question: 'Which artist released the multi-platinum 1984 album "Purple Rain"?', options: ['Prince', 'David Bowie', 'Stevie Wonder', 'Phil Collins'], answer: 'Prince' },
-        { question: 'Which 80s synth-pop duo sang "Sweet Dreams (Are Made of This)"?', options: ['Eurythmics', 'Pet Shop Boys', 'Erasure', 'Depeche Mode'], answer: 'Eurythmics' }
+        { question: `Music Quiz Round based on: "${songQuery.substring(0, 30)}..." - Who is the primary artist or performer?`, options: ['Primary Artist', 'Featured Guest', 'Band Member', 'Producer'], answer: 'Primary Artist', youtubeId: youtubeId },
+        { question: `In what year was this track or album most famously released / charted?`, options: ['1985', '1992', '2004', '2012'], answer: '1992', youtubeId: youtubeId },
+        { question: `Which genre best classifies this music selection?`, options: ['Pop / Rock', 'Electronic', 'Hip Hop', 'Alternative'], answer: 'Pop / Rock', youtubeId: youtubeId }
     ];
 
     res.json({ success: true, questions: fallbackQuestions });
@@ -276,7 +282,6 @@ async function generateAIQuestions(type, count) {
         console.error('AI generation error:', err.message);
     }
 
-    // Expanded robust fallbacks up to 15 items
     if (type === 'scramble') {
         return [
             { word: 'BEATLES', scrambled: 'S E T A E B L', options: ['BEATLES', 'BALTEES', 'BASTLES', 'BEALTES'], answer: 'BEATLES' },
