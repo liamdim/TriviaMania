@@ -1,5 +1,5 @@
 const express = require('express');
-const http = require('http');
+const http = http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +17,26 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// AUTO-CREATE CURATED TRACKS IF MISSING
+const curatedPath = path.join(__dirname, 'curatedTracks.json');
+if (!fs.existsSync(curatedPath)) {
+    const defaultTracks = [
+        { title: "Let It Go", artist: "Idina Menzel", genre: "Disney & Pixar Themes", previewUrl: "" },
+        { title: "You've Got a Friend in Me", artist: "Randy Newman", genre: "Disney & Pixar Themes", previewUrl: "" },
+        { title: "A Whole New World", artist: "Peabo Bryson & Regina Belle", genre: "Disney & Pixar Themes", previewUrl: "" },
+        { title: "Under the Sea", artist: "Samuel E. Wright", genre: "Disney & Pixar Themes", previewUrl: "" },
+        { title: "Circle of Life", artist: "Carmen Twillie", genre: "Disney & Pixar Themes", previewUrl: "" },
+        { title: "Shape of You", artist: "Ed Sheeran", genre: "Pop & Modern Hits", previewUrl: "" },
+        { title: "Blinding Lights", artist: "The Weeknd", genre: "Pop & Modern Hits", previewUrl: "" },
+        { title: "Watermelon Sugar", artist: "Harry Styles", genre: "Pop & Modern Hits", previewUrl: "" },
+        { title: "Dance The Night", artist: "Dua Lipa", genre: "Pop & Modern Hits", previewUrl: "" },
+        { title: "Flowers", artist: "Miley Cyrus", genre: "Pop & Modern Hits", previewUrl: "" }
+    ];
+    try {
+        fs.writeFileSync(curatedPath, JSON.stringify(defaultTracks, null, 2), 'utf8');
+    } catch (e) {}
+}
 
 let gameState = {
     status: 'IDLE',
@@ -72,7 +92,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI GENERATOR WITH PURE AI & GITHUB PERMANENT COMMIT
+// BULK AI GENERATOR WITH GITHUB PERMANENT COMMIT
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
@@ -181,7 +201,7 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
     }
 });
 
-// DIRECT BEATIQ TRACK LOADER (CHECKS MULTIPLE COMMON PATHS)
+// BEATIQ TRACK LOADER WITH AUTOMATIC FALLBACK
 app.get('/api/beatiq/tracks', (req, res) => {
     try {
         const possiblePaths = [
@@ -671,7 +691,7 @@ function advanceToNextQuestion() {
     startQuestionTimer();
 }
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log('TriviaMania server running on port ' + PORT);
 });
