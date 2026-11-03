@@ -6,231 +6,126 @@
     <link rel="icon" href="data:,">
     <title>TriviaMania - Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
+            --panel-bg: rgba(15, 23, 42, 0.9);
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
             --text: #ffffff;
+            --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background-image: radial-gradient(circle at 50% 50%, #1a103c 0%, #05050a 80%); }
-        .container { text-align: center; width: 90%; max-width: 1200px; padding: 2rem; }
-        h1 { font-size: 3.5rem; color: var(--neon-blue); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(0,243,255,0.5); }
-        h2 { font-size: 2.2rem; color: var(--neon-green); margin-bottom: 2rem; }
-        .timer-box { font-size: 5rem; font-weight: bold; color: var(--neon-yellow); text-shadow: 0 0 20px rgba(255,238,0,0.5); margin: 1rem 0; }
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; }
-        .option-card { background: rgba(15, 23, 42, 0.8); border: 2px solid var(--neon-blue); padding: 1.5rem; border-radius: 12px; font-size: 1.8rem; font-weight: bold; box-shadow: 0 0 15px rgba(0,243,255,0.2); }
-        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; background: rgba(15,23,42,0.8); border-radius: 12px; overflow: hidden; }
-        th, td { padding: 1.2rem; text-align: center; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        th { background: rgba(0,243,255,0.2); color: var(--neon-blue); }
-        
-        .lobby-layout { display: flex; align-items: center; justify-content: center; gap: 4rem; margin-top: 1rem; }
-        .qr-box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 0 25px rgba(255,255,255,0.2); display: inline-block; }
-        
-        .corner-qr { position: absolute; bottom: 30px; right: 30px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(255,255,255,0.3); display: flex; flex-direction: column; align-items: center; }
-        .corner-qr span { font-size: 0.8rem; color: #000; font-weight: bold; margin-top: 4px; }
-
-        @keyframes floatUp {
-            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-            20% { opacity: 1; transform: translateY(80vh) scale(1.3); }
-            100% { transform: translateY(-10vh) scale(2.2); opacity: 0; }
-        }
-        .floating-emoji { position: absolute; font-size: 4rem; animation: floatUp 3s ease-out forwards; z-index: 998; user-select: none; pointer-events: none; }
-        
-        .lobby-extras { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; width: 100%; }
-        .lobby-banner { background: rgba(0, 243, 255, 0.1); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.2rem; max-width: 800px; width: 100%; }
-        .poll-results-box { background: rgba(15, 23, 42, 0.9); border: 2px solid var(--neon-green); border-radius: 12px; padding: 1.5rem; max-width: 800px; width: 100%; text-align: left; }
-        .poll-bar-container { background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; height: 28px; margin-top: 0.4rem; position: relative; }
-        .poll-bar-fill { background: linear-gradient(90deg, #0077ff, var(--neon-green)); height: 100%; width: 0%; transition: width 0.4s ease; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 2rem; background-image: radial-gradient(circle at 50% 50%, #1a103c 0%, #05050a 80%); overflow: hidden; text-align: center; }
+        header { font-size: 2rem; color: var(--neon-blue); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; text-shadow: 0 0 20px rgba(0,243,255,0.4); }
+        .main-container { width: 100%; max-width: 1000px; background: var(--panel-bg); border-radius: 16px; padding: 3rem; border: 2px solid rgba(0, 243, 255, 0.4); box-shadow: 0 12px 40px rgba(0,0,0,0.6); margin: auto; }
+        .question-text { font-size: 2.5rem; margin-bottom: 2rem; font-weight: 600; line-height: 1.3; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .option-card { background: rgba(5, 10, 20, 0.8); border: 2px solid rgba(0, 243, 255, 0.3); padding: 1.5rem; border-radius: 10px; font-size: 1.5rem; font-weight: bold; color: var(--text); }
+        .timer-bar-container { width: 100%; background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; margin-top: 2rem; overflow: hidden; }
+        .timer-bar { width: 100%; height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-green)); transition: width 1s linear; }
+        #audioPlayerContainer { display: none; margin-top: 1.5rem; }
     </style>
 </head>
 <body>
+    <header id="headerTitle">TriviaMania Live</header>
 
-    <div id="floatingEmojiContainer"></div>
+    <div class="main-container" id="mainDisplayCard">
+        <div id="contentArea">
+            <h2 class="question-text" id="displayQuestion">Waiting for host to start the game...</h2>
+            <div class="options-grid" id="displayOptions"></div>
+        </div>
+        
+        <div class="timer-bar-container" id="timerBarContainer" style="display: none;">
+            <div class="timer-bar" id="timerBar"></div>
+        </div>
 
-    <div class="container" id="displayContainer">
-        <h1 id="displayTitle">Welcome to TriviaMania!</h1>
-        <h2 id="displaySubtitle">Get your phones ready to play!</h2>
-        <div id="displayContent">
-            <div class="lobby-layout">
-                <div>
-                    <p style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--neon-blue);">Scan to join on your mobile phone:</p>
-                    <p id="playerJoinUrl" style="font-family: monospace; color: var(--neon-yellow); font-size: 1.2rem; margin-bottom: 1rem;"></p>
-                </div>
-                <div class="qr-box" id="projectorMainQr"></div>
-            </div>
-            <div class="lobby-extras" id="lobbyExtrasContainer"></div>
+        <!-- Embedded YouTube Audio / Video Player -->
+        <div id="audioPlayerContainer">
+            <div id="youtubePlayer"></div>
         </div>
     </div>
 
-    <!-- Projector Advert Overlay Modal -->
-    <div id="adOverlayModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
-        <h2 style="color: #ffee00; font-size: 3rem; margin-bottom: 1.5rem; text-shadow: 0 0 20px rgba(255,238,0,0.5);">📢 SPONSOR MESSAGE</h2>
-        <div id="adImageContainer"></div>
-        <p id="adTextContainer" style="color: #ffffff; font-size: 2.2rem; font-weight: bold; max-width: 900px; line-height: 1.4;"></p>
-        <div class="corner-qr">
-            <div id="projectorCornerQr"></div>
-            <span>SCAN TO JOIN</span>
-        </div>
-    </div>
+    <footer style="color: var(--text-muted); font-size: 1.1rem;" id="venueFooter">Get your phones ready to play!</footer>
 
+    <!-- YouTube IFrame API Script -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        const playerUrl = window.location.origin + '/player.html';
+        let player;
+        let apiReady = false;
 
-        document.getElementById('playerJoinUrl').innerText = playerUrl;
-        new QRCode(document.getElementById("projectorMainQr"), { text: playerUrl, width: 200, height: 200 });
-        new QRCode(document.getElementById("projectorCornerQr"), { text: playerUrl, width: 90, height: 90 });
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtubePlayer', {
+                height: '180',
+                width: '320',
+                videoId: '',
+                playerVars: { 'autoplay': 1, 'controls': 1 },
+                events: {
+                    'onReady': () => { apiReady = true; }
+                }
+            });
+        }
 
         socket.on('state-update', (state) => {
-            const titleEl = document.getElementById('displayTitle');
-            const subtitleEl = document.getElementById('displaySubtitle');
-            const contentEl = document.getElementById('displayContent');
+            document.getElementById('venueFooter').innerText = state.venueDetails || 'Get your phones ready to play!';
+            document.getElementById('headerTitle').innerText = state.welcomeHeader || 'TriviaMania Live';
 
-            if (state.activeScreenAdvert) {
-                showProjectorAdvert(state.activeScreenAdvert);
-            } else {
-                hideProjectorAdvert();
-            }
-
-            if (state.status === 'IDLE' || state.status === 'PAUSED') {
-                titleEl.innerText = state.welcomeHeader || 'Welcome to TriviaMania!';
-                subtitleEl.innerText = state.venueDetails || 'Get your phones ready to play!';
-                
-                let extrasHtml = '';
-                if (state.lobbySettings) {
-                    if (state.lobbySettings.showFact && state.lobbySettings.factText) {
-                        extrasHtml += `<div class="lobby-banner" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">💡 <strong>Trivia Fact:</strong> ${state.lobbySettings.factText}</div>`;
-                    }
-                    if (state.lobbySettings.showPoll && state.lobbySettings.pollQuestion) {
-                        const votes = state.lobbySettings.votes || {};
-                        const options = state.lobbySettings.pollOptions || [];
-                        const totalVotes = Object.values(votes).length;
-                        
-                        let counts = {};
-                        options.forEach(opt => counts[opt] = 0);
-                        Object.values(votes).forEach(opt => {
-                            if (counts[opt] !== undefined) counts[opt]++;
-                        });
-
-                        let resultsHtml = options.map(opt => {
-                            const count = counts[opt] || 0;
-                            const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-                            return `
-                                <div style="margin-bottom: 0.8rem;">
-                                    <div style="display:flex; justify-content:space-between; font-size:1.1rem; font-weight:bold;">
-                                        <span>${opt}</span>
-                                        <span>${pct}% (${count} votes)</span>
-                                    </div>
-                                    <div class="poll-bar-container">
-                                        <div class="poll-bar-fill" style="width: ${pct}%;"></div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('');
-
-                        extrasHtml += `
-                            <div class="poll-results-box">
-                                <h3 style="color: var(--neon-green); margin-bottom: 0.5rem; font-size: 1.3rem;">📊 Live Audience Poll: ${state.lobbySettings.pollQuestion}</h3>
-                                ${resultsHtml}
-                            </div>
-                        `;
-                    }
-                }
-
-                contentEl.innerHTML = `
-                    <div class="lobby-layout">
-                        <div>
-                            <p style="font-size: 1.5rem; margin-bottom: 0.75rem; color: var(--neon-blue);">Scan to join on your mobile phone:</p>
-                            <p style="font-family: monospace; color: var(--neon-yellow); font-size: 1.1rem; margin-bottom: 1rem;">${playerUrl}</p>
-                        </div>
-                        <div class="qr-box" id="projectorMainQr"></div>
-                    </div>
-                    <div class="lobby-extras">${extrasHtml}</div>
-                `;
-                setTimeout(() => {
-                    const qrEl = document.getElementById('projectorMainQr');
-                    if (qrEl && qrEl.innerHTML === '') {
-                        new QRCode(qrEl, { text: playerUrl, width: 200, height: 200 });
-                    }
-                }, 50);
-            } else if (state.status === 'QUESTION') {
+            if (state.status === 'QUESTION') {
                 const round = state.playlist[state.currentRoundIndex];
-                const q = round && round.questions ? round.questions[state.currentQuestionIndex] : null;
+                if (round && round.questions) {
+                    const q = round.questions[state.currentQuestionIndex];
+                    if (q) {
+                        document.getElementById('displayQuestion').innerText = q.question;
+                        
+                        const optionsGrid = document.getElementById('displayOptions');
+                        if (q.options && q.options.length > 0) {
+                            optionsGrid.style.display = 'grid';
+                            optionsGrid.innerHTML = q.options.map(opt => `<div class="option-card">${opt}</div>`).join('');
+                        } else {
+                            optionsGrid.style.display = 'none';
+                        }
 
-                if (q) {
-                    titleEl.innerText = round.name;
-                    subtitleEl.innerText = `Question ${state.currentQuestionIndex + 1} of ${round.questions.length}`;
-                    
-                    let optionsHtml = '';
-                    if (q.options && q.options.length > 0) {
-                        optionsHtml = `
-                            <div class="timer-box">${state.timer}s</div>
-                            <div class="options-grid">
-                                ${q.options.map(opt => `<div class="option-card">${opt}</div>`).join('')}
-                            </div>
-                        `;
-                    } else {
-                        optionsHtml = `<div class="timer-box">${state.timer}s</div>`;
+                        document.getElementById('timerBarContainer').style.display = 'block';
+                        
+                        // Check if question contains a YouTube link or search query for audio
+                        if (q.youtubeId && apiReady) {
+                            document.getElementById('audioPlayerContainer').style.display = 'block';
+                            player.loadVideoById(q.youtubeId);
+                        }
                     }
-
-                    contentEl.innerHTML = `
-                        <div style="font-size: 2.2rem; font-weight: bold; margin-bottom: 1.5rem;">${q.question}</div>
-                        ${optionsHtml}
-                    `;
                 }
             } else if (state.status === 'LEADERBOARD') {
-                titleEl.innerText = '🏆 FINAL LEADERBOARD 🏆';
-                subtitleEl.innerText = 'What an incredible game!';
-                const sorted = Object.values(state.scores || {}).sort((a,b) => b.score - a.score);
-                contentEl.innerHTML = `
-                    <table>
-                        <thead><tr><th>Rank</th><th>Player Name</th><th>Streak</th><th>Score</th></tr></thead>
-                        <tbody>
-                            ${sorted.length === 0 ? '<tr><td colspan="4">No scores recorded</td></tr>' : sorted.map((p, idx) => `
-                                <tr>
-                                    <td>#${idx + 1}</td>
-                                    <td>${p.name}</td>
-                                    <td>🔥 x${p.streak || 0}</td>
-                                    <td><strong>${p.score}</strong></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
+                document.getElementById('displayQuestion').innerText = '🏆 FINAL LEADERBOARD 🏆';
+                document.getElementById('displayOptions').innerHTML = '';
+                document.getElementById('timerBarContainer').style.display = 'none';
+                stopAudio();
+            } else if (state.status === 'IDLE' || state.status === 'PAUSED') {
+                document.getElementById('displayQuestion').innerText = state.welcomeHeader || 'Waiting for host to start game...';
+                document.getElementById('displayOptions').innerHTML = '';
+                document.getElementById('timerBarContainer').style.display = 'none';
+                stopAudio();
             }
         });
 
-        socket.on('trigger-floating-emoji', (emoji) => {
-            spawnFloatingEmoji(emoji);
+        socket.on('timer-tick', (timeLeft) => {
+            const stateMax = 15; // fallback
+            const pct = (timeLeft / stateMax) * 100;
+            const bar = document.getElementById('timerBar');
+            if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
         });
 
-        function spawnFloatingEmoji(emoji) {
-            const container = document.getElementById('floatingEmojiContainer');
-            if (!container) return;
-            const el = document.createElement('div');
-            el.className = 'floating-emoji';
-            el.innerText = emoji;
-            el.style.left = Math.random() * 85 + 5 + 'vw';
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 3000);
-        }
+        socket.on('stop-audio', () => {
+            stopAudio();
+        });
 
-        socket.on('broadcast-advert-screen', (ad) => { showProjectorAdvert(ad); });
-        socket.on('hide-advert-screen', () => { hideProjectorAdvert(); });
-
-        function showProjectorAdvert(ad) {
-            const overlay = document.getElementById('adOverlayModal');
-            document.getElementById('adImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 45vh; max-width: 80vw; border-radius: 12px; border: 2px solid #ffee00; box-shadow: 0 0 30px rgba(255,238,0,0.3); margin-bottom: 1.5rem; object-fit: contain;">` : '';
-            document.getElementById('adTextContainer').innerText = ad.text;
-            overlay.style.display = 'flex';
-        }
-
-        function hideProjectorAdvert() {
-            document.getElementById('adOverlayModal').style.display = 'none';
+        function stopAudio() {
+            if (player && typeof player.stopVideo === 'function') {
+                player.stopVideo();
+            }
+            const container = document.getElementById('audioPlayerContainer');
+            if (container) container.style.display = 'none';
         }
     </script>
 </body>
