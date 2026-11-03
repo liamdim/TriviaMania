@@ -18,6 +18,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+let samplePolls = [
+    { question: 'What is your team’s pre-trivia drink of choice?', options: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤'] },
+    { question: 'Which decade had the absolute best music?', options: ['70s 🕺', '80s 🎸', '90s 📼', '00s 🎧'] },
+    { question: 'How confident is your team tonight?', options: ['Total Winners 🏆', 'Just for Fun 🍻', 'Clueless 🤷', 'Robbed Last Week 😡'] },
+    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] }
+];
+
 let gameState = {
     status: 'IDLE',
     currentRoundIndex: 0,
@@ -39,8 +46,9 @@ let gameState = {
         showFact: true,
         factText: 'Did you know? The pub record score is 480 points!',
         showPoll: true,
-        pollQuestion: 'What is your team’s pre-trivia drink of choice?',
-        pollOptions: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤']
+        pollQuestion: samplePolls[0].question,
+        pollOptions: samplePolls[0].options,
+        votes: {} // socketId -> option
     },
     announcement: { active: false, text: '' },
     settings: { 
@@ -51,28 +59,15 @@ let gameState = {
 };
 
 let timerInterval = null;
-let pollRandomizerInterval = null;
 let disconnectedPlayers = {};
 
-const samplePolls = [
-    { question: 'What is your team’s pre-trivia drink of choice?', options: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤'] },
-    { question: 'Which decade had the absolute best music?', options: ['70s 🕺', '80s 🎸', '90s 📼', '00s 🎧'] },
-    { question: 'How confident is your team tonight?', options: ['Total Winners 🏆', 'Just for Fun 🍻', ' Clueless 🤷', ' Robbed Last Week 😡'] },
-    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] }
-];
-
-function startPollRandomizer() {
-    if (pollRandomizerInterval) clearInterval(pollRandomizerInterval);
-    pollRandomizerInterval = setInterval(() => {
-        if (gameState.status === 'IDLE' && gameState.lobbySettings && gameState.lobbySettings.showPoll) {
-            const randomPoll = samplePolls[Math.floor(Math.random() * samplePolls.length)];
-            gameState.lobbySettings.pollQuestion = randomPoll.question;
-            gameState.lobbySettings.pollOptions = randomPoll.options;
-            io.emit('state-update', gameState);
-        }
-    }, 12000); // Rotates every 12 seconds automatically
+function triggerNewPoll() {
+    const randomPoll = samplePolls[Math.floor(Math.random() * samplePolls.length)];
+    gameState.lobbySettings.pollQuestion = randomPoll.question;
+    gameState.lobbySettings.pollOptions = randomPoll.options;
+    gameState.lobbySettings.votes = {}; // Reset votes for new poll
+    io.emit('state-update', gameState);
 }
-startPollRandomizer();
 
 const badWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'crap', 'ass', 'bastard', 'cunt', 'dick', 'piss', 'cock', 'prick', 'wanker', 'arse'];
 
@@ -324,7 +319,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('poll-vote', (option) => {
-        socket.emit('poll-voted', { option, message: `✅ Voted: "${option}"!` });
+        if (!gameState.lobbySettings.votes) gameState.lobbySettings.votes = {};
+        gameState.lobbySettings.votes[socket.id] = option;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('trigger-new-poll', () => {
+        triggerNewPoll();
     });
 
     socket.on('add-round', (roundConfig) => {
@@ -418,7 +419,8 @@ io.on('connection', (socket) => {
             factText: sanitizeText(toolkitSettings.factText),
             showPoll: !!toolkitSettings.showPoll,
             pollQuestion: sanitizeText(toolkitSettings.pollQuestion),
-            pollOptions: opts
+            pollOptions: opts,
+            votes: gameState.lobbySettings.votes || {}
         };
         io.emit('state-update', gameState);
     });
@@ -517,6 +519,7 @@ io.on('connection', (socket) => {
     socket.on('stop-game', () => {
         if (timerInterval) clearInterval(timerInterval);
         gameState.status = 'PAUSED';
+        triggerNewPoll(); // Trigger new poll on pause/intermission
         io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
@@ -526,6 +529,7 @@ io.on('connection', (socket) => {
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
+        triggerNewPoll();
         Object.values(gameState.scores).forEach(p => {
             p.score = 0; p.streak = 0; p.hasAnsweredCurrent = false;
         });
@@ -543,6 +547,7 @@ io.on('connection', (socket) => {
         gameState.scores = {};
         gameState.mutedPlayers = {};
         disconnectedPlayers = {};
+        triggerNewPoll();
         io.emit('stop-audio');
         io.emit('state-update', gameState);
     });
@@ -583,8 +588,10 @@ function advanceToNextQuestion() {
         if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
             gameState.currentRoundIndex++;
             gameState.currentQuestionIndex = 0;
+            triggerNewPoll(); // New poll at round intermission
         } else {
             gameState.status = 'LEADERBOARD';
+            triggerNewPoll(); // New poll at game over
             io.emit('stop-audio');
             io.emit('state-update', gameState);
             return;
