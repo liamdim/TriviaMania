@@ -43,7 +43,7 @@
         <h1>⚡ TriviaMania // HOST CONTROL ROOM</h1>
         <div class="nav-links">
             <a href="/builder.html">📝 Quiz Builder</a>
-            <a href="/music.html">🎵 Music Studio</a>
+            <a href="/pictures.html">🖼️ Picture Rounds</a>
             <a href="/minigames.html">🎮 Mini-Games</a>
             <a href="/adverts.html">📢 Adverts</a>
             <a href="/lobby.html">🌐 Lobby Studio</a>
@@ -135,7 +135,6 @@
                 advertSelect.innerHTML = '<option value="">No saved adverts available</option>';
             }
 
-            // Playlist Queue with Per-Round Timer Dropdown
             const queueContainer = document.getElementById('playlistQueueContainer');
             if (state.playlist && state.playlist.length > 0) {
                 queueContainer.innerHTML = state.playlist.map((round, idx) => {
