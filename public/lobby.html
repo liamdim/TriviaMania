@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>TriviaMania - Lobby & QR Customizer</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #05050a;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --neon-blue: #00f3ff;
+            --neon-yellow: #ffee00;
+            --text: #ffffff;
+            --text-muted: #8b9bb4;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
+        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
+        header h1 { font-size: 1.5rem; color: var(--neon-blue); }
+        .nav-links { display: flex; gap: 0.75rem; }
+        .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
+        .container { flex: 1; padding: 2rem; max-width: 800px; width: 100%; margin: 0 auto; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+        .card h3 { margin-bottom: 1.5rem; color: var(--neon-blue); font-weight: 600; }
+        .form-group { margin-bottom: 1.2rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; }
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌐 Lobby & QR Code Customizer</h1>
+        <div class="nav-links">
+            <a href="/index.html">⚡ Live Controls</a>
+        </div>
+    </header>
+    <div class="container">
+        <div class="card">
+            <h3>Customize Projector Lobby</h3>
+            <div class="form-group">
+                <label>Projector Welcome Header:</label>
+                <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!">
+            </div>
+            <div class="form-group">
+                <label>Venue Details / Subtitle:</label>
+                <input type="text" id="venueDetailsInput" placeholder="Tonight's Pub Trivia Night">
+            </div>
+            <button onclick="saveLobbySettings()" style="margin-bottom: 1.5rem;">💾 Save Lobby Settings</button>
+            <p style="color: var(--text-muted); margin-bottom: 0.5rem;">Player Mobile Join QR Code:</p>
+            <div id="qr-container"></div>
+            <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--neon-blue);"></p>
+        </div>
+    </div>
+    <script>
+        const socket = io({ transports: ['websocket', 'polling'] });
+        const playerUrl = window.location.origin + '/player.html';
+        document.getElementById('playerJoinUrl').innerText = playerUrl;
+        new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 200, height: 200 });
+
+        function saveLobbySettings() {
+            const headerText = document.getElementById('welcomeHeaderInput').value;
+            const detailsText = document.getElementById('venueDetailsInput').value;
+            socket.emit('update-welcome-header', headerText);
+            socket.emit('update-venue-details', detailsText);
+            alert('Lobby settings saved and broadcasted to projector display!');
+        }
+    </script>
+</body>
+</html>
