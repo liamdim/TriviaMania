@@ -60,6 +60,7 @@
                 <button class="btn-blue" onclick="socket.emit('next-question')">⏭️ Skip Question</button>
                 <button class="btn-yellow" onclick="socket.emit('stop-game')">⏸️ Pause Game</button>
                 <button class="btn-yellow" onclick="socket.emit('restart-game')">🔄 Reset Round</button>
+                <button class="btn-green" onclick="socket.emit('start-next-round')">▶️ Start Next Round</button>
                 <button class="btn-red" onclick="socket.emit('stop-reset')">🛑 Full Reset</button>
             </div>
             <p style="color: var(--text-muted); font-size: 1rem;">Game Status: <strong id="statusDisplay" style="color: var(--neon-yellow);">IDLE</strong></p>
@@ -123,7 +124,6 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
 
-            // Render Dynamic Saved Adverts Dropdown
             const advertSelect = document.getElementById('advertSelect');
             if (state.adverts && state.adverts.length > 0) {
                 currentAdvertsLibrary = state.adverts;
@@ -135,27 +135,36 @@
                 advertSelect.innerHTML = '<option value="">No saved adverts available</option>';
             }
 
-            // Render Playlist Queue
+            // Playlist Queue with Per-Round Timer Dropdown
             const queueContainer = document.getElementById('playlistQueueContainer');
             if (state.playlist && state.playlist.length > 0) {
-                queueContainer.innerHTML = state.playlist.map((round, idx) => `
-                    <div style="background:rgba(5,10,20,0.8); padding:0.75rem; border-radius:6px; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(0,243,255,0.2);">
-                        <div>
-                            <strong style="color:var(--neon-blue);">${idx + 1}. ${round.name}</strong>
-                            <span style="color:#8b9bb4; font-size:0.85rem; margin-left:0.75rem;">(${round.questions.length} items)</span>
+                queueContainer.innerHTML = state.playlist.map((round, idx) => {
+                    const currentTimer = round.timer || 15;
+                    return `
+                        <div style="background:rgba(5,10,20,0.8); padding:0.75rem; border-radius:6px; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(0,243,255,0.2);">
+                            <div>
+                                <strong style="color:var(--neon-blue);">${idx + 1}. ${round.name}</strong>
+                                <span style="color:#8b9bb4; font-size:0.85rem; margin-left:0.75rem;">(${round.questions.length} items)</span>
+                            </div>
+                            <div style="display:flex; gap:0.4rem; align-items:center;">
+                                <select onchange="updateRoundTimer(${idx}, this.value)" style="padding:0.2rem; background:rgba(0,0,0,0.5); color:var(--neon-yellow); border:1px solid rgba(0,243,255,0.3); border-radius:4px; font-size:0.85rem; margin-bottom:0;">
+                                    <option value="5" ${currentTimer === 5 ? 'selected' : ''}>5s</option>
+                                    <option value="10" ${currentTimer === 10 ? 'selected' : ''}>10s</option>
+                                    <option value="15" ${currentTimer === 15 ? 'selected' : ''}>15s</option>
+                                    <option value="20" ${currentTimer === 20 ? 'selected' : ''}>20s</option>
+                                    <option value="30" ${currentTimer === 30 ? 'selected' : ''}>30s</option>
+                                </select>
+                                <button onclick="socket.emit('move-round', {index: ${idx}, direction: 'up'})" style="padding:0.2rem 0.5rem; background:rgba(0,243,255,0.2); border:none; color:white; border-radius:4px; cursor:pointer;">⬆️</button>
+                                <button onclick="socket.emit('move-round', {index: ${idx}, direction: 'down'})" style="padding:0.2rem 0.5rem; background:rgba(0,243,255,0.2); border:none; color:white; border-radius:4px; cursor:pointer;">⬇️</button>
+                                <button onclick="socket.emit('delete-round', ${idx})" style="padding:0.2rem 0.5rem; background:rgba(255,0,85,0.3); border:none; color:white; border-radius:4px; cursor:pointer;">❌</button>
+                            </div>
                         </div>
-                        <div style="display:flex; gap:0.4rem;">
-                            <button onclick="socket.emit('move-round', {index: ${idx}, direction: 'up'})" style="padding:0.2rem 0.5rem; background:rgba(0,243,255,0.2); border:none; color:white; border-radius:4px; cursor:pointer;">⬆️</button>
-                            <button onclick="socket.emit('move-round', {index: ${idx}, direction: 'down'})" style="padding:0.2rem 0.5rem; background:rgba(0,243,255,0.2); border:none; color:white; border-radius:4px; cursor:pointer;">⬇️</button>
-                            <button onclick="socket.emit('delete-round', ${idx})" style="padding:0.2rem 0.5rem; background:rgba(255,0,85,0.3); border:none; color:white; border-radius:4px; cursor:pointer;">❌</button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
                 queueContainer.innerHTML = '<p style="color: var(--text-muted);">No rounds loaded yet.</p>';
             }
 
-            // Next Question Preview
             const previewBox = document.getElementById('nextQuestionPreviewBox');
             if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
                 const round = state.playlist[state.currentRoundIndex];
@@ -166,11 +175,15 @@
                     <p style="font-size:0.95rem;">${nextQ ? nextQ.question : 'End of round'}</p>
                     <p style="color:var(--neon-yellow); margin-top:0.3rem; font-size:0.85rem;">Answer: ${nextQ ? nextQ.answer : '-'}</p>
                 `;
+            } else if (state.status === 'INTERMISSION') {
+                previewBox.innerHTML = `
+                    <p style="color:var(--neon-yellow); font-weight:bold; font-size:1.1rem; margin-bottom:0.3rem;">⏸️ Round Finished!</p>
+                    <p style="font-size:0.95rem;">Click <strong style="color:var(--neon-green);">"Start Next Round"</strong> above when you are ready to proceed.</p>
+                `;
             } else {
                 previewBox.innerHTML = '<p style="color: var(--text-muted);">Quiz is idle or paused.</p>';
             }
 
-            // Connected Players & Mute Buttons
             const playersContainer = document.getElementById('connectedPlayersContainer');
             const scoresEntries = Object.entries(state.scores || {});
             if (scoresEntries.length > 0) {
@@ -192,6 +205,10 @@
                 playersContainer.innerHTML = '<p style="color: var(--text-muted);">No players connected.</p>';
             }
         });
+
+        function updateRoundTimer(index, timerVal) {
+            socket.emit('update-round-timer', { index: index, timer: timerVal });
+        }
 
         function sendHostAnnouncement() {
             const input = document.getElementById('hostAnnouncementInput');
