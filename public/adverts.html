@@ -9,148 +9,119 @@
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-bg: rgba(15, 23, 42, 0.85);
             --neon-blue: #00f3ff;
+            --neon-green: #00ff66;
             --neon-yellow: #ffee00;
+            --neon-red: #ff0055;
             --text: #ffffff;
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
-        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 238, 0, 0.3); }
-        header h1 { font-size: 1.5rem; color: var(--neon-yellow); }
+        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
+        header h1 { font-size: 1.5rem; color: var(--neon-blue); }
         .nav-links { display: flex; gap: 0.75rem; }
         .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
         .container { flex: 1; padding: 2rem; max-width: 900px; width: 100%; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(255, 238, 0, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
-        .card h3 { margin-bottom: 1rem; color: var(--neon-yellow); font-weight: 600; }
-        .form-group { margin-bottom: 1rem; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); margin-bottom: 1.5rem; }
+        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); font-weight: 600; }
+        .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(255, 238, 0, 0.3); color: white; border-radius: 6px; margin-bottom: 0.5rem; }
-        button { background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(255, 238, 0, 0.5); }
-        button.danger { background: linear-gradient(135deg, #aa0033, #ff0055); color: #fff; }
-        button.small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
-        .flex-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-        .ad-item { display: flex; justify-content: space-between; align-items: center; background: rgba(5, 10, 20, 0.6); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.08); }
-        .ad-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); margin-right: 10px; vertical-align: middle; }
+        input[type="text"], textarea { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; font-size: 1rem; }
+        textarea { resize: vertical; min-height: 80px; }
+        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 1rem; }
+        button:hover { filter: brightness(1.2); }
+        .ad-item { background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.2); padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <header>
-        <h1>📢 Adverts & Sponsor Library</h1>
+        <h1>📢 Adverts Manager</h1>
         <div class="nav-links">
             <a href="/index.html">⚡ Live Controls</a>
         </div>
     </header>
     <div class="container">
         <div class="card">
-            <h3>Add New Advert / Sponsor</h3>
+            <h3>Add New Sponsor Advert</h3>
             <div class="form-group">
-                <label>Advert Title / Message:</label>
-                <input type="text" id="adTitleInput" placeholder="Tonight's Drink Special - 2 for 1 Cocktails!">
+                <label>Advert Message / Text:</label>
+                <textarea id="adTextInput" placeholder="Enter sponsor message, drink deals, or special announcements..."></textarea>
             </div>
             <div class="form-group">
-                <label>Upload Sponsor Image / Graphic:</label>
-                <input type="file" id="adImageInput" accept="image/*">
+                <label>Sponsor Image (Optional Upload / Base64):</label>
+                <input type="file" id="adImageFile" accept="image/*" style="color: white; margin-bottom: 0.5rem;">
+                <input type="hidden" id="adImageBase64" value="">
             </div>
-            <button onclick="saveNewAdvert()">💾 Save Advert to Library</button>
+            <button onclick="saveAdvert()">➕ Save Advert to Library</button>
         </div>
+
         <div class="card">
-            <h3>Stored Adverts Manager</h3>
-            <div id="storedAdvertsContainer"><p style="color: var(--text-muted);">No adverts stored yet.</p></div>
+            <h3>Saved Adverts Library</h3>
+            <div id="advertsListContainer">
+                <p style="color: var(--text-muted);">No saved adverts yet.</p>
+            </div>
         </div>
     </div>
+
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        let savedAdverts = JSON.parse(localStorage.getItem('triviamania_saved_adverts') || '[]');
+        let advertsList = [];
 
-        function saveNewAdvert() {
-            const title = document.getElementById('adTitleInput').value.trim();
-            const fileInput = document.getElementById('adImageInput');
-            if (!title) { alert('Please enter an advert title!'); return; }
+        document.getElementById('adImageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                document.getElementById('adImageBase64').value = uploadEvent.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
 
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const maxDim = 800;
-                        if (width > height && width > maxDim) {
-                            height *= maxDim / width;
-                            width = maxDim;
-                        } else if (height > maxDim) {
-                            width *= maxDim / height;
-                            height = maxDim;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        savedAdverts.push({ title, image: compressedDataUrl });
-                        localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-                        renderAdverts();
-                        document.getElementById('adTitleInput').value = '';
-                        fileInput.value = '';
-                        alert('Advert saved successfully!');
-                    };
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                savedAdverts.push({ title, image: null });
-                localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-                renderAdverts();
-                document.getElementById('adTitleInput').value = '';
-                alert('Advert saved successfully!');
+        socket.on('state-update', (state) => {
+            if (state.adverts) {
+                advertsList = state.adverts;
+                renderAdvertsList();
             }
-        }
+        });
 
-        function renderAdverts() {
-            const container = document.getElementById('storedAdvertsContainer');
-            if (savedAdverts.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted);">No adverts stored yet.</p>';
-                return;
-            }
-            container.innerHTML = savedAdverts.map((ad, idx) => `
-                <div class="ad-item">
-                    <div style="display: flex; align-items: center;">
-                        ${ad.image ? `<img src="${ad.image}" class="ad-thumb">` : ''}
-                        <strong>${ad.title}</strong>
-                    </div>
-                    <div class="flex-row">
-                        <button class="small success" onclick="showAdDisplay(${idx})">🖥️ Show Display</button>
-                        <button class="small warning" onclick="showAdMobile(${idx})">📱 Show Mobile</button>
-                        <button class="small danger" onclick="deleteAdvert(${idx})">🗑️ Delete</button>
-                    </div>
-                </div>
-            `).join('');
-        }
+        function saveAdvert() {
+            const text = document.getElementById('adTextInput').value.trim();
+            const image = document.getElementById('adImageBase64').value;
+            if (!text) { alert('Please enter advert text!'); return; }
 
-        function showAdDisplay(index) {
-            const ad = savedAdverts[index];
-            socket.emit('broadcast-advert-screen', { text: ad.title, image: ad.image || null });
-            alert('Broadcasting ad to Projector Display!');
-        }
+            advertsList.push({ text, image });
+            socket.emit('update-adverts-library', advertsList);
 
-        function showAdMobile(index) {
-            const ad = savedAdverts[index];
-            socket.emit('broadcast-advert-mobile', { text: ad.title, image: ad.image || null });
-            alert('Broadcasting ad to Mobile Players!');
+            document.getElementById('adTextInput').value = '';
+            document.getElementById('adImageBase64').value = '';
+            document.getElementById('adImageFile').value = '';
+            alert('Advert successfully saved to library and synced to host controls!');
         }
 
         function deleteAdvert(index) {
-            savedAdverts.splice(index, 1);
-            localStorage.setItem('triviamania_saved_adverts', JSON.stringify(savedAdverts));
-            renderAdverts();
+            advertsList.splice(index, 1);
+            socket.emit('update-adverts-library', advertsList);
         }
 
-        renderAdverts();
+        function renderAdvertsList() {
+            const container = document.getElementById('advertsListContainer');
+            if (advertsList.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">No saved adverts yet.</p>';
+                return;
+            }
+            container.innerHTML = advertsList.map((ad, idx) => `
+                <div class="ad-item">
+                    <div>
+                        <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
+                        <p style="font-size: 0.95rem; margin-top: 0.25rem;">${ad.text}</p>
+                        ${ad.image ? '<span style="font-size:0.8rem; color:var(--neon-green);">[Has Sponsor Image]</span>' : ''}
+                    </div>
+                    <button onclick="deleteAdvert(${idx})" style="background: rgba(255,0,85,0.3); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Delete</button>
+                </div>
+            `).join('');
+        }
     </script>
 </body>
 </html>
