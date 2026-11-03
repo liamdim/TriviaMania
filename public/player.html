@@ -36,8 +36,6 @@
         .option-btn:disabled { cursor: not-allowed; opacity: 0.8; }
         
         /* Direct Feedback Colors */
-        .option-btn.selected-correct { background: var(--neon-green) !important; color: #000 !important; border-color: var(--neon-green) !important; }
-        .option-btn.selected-incorrect { background: var(--neon-red) !important; color: #fff !important; border-color: var(--neon-red) !important; }
         .option-btn.reveal-correct { background: var(--neon-green) !important; color: #000 !important; border-color: var(--neon-green) !important; box-shadow: 0 0 15px var(--neon-green); }
 
         /* Mobile Advert Overlay */
@@ -118,7 +116,6 @@
         }
 
         socket.on('state-update', (state) => {
-            // Check personal score
             if (state.scores) {
                 const myId = socket.id;
                 const me = state.scores[myId];
@@ -128,7 +125,6 @@
             }
 
             if (state.status === 'QUESTION') {
-                // Reset answer lock when a new question index begins
                 if (currentQuestionIndexTracker !== state.currentQuestionIndex) {
                     currentQuestionIndexTracker = state.currentQuestionIndex;
                     hasAnswered = false;
@@ -162,7 +158,6 @@
                 }
             } else if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'LEADERBOARD') {
                 if (playerName) {
-                    document.getElementById('questionScreen').style.display = 'block'; // Keep question screen or show waiting status
                     document.getElementById('waitingScreen').style.display = 'block';
                     document.getElementById('questionScreen').style.display = 'none';
                 }
@@ -184,7 +179,6 @@
             if (hasAnswered) return;
             hasAnswered = true;
 
-            // Lock all buttons immediately
             const allBtns = document.querySelectorAll('.option-btn');
             allBtns.forEach(b => b.disabled = true);
 
@@ -207,18 +201,18 @@
             
             allBtns.forEach(b => {
                 const text = b.innerText.trim();
-                // Highlight correct answer in green
                 if (text.toLowerCase() === res.correctAnswer.toLowerCase()) {
                     b.classList.add('reveal-correct');
                 }
             });
 
+            const banner = document.getElementById('answerFeedbackBanner');
             if (res.correct) {
-                document.getElementById('answerFeedbackBanner.innerText = `✅ Correct! +${res.points} pts (Streak 🔥 x${res.streak})`;
-                document.getElementById('answerFeedbackBanner').style.color = 'var(--neon-green)';
+                banner.innerText = `✅ Correct! +${res.points} pts (Streak 🔥 x${res.streak})`;
+                banner.style.color = 'var(--neon-green)';
             } else {
-                document.getElementById('answerFeedbackBanner').innerText = `❌ Incorrect! Correct answer was: ${res.correctAnswer}`;
-                document.getElementById('answerFeedbackBanner').style.color = 'var(--neon-red)';
+                banner.innerText = `❌ Incorrect! Correct answer was: ${res.correctAnswer}`;
+                banner.style.color = 'var(--neon-red)';
             }
         });
 
