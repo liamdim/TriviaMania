@@ -31,7 +31,7 @@ let gameState = {
     chatHistory: [],
     activeScreenAdvert: null,
     activeMobileAdvert: null,
-    venueDetails: 'Welcome to Trivia Night!',
+    venueDetails: 'Get your phones ready to play!',
     welcomeHeader: 'Welcome to TriviaMania!',
     mobileWaitingText: 'Waiting for host to start game...',
     customEmojis: ['🔥', '🍻', '👏', '😂', '🎉', '💡'],
