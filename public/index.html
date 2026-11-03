@@ -118,17 +118,20 @@
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
+        let currentAdvertsLibrary = [];
 
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
 
-            // Render Dynamic Saved Adverts Dropdown from Server gameState.adverts
+            // Render Dynamic Saved Adverts Dropdown
             const advertSelect = document.getElementById('advertSelect');
             if (state.adverts && state.adverts.length > 0) {
+                currentAdvertsLibrary = state.adverts;
                 advertSelect.innerHTML = state.adverts.map((ad, idx) => `
-                    <option value="${encodeURIComponent(ad.text)}" data-image="${ad.image || ''}">Advert #${idx + 1}: ${ad.text.substring(0, 50)}...</option>
+                    <option value="${idx}">Advert #${idx + 1}: ${ad.text.substring(0, 50)}...</option>
                 `).join('');
             } else {
+                currentAdvertsLibrary = [];
                 advertSelect.innerHTML = '<option value="">No saved adverts available</option>';
             }
 
@@ -200,11 +203,11 @@
 
         function broadcastSelectedAd(target) {
             const select = document.getElementById('advertSelect');
-            if (!select.value) return;
-            const text = decodeURIComponent(select.value);
-            const selectedOpt = select.options[select.selectedIndex];
-            const image = selectedOpt ? selectedOpt.getAttribute('data-image') : '';
-            const adData = { text: text, image: image };
+            const idx = select.value;
+            if (idx === '' || !currentAdvertsLibrary[idx]) return;
+            
+            const selectedAd = currentAdvertsLibrary[idx];
+            const adData = { text: selectedAd.text, image: selectedAd.image || '' };
             
             if (target === 'screen') {
                 socket.emit('broadcast-advert-screen', adData);
