@@ -399,10 +399,21 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('player-emoji', (emoji) => {
+    // Dedicated floating emoji reactions broadcast
+    socket.on('player-reaction', (emoji) => {
+        const cleanEmoji = sanitizeText(emoji);
+        if (cleanEmoji) {
+            io.emit('trigger-floating-emoji', cleanEmoji);
+        }
+    });
+
+    socket.on('player-chat', (message) => {
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
-        io.emit('chat-message', { name: name, text: sanitizeText(emoji) });
+        const cleanMsg = sanitizeText(message);
+        if (cleanMsg) {
+            io.emit('chat-message', { name: name, text: cleanMsg });
+        }
     });
 
     socket.on('broadcast-advert-screen', (adData) => {
