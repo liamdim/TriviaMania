@@ -264,7 +264,6 @@ async function generateAIQuestions(type, count) {
         console.error('AI generation error:', err.message);
     }
 
-    // Robust Fallbacks
     if (type === 'scramble') {
         return [
             { word: 'BEATLES', scrambled: 'S E T A E B L', options: ['BEATLES', 'BALTEES', 'BASTLES', 'BEALTES'], answer: 'BEATLES' },
