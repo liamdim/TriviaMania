@@ -72,7 +72,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI GENERATOR WITH SMART FALLBACK & GITHUB COMMIT
+// BULK AI GENERATOR WITH PURE AI & GITHUB PERMANENT COMMIT
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
@@ -102,63 +102,9 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
             success = true;
         } catch (err) {
             if (attempts >= 3) {
-                // SMART FALLBACK: If AI is busy, generate real playable trivia questions automatically!
-                let fileContent = '';
-                const samplePool = [
-                    { q: `Which prominent historical event or cultural phenomenon is most closely associated with ${categoryName}?`, a: "Option B", opts: ["Option A", "Option B", "Option C", "Option D"] },
-                    { q: `What is a primary characteristic or notable feature of ${categoryName}?`, a: "The Core Element", opts: ["Alternative One", "The Core Element", "Alternative Two", "Alternative Three"] },
-                    { q: `In standard studies regarding ${categoryName}, what is typically considered the standard benchmark?`, a: "Standard Alpha", opts: ["Standard Alpha", "Deviation Beta", "Factor Gamma", "Index Delta"] },
-                    { q: `Which notable figure or creator played a pivotal role in the development of ${categoryName}?`, a: "Lead Innovator", opts: ["Secondary Contributor", "External Observer", "Lead Innovator", "Historical Critic"] },
-                    { q: `What year or era marked a major turning point for ${categoryName}?`, a: "The Modern Era", opts: ["The Classic Period", "The Transitional Phase", "The Modern Era", "The Retro Epoch"] }
-                ];
-
-                for (let i = 1; i <= count; i++) {
-                    const sample = samplePool[(i - 1) % samplePool.length];
-                    fileContent += `#Q ${sample.q} (#${i})\n`;
-                    fileContent += `A ${sample.opts[0]}\n`;
-                    fileContent += `B ${sample.opts[1]}\n`;
-                    fileContent += `C ${sample.opts[2]}\n`;
-                    fileContent += `D ${sample.opts[3]}\n`;
-                    fileContent += `^${sample.opts[1]}\n\n`;
-                }
-
-                const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                const filePath = `categories/${fileName}`;
-
-                // Push fallback to GitHub so it saves permanently
-                if (process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_REPO) {
-                    try {
-                        const owner = process.env.GITHUB_OWNER;
-                        const repo = process.env.GITHUB_REPO;
-                        let sha = null;
-                        const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-                            headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN}`, 'User-Agent': 'TriviaMania-Server' }
-                        });
-                        if (getRes.ok) {
-                            const fileData = await getRes.json();
-                            sha = fileData.sha;
-                            const existing = Buffer.from(fileData.content, 'base64').toString('utf8');
-                            fileContent = existing + '\n' + fileContent;
-                        }
-                        await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-                                'Content-Type': 'application/json',
-                                'User-Agent': 'TriviaMania-Server'
-                            },
-                            body: JSON.stringify({
-                                message: `Smart fallback category: ${categoryName}`,
-                                content: Buffer.from(fileContent).toString('base64'),
-                                sha: sha
-                            })
-                        });
-                    } catch (gitErr) {}
-                }
-
-                return res.json({ success: true, count: count, fileName, message: 'Created smart fallback questions successfully!' });
+                return res.status(500).json({ error: 'AI server is currently experiencing high demand. Please wait 10 seconds and try generating again!' });
             }
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
         }
     }
 
@@ -167,6 +113,10 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
         else if (responseText.startsWith('```')) responseText = responseText.replace(/^```/, '').replace(/```$/, '').trim();
 
         const items = JSON.parse(responseText);
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(500).json({ error: 'Failed to parse generated questions format from AI.' });
+        }
+
         let newContent = '';
         items.forEach((item) => {
             newContent += `#Q ${item.question}\n`;
@@ -182,20 +132,33 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
         const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const filePath = `categories/${fileName}`;
 
+        // Save locally to Render container immediately for runtime use
+        const categoriesDir = path.join(__dirname, 'categories');
+        if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
+        const localFullPath = path.join(categoriesDir, fileName);
+        
+        let existingLocal = fs.existsSync(localFullPath) ? fs.readFileSync(localFullPath, 'utf8') : '';
+        const combinedContent = existingLocal + (existingLocal ? '\n' : '') + newContent;
+        fs.writeFileSync(localFullPath, combinedContent, 'utf8');
+
+        // Push permanently to GitHub
         if (process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_REPO) {
             try {
                 const owner = process.env.GITHUB_OWNER;
                 const repo = process.env.GITHUB_REPO;
                 let sha = null;
+
                 const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
                     headers: { 'Authorization': `token ${process.env.GITHUB_TOKEN}`, 'User-Agent': 'TriviaMania-Server' }
                 });
+                
                 if (getRes.ok) {
                     const fileData = await getRes.json();
                     sha = fileData.sha;
-                    const existing = Buffer.from(fileData.content, 'base64').toString('utf8');
-                    newContent = existing + '\n' + newContent;
+                    const existingGithubContent = Buffer.from(fileData.content, 'base64').toString('utf8');
+                    newContent = existingGithubContent + '\n' + newContent;
                 }
+
                 await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
                     method: 'PUT',
                     headers: {
@@ -209,12 +172,14 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
                         sha: sha
                     })
                 });
-            } catch (gitErr) {}
+            } catch (gitErr) {
+                console.error('GitHub auto-commit failed:', gitErr.message);
+            }
         }
 
         res.json({ success: true, count: items.length, fileName });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to process response: ' + err.message });
+        res.status(500).json({ error: 'Failed to process AI response: ' + err.message });
     }
 });
 
@@ -716,5 +681,4 @@ function advanceToNextQuestion() {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log('TriviaMania server running on port ' + PORT);
-});
+    console.log('TriviaMania
