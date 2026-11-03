@@ -40,8 +40,11 @@
         }
         .floating-emoji { position: absolute; font-size: 4rem; animation: floatUp 3s ease-out forwards; z-index: 998; user-select: none; pointer-events: none; }
         
-        .lobby-extras { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
-        .lobby-banner { background: rgba(0, 243, 255, 0.1); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.2rem; max-width: 800px; }
+        .lobby-extras { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; width: 100%; }
+        .lobby-banner { background: rgba(0, 243, 255, 0.1); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.2rem; max-width: 800px; width: 100%; }
+        .poll-results-box { background: rgba(15, 23, 42, 0.9); border: 2px solid var(--neon-green); border-radius: 12px; padding: 1.5rem; max-width: 800px; width: 100%; text-align: left; }
+        .poll-bar-container { background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; height: 28px; margin-top: 0.4rem; position: relative; }
+        .poll-bar-fill { background: linear-gradient(90deg, #0077ff, var(--neon-green)); height: 100%; width: 0%; transition: width 0.4s ease; }
     </style>
 </head>
 <body>
@@ -98,8 +101,44 @@
                 subtitleEl.innerText = state.venueDetails || 'Get your phones ready to play!';
                 
                 let extrasHtml = '';
-                if (state.lobbySettings && state.lobbySettings.showFact && state.lobbySettings.factText) {
-                    extrasHtml += `<div class="lobby-banner" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">💡 <strong>Trivia Fact:</strong> ${state.lobbySettings.factText}</div>`;
+                if (state.lobbySettings) {
+                    if (state.lobbySettings.showFact && state.lobbySettings.factText) {
+                        extrasHtml += `<div class="lobby-banner" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">💡 <strong>Trivia Fact:</strong> ${state.lobbySettings.factText}</div>`;
+                    }
+                    if (state.lobbySettings.showPoll && state.lobbySettings.pollQuestion) {
+                        const votes = state.lobbySettings.votes || {};
+                        const options = state.lobbySettings.pollOptions || [];
+                        const totalVotes = Object.values(votes).length;
+                        
+                        let counts = {};
+                        options.forEach(opt => counts[opt] = 0);
+                        Object.values(votes).forEach(opt => {
+                            if (counts[opt] !== undefined) counts[opt]++;
+                        });
+
+                        let resultsHtml = options.map(opt => {
+                            const count = counts[opt] || 0;
+                            const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                            return `
+                                <div style="margin-bottom: 0.8rem;">
+                                    <div style="display:flex; justify-content:space-between; font-size:1.1rem; font-weight:bold;">
+                                        <span>${opt}</span>
+                                        <span>${pct}% (${count} votes)</span>
+                                    </div>
+                                    <div class="poll-bar-container">
+                                        <div class="poll-bar-fill" style="width: ${pct}%;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        extrasHtml += `
+                            <div class="poll-results-box">
+                                <h3 style="color: var(--neon-green); margin-bottom: 0.5rem; font-size: 1.3rem;">📊 Live Audience Poll: ${state.lobbySettings.pollQuestion}</h3>
+                                ${resultsHtml}
+                            </div>
+                        `;
+                    }
                 }
 
                 contentEl.innerHTML = `
