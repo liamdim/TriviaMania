@@ -27,16 +27,27 @@
         th, td { padding: 1.2rem; text-align: center; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
         th { background: rgba(0,243,255,0.2); color: var(--neon-blue); }
         
-        /* Lobby QR & Layout styling */
-        .lobby-layout { display: flex; align-items: center; justify-content: center; gap: 4rem; margin-top: 2rem; }
+        .lobby-layout { display: flex; align-items: center; justify-content: center; gap: 4rem; margin-top: 1rem; }
         .qr-box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 0 25px rgba(255,255,255,0.2); display: inline-block; }
         
-        /* Corner QR on Adverts */
         .corner-qr { position: absolute; bottom: 30px; right: 30px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(255,255,255,0.3); display: flex; flex-direction: column; align-items: center; }
         .corner-qr span { font-size: 0.8rem; color: #000; font-weight: bold; margin-top: 4px; }
+
+        /* Floating Emoji Animations */
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            20% { opacity: 1; transform: translateY(80vh) scale(1.2); }
+            100% { transform: translateY(-10vh) scale(2); opacity: 0; }
+        }
+        .floating-emoji { position: absolute; font-size: 4rem; animation: floatUp 3s ease-out forwards; z-index: 998; user-select: none; pointer-events: none; }
+        
+        .lobby-extras { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+        .lobby-banner { background: rgba(0, 243, 255, 0.1); border: 1px solid rgba(0, 243, 255, 0.3); padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1.2rem; max-width: 800px; }
     </style>
 </head>
 <body>
+
+    <div id="floatingEmojiContainer"></div>
 
     <div class="container" id="displayContainer">
         <h1 id="displayTitle">Welcome to TriviaMania!</h1>
@@ -49,16 +60,15 @@
                 </div>
                 <div class="qr-box" id="projectorMainQr"></div>
             </div>
+            <div class="lobby-extras" id="lobbyExtrasContainer"></div>
         </div>
     </div>
 
-    <!-- Projector Advert Overlay Modal with Corner QR -->
+    <!-- Projector Advert Overlay Modal -->
     <div id="adOverlayModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
         <h2 style="color: #ffee00; font-size: 3rem; margin-bottom: 1.5rem; text-shadow: 0 0 20px rgba(255,238,0,0.5);">📢 SPONSOR MESSAGE</h2>
         <div id="adImageContainer"></div>
         <p id="adTextContainer" style="color: #ffffff; font-size: 2.2rem; font-weight: bold; max-width: 900px; line-height: 1.4;"></p>
-        
-        <!-- Bottom Corner QR Code -->
         <div class="corner-qr">
             <div id="projectorCornerQr"></div>
             <span>SCAN TO JOIN</span>
@@ -69,28 +79,9 @@
         const socket = io({ transports: ['websocket', 'polling'] });
         const playerUrl = window.location.origin + '/player.html';
 
-        // Render Lobby QR Code on load
         document.getElementById('playerJoinUrl').innerText = playerUrl;
-        new QRCode(document.getElementById("projectorMainQr"), { text: playerUrl, width: 220, height: 220 });
-        
-        // Render Corner QR Code for Adverts
-        new QRCode(document.getElementById("projectorCornerQr"), { text: playerUrl, width: 100, height: 100 });
-
-        function playChime() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.3);
-            } catch (e) {}
-        }
+        new QRCode(document.getElementById("projectorMainQr"), { text: playerUrl, width: 200, height: 200 });
+        new QRCode(document.getElementById("projectorCornerQr"), { text: playerUrl, width: 90, height: 90 });
 
         socket.on('state-update', (state) => {
             const titleEl = document.getElementById('displayTitle');
@@ -106,20 +97,31 @@
             if (state.status === 'IDLE' || state.status === 'PAUSED') {
                 titleEl.innerText = state.welcomeHeader || 'Welcome to TriviaMania!';
                 subtitleEl.innerText = state.venueDetails || 'Get your phones ready to play!';
+                
+                let extrasHtml = '';
+                if (state.lobbySettings) {
+                    if (state.lobbySettings.showFact && state.lobbySettings.factText) {
+                        extrasHtml += `<div class="lobby-banner" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">💡 <strong>Trivia Fact:</strong> ${state.lobbySettings.factText}</div>`;
+                    }
+                    if (state.lobbySettings.showPoll && state.lobbySettings.pollQuestion) {
+                        extrasHtml += `<div class="lobby-banner" style="border-color: var(--neon-green);">📊 <strong>Practice Poll:</strong> ${state.lobbySettings.pollQuestion}</div>`;
+                    }
+                }
+
                 contentEl.innerHTML = `
                     <div class="lobby-layout">
                         <div>
-                            <p style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--neon-blue);">Scan to join on your mobile phone:</p>
-                            <p style="font-family: monospace; color: var(--neon-yellow); font-size: 1.2rem; margin-bottom: 1rem;">${playerUrl}</p>
+                            <p style="font-size: 1.5rem; margin-bottom: 0.75rem; color: var(--neon-blue);">Scan to join on your mobile phone:</p>
+                            <p style="font-family: monospace; color: var(--neon-yellow); font-size: 1.1rem; margin-bottom: 1rem;">${playerUrl}</p>
                         </div>
                         <div class="qr-box" id="projectorMainQr"></div>
                     </div>
+                    <div class="lobby-extras">${extrasHtml}</div>
                 `;
-                // Re-initialize QR code since innerHTML wiped it
                 setTimeout(() => {
                     const qrEl = document.getElementById('projectorMainQr');
                     if (qrEl && qrEl.innerHTML === '') {
-                        new QRCode(qrEl, { text: playerUrl, width: 220, height: 220 });
+                        new QRCode(qrEl, { text: playerUrl, width: 200, height: 200 });
                     }
                 }, 50);
             } else if (state.status === 'QUESTION') {
@@ -169,22 +171,30 @@
             }
         });
 
-        socket.on('timer-tick', (timeLeft) => {
-            const timerBox = document.querySelector('.timer-box');
-            if (timerBox) timerBox.innerText = timeLeft + 's';
-            if (timeLeft <= 3 && timeLeft > 0) playChime();
+        socket.on('chat-message', (msg) => {
+            if (/\p{Extended_Pictographic}/u.test(msg.text) && msg.text.length <= 4) {
+                spawnFloatingEmoji(msg.text);
+            }
         });
+
+        function spawnFloatingEmoji(emoji) {
+            const container = document.getElementById('floatingEmojiContainer');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = emoji;
+            el.style.left = Math.random() * 85 + 5 + 'vw';
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
 
         socket.on('broadcast-advert-screen', (ad) => { showProjectorAdvert(ad); });
         socket.on('hide-advert-screen', () => { hideProjectorAdvert(); });
 
         function showProjectorAdvert(ad) {
             const overlay = document.getElementById('adOverlayModal');
-            const imgContainer = document.getElementById('adImageContainer');
-            const textContainer = document.getElementById('adTextContainer');
-            
-            imgContainer.innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 45vh; max-width: 80vw; border-radius: 12px; border: 2px solid #ffee00; box-shadow: 0 0 30px rgba(255,238,0,0.3); margin-bottom: 1.5rem; object-fit: contain;">` : '';
-            textContainer.innerText = ad.text;
+            document.getElementById('adImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 45vh; max-width: 80vw; border-radius: 12px; border: 2px solid #ffee00; box-shadow: 0 0 30px rgba(255,238,0,0.3); margin-bottom: 1.5rem; object-fit: contain;">` : '';
+            document.getElementById('adTextContainer').innerText = ad.text;
             overlay.style.display = 'flex';
         }
 
