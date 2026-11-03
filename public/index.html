@@ -122,7 +122,7 @@
         socket.on('state-update', (state) => {
             document.getElementById('statusDisplay').innerText = state.status;
 
-            // Render Dynamic Saved Adverts Dropdown
+            // Render Dynamic Saved Adverts Dropdown from Server gameState.adverts
             const advertSelect = document.getElementById('advertSelect');
             if (state.adverts && state.adverts.length > 0) {
                 advertSelect.innerHTML = state.adverts.map((ad, idx) => `
