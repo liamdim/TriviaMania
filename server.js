@@ -35,6 +35,12 @@ let gameState = {
     welcomeHeader: 'Welcome to TriviaMania!',
     mobileWaitingText: 'Waiting for host to start game...',
     customEmojis: ['🔥', '🍻', '👏', '😂', '🎉', '💡'],
+    lobbySettings: {
+        showFact: true,
+        factText: 'Did you know? The pub record score is 480 points!',
+        showPoll: true,
+        pollQuestion: 'What is your team’s pre-trivia drink of choice?'
+    },
     announcement: { active: false, text: '' },
     settings: { 
         questionTime: 15,
@@ -238,7 +244,6 @@ function getCurrentRoundTimer() {
 
 io.on('connection', (socket) => {
     socket.emit('state-update', gameState);
-    socket.emit('announcement-update', gameState.announcement);
 
     socket.on('player-join', (playerName) => {
         const cleanName = sanitizeText(playerName) || 'Anonymous';
@@ -377,6 +382,16 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('update-lobby-toolkit', (toolkitSettings) => {
+        gameState.lobbySettings = {
+            showFact: !!toolkitSettings.showFact,
+            factText: sanitizeText(toolkitSettings.factText),
+            showPoll: !!toolkitSettings.showPoll,
+            pollQuestion: sanitizeText(toolkitSettings.pollQuestion)
+        };
+        io.emit('state-update', gameState);
+    });
+
     socket.on('update-emojis', (emojisArray) => {
         if (Array.isArray(emojisArray)) {
             gameState.customEmojis = emojisArray;
@@ -387,13 +402,7 @@ io.on('connection', (socket) => {
     socket.on('player-emoji', (emoji) => {
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
-        io.emit('chat-message', { name: name, text: emoji });
-    });
-
-    socket.on('host-chat-broadcast', (message) => {
-        const cleanMsg = sanitizeText(message);
-        if (!cleanMsg) return;
-        io.emit('chat-message', { name: 'HOST', text: cleanMsg });
+        io.emit('chat-message', { name: name, text: sanitizeText(emoji) });
     });
 
     socket.on('broadcast-advert-screen', (adData) => {
