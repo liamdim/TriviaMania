@@ -67,7 +67,7 @@
             <!-- Trivia Fact Toggle & Editor -->
             <div class="form-group">
                 <label class="checkbox-row">
-                    <input type="checkbox" id="showFactToggle"> Show Random Trivia Fact / Venue Tip
+                    <input type="checkbox" id="showFactToggle"> Show Random Trivia Fact / Venue Tip on Projector
                 </label>
                 <input type="text" id="factTextInput" placeholder="e.g., Did you know? The pub record score is 480 points!">
             </div>
@@ -77,9 +77,13 @@
             <!-- Practice Poll Toggle & Editor -->
             <div class="form-group">
                 <label class="checkbox-row" style="color: var(--neon-green);">
-                    <input type="checkbox" id="showPollToggle"> Show Pre-Game Practice Poll
+                    <input type="checkbox" id="showPollToggle"> Show Interactive Practice Poll on Mobile Phones (Auto-Randomizer Active)
                 </label>
-                <input type="text" id="pollQuestionInput" placeholder="e.g., What is the best drink for pub trivia? (Beer / Cocktail / Wine)">
+                <input type="text" id="pollQuestionInput" placeholder="Poll Question...">
+            </div>
+            <div class="form-group">
+                <label>Poll Options (comma separated):</label>
+                <input type="text" id="pollOptionsInput" placeholder="Beer 🍺, Cocktail 🍸, Wine 🍷, Soft Drink 🥤">
             </div>
             
             <button onclick="saveLobbyToolkit()" style="margin-top: 1rem; background: linear-gradient(135deg, #aa7700, #ffee00); color: #000;">💾 Save Lobby Toolkit Changes</button>
@@ -107,6 +111,7 @@
         const factTextInput = document.getElementById('factTextInput');
         const showPollToggle = document.getElementById('showPollToggle');
         const pollQuestionInput = document.getElementById('pollQuestionInput');
+        const pollOptionsInput = document.getElementById('pollOptionsInput');
         const emojisInput = document.getElementById('emojisInput');
 
         socket.on('state-update', (state) => {
@@ -119,6 +124,7 @@
                 if (document.activeElement !== factTextInput && state.lobbySettings.factText) factTextInput.value = state.lobbySettings.factText;
                 if (document.activeElement !== showPollToggle) showPollToggle.checked = state.lobbySettings.showPoll;
                 if (document.activeElement !== pollQuestionInput && state.lobbySettings.pollQuestion) pollQuestionInput.value = state.lobbySettings.pollQuestion;
+                if (document.activeElement !== pollOptionsInput && state.lobbySettings.pollOptions) pollOptionsInput.value = state.lobbySettings.pollOptions.join(', ');
             }
         });
 
@@ -130,7 +136,8 @@
                 showFact: showFactToggle.checked,
                 factText: factTextInput.value,
                 showPoll: showPollToggle.checked,
-                pollQuestion: pollQuestionInput.value
+                pollQuestion: pollQuestionInput.value,
+                pollOptionsStr: pollOptionsInput.value
             };
             socket.emit('update-lobby-toolkit', settings);
             alert('Lobby toolkit settings updated successfully!');
