@@ -13,6 +13,7 @@
             --panel-bg: rgba(15, 23, 42, 0.75);
             --neon-blue: #00f3ff;
             --neon-yellow: #ffee00;
+            --neon-green: #00ff66;
             --text: #ffffff;
             --text-muted: #8b9bb4;
         }
@@ -23,19 +24,21 @@
         .nav-links { display: flex; gap: 0.75rem; }
         .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
         .container { flex: 1; padding: 2rem; max-width: 800px; width: 100%; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; text-align: center; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); margin-bottom: 1.5rem; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); margin-bottom: 1.5rem; }
         .card h3 { margin-bottom: 1.5rem; color: var(--neon-blue); font-weight: 600; }
         .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; }
+        input[type="text"] { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; }
+        .checkbox-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; font-weight: bold; color: var(--neon-yellow); cursor: pointer; }
+        input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--neon-blue); cursor: pointer; }
         button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
-        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
+        button:hover { filter: brightness(1.2); }
+        #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
     <header>
-        <h1>🌐 Lobby, QR & Emoji Customizer</h1>
+        <h1>🌐 Lobby, QR & Pre-Game Studio</h1>
         <div class="nav-links">
             <a href="/index.html">⚡ Live Controls</a>
         </div>
@@ -52,9 +55,34 @@
                 <label>Venue Details / Subtitle:</label>
                 <input type="text" id="venueDetailsInput" placeholder="Get your phones ready to play!">
             </div>
-            <p style="color: var(--text-muted); margin-top: 1.5rem; margin-bottom: 0.5rem;">Player Mobile Join QR Code:</p>
+            <p style="color: var(--text-muted); margin-top: 1rem; margin-bottom: 0.5rem; text-align:center;">Player Mobile Join QR Code:</p>
             <div id="qr-container"></div>
-            <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--neon-blue);"></p>
+            <p id="playerJoinUrl" style="text-align:center; font-family: monospace; color: var(--neon-blue);"></p>
+        </div>
+
+        <!-- PRE-GAME ENTERTAINMENT TOOLKIT -->
+        <div class="card" style="border-color: var(--neon-yellow);">
+            <h3 style="color: var(--neon-yellow);">🎮 Pre-Game Lobby Interactive Tools</h3>
+            
+            <!-- Trivia Fact Toggle & Editor -->
+            <div class="form-group">
+                <label class="checkbox-row">
+                    <input type="checkbox" id="showFactToggle"> Show Random Trivia Fact / Venue Tip
+                </label>
+                <input type="text" id="factTextInput" placeholder="e.g., Did you know? The pub record score is 480 points!">
+            </div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 1.5rem 0;">
+
+            <!-- Practice Poll Toggle & Editor -->
+            <div class="form-group">
+                <label class="checkbox-row" style="color: var(--neon-green);">
+                    <input type="checkbox" id="showPollToggle"> Show Pre-Game Practice Poll
+                </label>
+                <input type="text" id="pollQuestionInput" placeholder="e.g., What is the best drink for pub trivia? (Beer / Cocktail / Wine)">
+            </div>
+            
+            <button onclick="saveLobbyToolkit()" style="margin-top: 1rem; background: linear-gradient(135deg, #aa7700, #ffee00); color: #000;">💾 Save Lobby Toolkit Changes</button>
         </div>
 
         <!-- EMOJI EDITOR -->
@@ -71,37 +99,47 @@
         const socket = io({ transports: ['websocket', 'polling'] });
         const playerUrl = window.location.origin + '/player.html';
         document.getElementById('playerJoinUrl').innerText = playerUrl;
-        new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 200, height: 200 });
+        new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 180, height: 180 });
 
         const headerInput = document.getElementById('welcomeHeaderInput');
         const venueInput = document.getElementById('venueDetailsInput');
+        const showFactToggle = document.getElementById('showFactToggle');
+        const factTextInput = document.getElementById('factTextInput');
+        const showPollToggle = document.getElementById('showPollToggle');
+        const pollQuestionInput = document.getElementById('pollQuestionInput');
         const emojisInput = document.getElementById('emojisInput');
 
         socket.on('state-update', (state) => {
-            if (state.welcomeHeader && document.activeElement !== headerInput) {
-                headerInput.value = state.welcomeHeader;
-            }
-            if (state.venueDetails && document.activeElement !== venueInput) {
-                venueInput.value = state.venueDetails;
-            }
-            if (state.customEmojis && document.activeElement !== emojisInput) {
-                emojisInput.value = state.customEmojis.join(', ');
+            if (state.welcomeHeader && document.activeElement !== headerInput) headerInput.value = state.welcomeHeader;
+            if (state.venueDetails && document.activeElement !== venueInput) venueInput.value = state.venueDetails;
+            if (state.customEmojis && document.activeElement !== emojisInput) emojisInput.value = state.customEmojis.join(', ');
+            
+            if (state.lobbySettings) {
+                if (document.activeElement !== showFactToggle) showFactToggle.checked = state.lobbySettings.showFact;
+                if (document.activeElement !== factTextInput && state.lobbySettings.factText) factTextInput.value = state.lobbySettings.factText;
+                if (document.activeElement !== showPollToggle) showPollToggle.checked = state.lobbySettings.showPoll;
+                if (document.activeElement !== pollQuestionInput && state.lobbySettings.pollQuestion) pollQuestionInput.value = state.lobbySettings.pollQuestion;
             }
         });
 
-        headerInput.addEventListener('input', () => {
-            socket.emit('update-welcome-header', headerInput.value);
-        });
+        headerInput.addEventListener('input', () => socket.emit('update-welcome-header', headerInput.value));
+        venueInput.addEventListener('input', () => socket.emit('update-venue-details', venueInput.value));
 
-        venueInput.addEventListener('input', () => {
-            socket.emit('update-venue-details', venueInput.value);
-        });
+        function saveLobbyToolkit() {
+            const settings = {
+                showFact: showFactToggle.checked,
+                factText: factTextInput.value,
+                showPoll: showPollToggle.checked,
+                pollQuestion: pollQuestionInput.value
+            };
+            socket.emit('update-lobby-toolkit', settings);
+            alert('Lobby toolkit settings updated successfully!');
+        }
 
         function saveEmojis() {
-            const raw = emojisInput.value;
-            const emojis = raw.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            const emojis = emojisInput.value.split(',').map(e => e.trim()).filter(e => e.length > 0);
             socket.emit('update-emojis', emojis);
-            alert('Emojis updated live for all players!');
+            alert('Emojis updated live!');
         }
     </script>
 </body>
