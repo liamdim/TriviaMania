@@ -72,7 +72,7 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// BULK AI GENERATOR WITH AUTOMATIC FALLBACK TEMPLATE & GITHUB COMMIT
+// BULK AI GENERATOR WITH CLEAN FILENAME (NO .TXT) & GITHUB COMMIT
 app.post('/api/generate-bulk-trivia', async (req, res) => {
     const { categoryName, count = 20 } = req.body;
     if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
@@ -113,7 +113,8 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
                     fileContent += `^Correct Answer ${i}\n\n`;
                 }
 
-                const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.txt';
+                // Clean filename without .txt extension
+                const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
                 const filePath = `categories/${fileName}`;
 
                 // Push fallback to GitHub so it saves permanently
@@ -170,7 +171,8 @@ app.post('/api/generate-bulk-trivia', async (req, res) => {
             newContent += `^${item.answer}\n\n`;
         });
 
-        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.txt';
+        // Clean filename without .txt extension
+        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const filePath = `categories/${fileName}`;
 
         if (process.env.GITHUB_TOKEN && process.env.GITHUB_OWNER && process.env.GITHUB_REPO) {
