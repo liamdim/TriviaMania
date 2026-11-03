@@ -43,6 +43,7 @@
             align-items: center;
             padding: 3rem;
             text-align: center;
+            overflow-y: auto;
         }
         .option-grid {
             display: grid;
@@ -61,6 +62,27 @@
             font-weight: 600;
             color: #fff;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .leaderboard-table {
+            width: 100%;
+            max-width: 800px;
+            border-collapse: collapse;
+            background: rgba(19, 27, 46, 0.9);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            margin-top: 1.5rem;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 1.2rem;
+        }
+        .leaderboard-table th {
+            color: var(--neon-blue);
+            background: rgba(0, 210, 255, 0.1);
+            font-weight: bold;
         }
         #audioUnlockOverlay {
             position: fixed;
@@ -107,39 +129,29 @@
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                
-                // Play test chord
                 playSynthMelody();
                 
                 const overlay = document.getElementById('audioUnlockOverlay');
                 if (overlay) overlay.style.display = 'none';
-                console.log("Audio unlocked successfully!");
-            } catch (e) {
-                console.error("Audio unlock failed:", e);
-            }
+            } catch (e) {}
         }
 
-        // Play a fun synthesizer melody for music rounds
         function playSynthMelody() {
             if (!audioCtx) return;
             try {
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                
-                const notes = [440, 554.37, 659.25, 880, 783.99, 659.25];
+                const notes = [440, 554.37, 659.25, 880];
                 notes.forEach((freq, idx) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.2));
-                    
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime + (idx * 0.2));
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (idx * 0.2) + 0.3);
-                    
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.15));
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (idx * 0.15));
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (idx * 0.15 + 0.25));
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    
-                    osc.start(audioCtx.currentTime + (idx * 0.2));
-                    osc.stop(audioCtx.currentTime + (idx * 0.2) + 0.3);
+                    osc.start(audioCtx.currentTime + (idx * 0.15));
+                    osc.stop(audioCtx.currentTime + (idx * 0.15 + 0.25));
                 });
             } catch (e) {}
         }
@@ -150,10 +162,7 @@
         });
 
         socket.on('stop-audio', () => {
-            if (musicInterval) {
-                clearInterval(musicInterval);
-                musicInterval = null;
-            }
+            if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
         });
 
         socket.on('state-update', (state) => {
@@ -191,14 +200,10 @@
                 const currentQ = currentRound.questions[state.currentQuestionIndex];
                 if (!currentQ) return;
 
-                // If it's a music round, play the synth melody when the question appears
                 if (currentRound.genre && currentRound.genre.toLowerCase().includes('beatiq')) {
                     playSynthMelody();
-                    // Loop the melody every few seconds while the question is active if desired
                     if (!musicInterval) {
-                        musicInterval = setInterval(() => {
-                            playSynthMelody();
-                        }, 4000);
+                        musicInterval = setInterval(() => { playSynthMelody(); }, 4000);
                     }
                 } else {
                     if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
@@ -214,15 +219,47 @@
                 }
 
                 stage.innerHTML = `
-                    <div style="font-size: 1.1rem; color: var(--neon-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">🎵 ${currentRound.name} (Q${state.currentQuestionIndex + 1}/${currentRound.questions.length})</div>
+                    <div style="font-size: 1.1rem; color: var(--neon-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">${currentRound.name} (Q${state.currentQuestionIndex + 1}/${currentRound.questions.length})</div>
                     <h2 style="font-size: 2.2rem; color: #fff; margin-bottom: 1.5rem; max-width: 1000px;">${currentQ.question}</h2>
                     ${optionsHtml}
                 `;
             } else if (state.status === 'LEADERBOARD') {
                 if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
+                const timerEl3 = document.getElementById('projectorTimer');
+                if (timerEl3) timerEl3.innerText = '🏆 FINAL';
+
+                const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+                
+                let tableRows = '';
+                if (sortedPlayers.length === 0) {
+                    tableRows = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No player scores recorded yet.</td></tr>';
+                } else {
+                    tableRows = sortedPlayers.map((p, idx) => `
+                        <tr>
+                            <td>#${idx + 1}</td>
+                            <td><strong>${p.name}</strong></td>
+                            <td>🔥 x${p.streak || 0}</td>
+                            <td><strong style="color: var(--neon-yellow);">${p.score} pts</strong></td>
+                        </tr>
+                    `).join('');
+                }
+
                 stage.innerHTML = `
-                    <h2 style="font-size: 3rem; color: var(--neon-yellow); margin-bottom: 1rem;">🏆 Final Leaderboard 🏆</h2>
-                    <p style="font-size: 1.5rem; color: var(--text-muted);">Great game everyone! Check your devices for final standings.</p>
+                    <h2 style="font-size: 2.8rem; color: var(--neon-yellow); margin-bottom: 0.5rem;">🏆 Live Leaderboard 🏆</h2>
+                    <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1rem;">Here is how everyone is stacking up!</p>
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player Name</th>
+                                <th>Streak</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
                 `;
             }
         });
