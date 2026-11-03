@@ -68,18 +68,24 @@
             right: 20px;
             background: var(--neon-yellow);
             color: #000;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 30px;
             font-weight: bold;
             cursor: pointer;
             z-index: 10000;
-            box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.6);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
 
-    <div id="audioUnlockOverlay" onclick="unlockAudio()">🔊 Enable Sound / Audio Ready</div>
+    <div id="audioUnlockOverlay" onclick="unlockAudio()">🔊 CLICK HERE TO ENABLE SOUND</div>
 
     <header>
         <h1 id="headerVenueTitle">TriviaMania</h1>
@@ -92,20 +98,49 @@
         <div id="projectorQrContainer" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>
     </div>
 
-    <audio id="bgAudio" preload="auto"></audio>
-
     <script>
         const socket = io();
         let audioCtx = null;
+        let musicInterval = null;
 
         function unlockAudio() {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                const audio = document.getElementById('bgAudio');
-                audio.play().catch(() => {});
-                document.getElementById('audioUnlockOverlay').style.display = 'none';
+                
+                // Play test chord
+                playSynthMelody();
+                
+                const overlay = document.getElementById('audioUnlockOverlay');
+                if (overlay) overlay.style.display = 'none';
                 console.log("Audio unlocked successfully!");
+            } catch (e) {
+                console.error("Audio unlock failed:", e);
+            }
+        }
+
+        // Play a fun synthesizer melody for music rounds
+        function playSynthMelody() {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const notes = [440, 554.37, 659.25, 880, 783.99, 659.25];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.2));
+                    
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime + (idx * 0.2));
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (idx * 0.2) + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(audioCtx.currentTime + (idx * 0.2));
+                    osc.stop(audioCtx.currentTime + (idx * 0.2) + 0.3);
+                });
             } catch (e) {}
         }
 
@@ -115,20 +150,21 @@
         });
 
         socket.on('stop-audio', () => {
-            const audio = document.getElementById('bgAudio');
-            audio.pause();
-            audio.currentTime = 0;
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
         });
 
         socket.on('state-update', (state) => {
             const stage = document.getElementById('displayStage');
             if (!stage) return;
 
-            // Header updates
             const headerEl = document.getElementById('headerVenueTitle');
             if (headerEl && state.welcomeHeader) headerEl.innerText = state.welcomeHeader;
 
             if (state.status === 'IDLE' || state.status === 'PAUSED') {
+                if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
                 const timerEl2 = document.getElementById('projectorTimer');
                 if (timerEl2) timerEl2.innerText = '⏱️ --';
 
@@ -155,13 +191,17 @@
                 const currentQ = currentRound.questions[state.currentQuestionIndex];
                 if (!currentQ) return;
 
-                // Play audio preview if available
-                if (currentQ.audioPreviewUrl) {
-                    const audio = document.getElementById('bgAudio');
-                    if (audio.src !== currentQ.audioPreviewUrl) {
-                        audio.src = currentQ.audioPreviewUrl;
-                        audio.play().catch(e => console.log("Audio play prevented:", e));
+                // If it's a music round, play the synth melody when the question appears
+                if (currentRound.genre && currentRound.genre.toLowerCase().includes('beatiq')) {
+                    playSynthMelody();
+                    // Loop the melody every few seconds while the question is active if desired
+                    if (!musicInterval) {
+                        musicInterval = setInterval(() => {
+                            playSynthMelody();
+                        }, 4000);
                     }
+                } else {
+                    if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
                 }
 
                 let optionsHtml = '';
@@ -174,11 +214,12 @@
                 }
 
                 stage.innerHTML = `
-                    <div style="font-size: 1rem; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">Round: ${currentRound.name} (Q${state.currentQuestionIndex + 1}/${currentRound.questions.length})</div>
+                    <div style="font-size: 1.1rem; color: var(--neon-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">🎵 ${currentRound.name} (Q${state.currentQuestionIndex + 1}/${currentRound.questions.length})</div>
                     <h2 style="font-size: 2.2rem; color: #fff; margin-bottom: 1.5rem; max-width: 1000px;">${currentQ.question}</h2>
                     ${optionsHtml}
                 `;
             } else if (state.status === 'LEADERBOARD') {
+                if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
                 stage.innerHTML = `
                     <h2 style="font-size: 3rem; color: var(--neon-yellow); margin-bottom: 1rem;">🏆 Final Leaderboard 🏆</h2>
                     <p style="font-size: 1.5rem; color: var(--text-muted);">Great game everyone! Check your devices for final standings.</p>
