@@ -28,8 +28,6 @@
         .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
         input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; }
-        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
         #qr-container { display: flex; justify-content: center; padding: 1rem; background: white; border-radius: 12px; width: fit-content; margin: 1.5rem auto; box-shadow: 0 0 25px rgba(255,255,255,0.2); }
     </style>
 </head>
@@ -45,14 +43,13 @@
             <h3>Customize Projector Lobby</h3>
             <div class="form-group">
                 <label>Projector Welcome Header:</label>
-                <input type="text" id="welcomeHeaderInput" value="Welcome to TriviaMania!">
+                <input type="text" id="welcomeHeaderInput" placeholder="Welcome to TriviaMania!">
             </div>
             <div class="form-group">
                 <label>Venue Details / Subtitle:</label>
-                <input type="text" id="venueDetailsInput" value="Get your phones ready to play!">
+                <input type="text" id="venueDetailsInput" placeholder="Get your phones ready to play!">
             </div>
-            <button onclick="saveLobbySettings()" style="margin-bottom: 1.5rem;">💾 Save Lobby Settings</button>
-            <p style="color: var(--text-muted); margin-bottom: 0.5rem;">Player Mobile Join QR Code:</p>
+            <p style="color: var(--text-muted); margin-top: 1.5rem; margin-bottom: 0.5rem;">Player Mobile Join QR Code:</p>
             <div id="qr-container"></div>
             <p id="playerJoinUrl" style="margin-top: 1rem; font-family: monospace; color: var(--neon-blue);"></p>
         </div>
@@ -63,22 +60,27 @@
         document.getElementById('playerJoinUrl').innerText = playerUrl;
         new QRCode(document.getElementById("qr-container"), { text: playerUrl, width: 200, height: 200 });
 
+        const headerInput = document.getElementById('welcomeHeaderInput');
+        const venueInput = document.getElementById('venueDetailsInput');
+
+        // Populate fields initially from server state
         socket.on('state-update', (state) => {
-            if (state.welcomeHeader && document.activeElement !== document.getElementById('welcomeHeaderInput')) {
-                document.getElementById('welcomeHeaderInput').value = state.welcomeHeader;
+            if (state.welcomeHeader && document.activeElement !== headerInput) {
+                headerInput.value = state.welcomeHeader;
             }
-            if (state.venueDetails && document.activeElement !== document.getElementById('venueDetailsInput')) {
-                document.getElementById('venueDetailsInput').value = state.venueDetails;
+            if (state.venueDetails && document.activeElement !== venueInput) {
+                venueInput.value = state.venueDetails;
             }
         });
 
-        function saveLobbySettings() {
-            const headerText = document.getElementById('welcomeHeaderInput').value;
-            const detailsText = document.getElementById('venueDetailsInput').value;
-            socket.emit('update-welcome-header', headerText);
-            socket.emit('update-venue-details', detailsText);
-            alert('Lobby settings saved and broadcasted to projector display!');
-        }
+        // Send updates live as you type
+        headerInput.addEventListener('input', () => {
+            socket.emit('update-welcome-header', headerInput.value);
+        });
+
+        venueInput.addEventListener('input', () => {
+            socket.emit('update-venue-details', venueInput.value);
+        });
     </script>
 </body>
 </html>
