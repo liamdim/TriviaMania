@@ -46,6 +46,12 @@
         }
 
         #advertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; text-align: center; }
+        
+        .corner-qr-box { position: absolute; bottom: 30px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,243,255,0.4); display: flex; flex-direction: column; align-items: center; }
+        .corner-qr-box span { font-size: 0.75rem; font-weight: bold; color: #000; margin-top: 4px; text-transform: uppercase; }
+        #adQrLeft { left: 30px; }
+        #adQrRight { right: 30px; }
+
         #projectorQrContainer { display: flex; justify-content: center; padding: 0.75rem; background: white; border-radius: 10px; width: fit-content; margin: 1rem auto 0.5rem auto; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
     </style>
 </head>
@@ -54,8 +60,20 @@
     <audio id="displayAudioPlayer" preload="auto"></audio>
 
     <div id="advertOverlay">
-        <h2 id="adOverlayTitle" style="font-size: 3rem; color: var(--neon-blue); margin-bottom: 2rem;"></h2>
-        <img id="adOverlayImage" style="max-height: 60vh; max-width: 80vw; border-radius: 12px; box-shadow: 0 0 30px rgba(0,243,255,0.4); display: none;" />
+        <h2 id="adOverlayTitle" style="font-size: 2.8rem; color: var(--neon-blue); margin-bottom: 1.5rem;"></h2>
+        <img id="adOverlayImage" style="max-height: 55vh; max-width: 75vw; border-radius: 12px; box-shadow: 0 0 30px rgba(0,243,255,0.4); display: none;" />
+        
+        <!-- Bottom Left Corner QR -->
+        <div id="adQrLeft" class="corner-qr-box">
+            <div id="cornerQrImg1"></div>
+            <span>Scan to Join</span>
+        </div>
+
+        <!-- Bottom Right Corner QR -->
+        <div id="adQrRight" class="corner-qr-box">
+            <div id="cornerQrImg2"></div>
+            <span>Scan to Join</span>
+        </div>
     </div>
 
     <header>
@@ -82,14 +100,20 @@
         });
 
         const playerUrl = window.location.origin + '/player.html';
+        
+        // Generate Main Welcome Screen QR
         const qrEl = document.getElementById('projectorQrContainer');
         if (qrEl) {
-            new QRCode(qrEl, {
-                text: playerUrl,
-                width: 160,
-                height: 160
-            });
+            new QRCode(qrEl, { text: playerUrl, width: 160, height: 160 });
             document.getElementById('projectorJoinUrlText').innerText = playerUrl;
+        }
+
+        // Generate Bottom Corner QRs for Advert Overlay
+        const cQr1 = document.getElementById('cornerQrImg1');
+        const cQr2 = document.getElementById('cornerQrImg2');
+        if (cQr1 && cQr2) {
+            new QRCode(cQr1, { text: playerUrl, width: 90, height: 90 });
+            new QRCode(cQr2, { text: playerUrl, width: 90, height: 90 });
         }
 
         socket.on('connect', () => {
@@ -126,8 +150,6 @@
         });
 
         socket.on('state-update', (state) => {
-            console.log("Projector state-update received:", state);
-
             if (state.venueDetails) document.getElementById('displayVenueDetails').innerText = state.venueDetails;
             if (state.welcomeHeader) {
                 document.getElementById('headerVenueTitle').innerText = state.welcomeHeader;
@@ -135,7 +157,7 @@
                 if (welH) welH.innerText = state.welcomeHeader;
             }
 
-            // Real-time Projector Advert Toggle
+            // Real-time Projector Advert Toggle with Corner QRs
             const adOverlay = document.getElementById('advertOverlay');
             if (state.activeScreenAdvert) {
                 adOverlay.style.display = 'flex';
@@ -155,7 +177,6 @@
 
             if (state.status === 'IDLE' || state.status === 'PAUSED') {
                 document.getElementById('projectorTimer').innerText = '⏱ --';
-                // Keep the welcome card with QR code intact during IDLE state
                 if (!document.getElementById('projectorQrContainer')) {
                     stage.innerHTML = 
                         '<h2 style="font-size: 2.2rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">' + (state.welcomeHeader || 'Welcome to TriviaMania!') + '</h2>' +
