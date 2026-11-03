@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriviaMania // Projector Display</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --neon-yellow: #f39c12;
@@ -55,7 +56,7 @@
     <div id="displayStage">
         <h2 style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">Welcome to TriviaMania!</h2>
         <p style="font-size: 1.3rem; color: var(--text-muted); margin-bottom: 1.5rem;" id="displayVenueDetails">Waiting for host to start...</p>
-        <div id="projectorQrContainer"></div>
+        <div id="projectorQrContainer" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>
     </div>
 
     <div id="advertOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:9999; justify-content:center; align-items:center; flex-direction:column; text-align:center; padding:2rem;">
@@ -111,7 +112,7 @@
                 }
             }
 
-            // Handle IDLE / PAUSED stages safely
+            // Handle IDLE / PAUSED stages safely with QR code generation
             const stage = document.getElementById('displayStage');
             if (stage && (state.status === 'IDLE' || state.status === 'PAUSED')) {
                 const timerEl2 = document.getElementById('projectorTimer');
@@ -121,7 +122,21 @@
                     stage.innerHTML = 
                         `<h2 style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 0.5rem;" id="displayWelcomeHeader">${state.welcomeHeader}</h2>` +
                         `<p style="font-size: 1.3rem; color: var(--text-muted); margin-bottom: 1.5rem;" id="displayVenueDetails">${state.venueDetails || ''}</p>` +
-                        `<div id="projectorQrContainer"></div>`;
+                        `<div id="projectorQrContainer" style="background: white; padding: 10px; border-radius: 8px; display: inline-block;"></div>` +
+                        `<p id="projectorJoinUrlText" style="font-size: 1rem; color: var(--neon-blue); margin-top: 1rem; font-family: monospace;">Join at: ${window.location.origin}</p>`;
+                }
+
+                // Render QR code
+                const qrEl = document.getElementById('projectorQrContainer');
+                if (qrEl && window.QRCode && qrEl.childElementCount === 0) {
+                    new QRCode(qrEl, {
+                        text: window.location.origin,
+                        width: 160,
+                        height: 160,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
                 }
             }
         });
