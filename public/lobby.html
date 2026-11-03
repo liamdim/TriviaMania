@@ -64,7 +64,6 @@
         <div class="card" style="border-color: var(--neon-yellow);">
             <h3 style="color: var(--neon-yellow);">🎮 Pre-Game Lobby Interactive Tools</h3>
             
-            <!-- Trivia Fact Toggle & Editor -->
             <div class="form-group">
                 <label class="checkbox-row">
                     <input type="checkbox" id="showFactToggle"> Show Random Trivia Fact / Venue Tip on Projector
@@ -74,10 +73,9 @@
 
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 1.5rem 0;">
 
-            <!-- Practice Poll Toggle & Editor -->
             <div class="form-group">
                 <label class="checkbox-row" style="color: var(--neon-green);">
-                    <input type="checkbox" id="showPollToggle"> Show Interactive Practice Poll on Mobile Phones (Auto-Randomizer Active)
+                    <input type="checkbox" id="showPollToggle"> Show Interactive Practice Poll on Mobile Phones
                 </label>
                 <input type="text" id="pollQuestionInput" placeholder="Poll Question...">
             </div>
@@ -86,7 +84,10 @@
                 <input type="text" id="pollOptionsInput" placeholder="Beer 🍺, Cocktail 🍸, Wine 🍷, Soft Drink 🥤">
             </div>
             
-            <button onclick="saveLobbyToolkit()" style="margin-top: 1rem; background: linear-gradient(135deg, #aa7700, #ffee00); color: #000;">💾 Save Lobby Toolkit Changes</button>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button onclick="saveLobbyToolkit()" style="background: linear-gradient(135deg, #aa7700, #ffee00); color: #000; flex:1;">💾 Save Toolkit Changes</button>
+                <button onclick="socket.emit('trigger-new-poll')" style="background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; flex:1;">🎲 Randomize New Poll Now</button>
+            </div>
         </div>
 
         <!-- EMOJI EDITOR -->
