@@ -13,43 +13,87 @@
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
+            --neon-red: #ff0055;
             --text: #ffffff;
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 2rem; background-image: radial-gradient(circle at 50% 50%, #1a103c 0%, #05050a 80%); overflow: hidden; text-align: center; }
-        header { font-size: 2rem; color: var(--neon-blue); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; text-shadow: 0 0 20px rgba(0,243,255,0.4); }
-        .main-container { width: 100%; max-width: 1000px; background: var(--panel-bg); border-radius: 16px; padding: 3rem; border: 2px solid rgba(0, 243, 255, 0.4); box-shadow: 0 12px 40px rgba(0,0,0,0.6); margin: auto; }
-        .question-text { font-size: 2.5rem; margin-bottom: 2rem; font-weight: 600; line-height: 1.3; }
+        header { font-size: 2.2rem; color: var(--neon-blue); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px rgba(0,243,255,0.4); }
+        .main-container { width: 100%; max-width: 1100px; background: var(--panel-bg); border-radius: 16px; padding: 2.5rem; border: 2px solid rgba(0, 243, 255, 0.4); box-shadow: 0 12px 40px rgba(0,0,0,0.6); margin: auto; position: relative; }
+        .question-text { font-size: 2.3rem; margin-bottom: 2rem; font-weight: 600; line-height: 1.3; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .option-card { background: rgba(5, 10, 20, 0.8); border: 2px solid rgba(0, 243, 255, 0.3); padding: 1.5rem; border-radius: 10px; font-size: 1.5rem; font-weight: bold; color: var(--text); }
+        .option-card { background: rgba(5, 10, 20, 0.8); border: 2px solid rgba(0, 243, 255, 0.3); padding: 1.5rem; border-radius: 10px; font-size: 1.4rem; font-weight: bold; color: var(--text); }
         .timer-bar-container { width: 100%; background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; margin-top: 2rem; overflow: hidden; }
         .timer-bar { width: 100%; height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-green)); transition: width 1s linear; }
-        #audioPlayerContainer { display: none; margin-top: 1.5rem; }
+        
+        /* Lobby & Poll / Fact Styles */
+        .lobby-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; text-align: left; }
+        .lobby-box { background: rgba(5, 10, 20, 0.7); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(0,243,255,0.2); }
+        .lobby-box h3 { color: var(--neon-blue); margin-bottom: 1rem; font-size: 1.3rem; }
+        
+        /* Floating Emojis */
+        .floating-emoji { position: absolute; font-size: 2.5rem; animation: floatUp 3s ease-out forwards; pointer-events: none; z-index: 100; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 1; } 100% { transform: translateY(-400px) scale(1.5); opacity: 0; } }
+
+        /* Advert Overlay */
+        #advertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; }
+        #audioPlayerContainer { display: none; }
     </style>
 </head>
 <body>
     <header id="headerTitle">TriviaMania Live</header>
 
     <div class="main-container" id="mainDisplayCard">
-        <div id="contentArea">
-            <h2 class="question-text" id="displayQuestion">Waiting for host to start the game...</h2>
-            <div class="options-grid" id="displayOptions"></div>
-        </div>
-        
-        <div class="timer-bar-container" id="timerBarContainer" style="display: none;">
-            <div class="timer-bar" id="timerBar"></div>
+        <!-- IDLE / LOBBY VIEW -->
+        <div id="idleView">
+            <h2 id="welcomeHeading" style="font-size: 2.5rem; color: var(--neon-blue); margin-bottom: 1rem;">Welcome to TriviaMania!</h2>
+            <p id="venueDisplayDetails" style="font-size: 1.3rem; color: var(--text-muted); margin-bottom: 2rem;">Get your phones ready to play!</p>
+            
+            <div class="lobby-grid">
+                <div class="lobby-box" id="factBox">
+                    <h3>💡 Did You Know?</h3>
+                    <p id="factTextDisplay" style="font-size: 1.1rem; line-height: 1.5;">Loading fun facts...</p>
+                </div>
+                <div class="lobby-box" id="pollBox">
+                    <h3>📊 Live Room Poll</h3>
+                    <p id="pollQuestionDisplay" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem;">Loading poll...</p>
+                    <div id="pollResultsDisplay" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Embedded YouTube Audio / Video Player -->
+        <!-- QUESTION VIEW -->
+        <div id="questionView" style="display: none;">
+            <h2 class="question-text" id="displayQuestion">Question goes here...</h2>
+            <div class="options-grid" id="displayOptions"></div>
+            <div class="timer-bar-container">
+                <div class="timer-bar" id="timerBar"></div>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD VIEW -->
+        <div id="leaderboardView" style="display: none;">
+            <h2 style="font-size: 2.5rem; color: var(--neon-yellow); margin-bottom: 1.5rem;">🏆 LIVE LEADERBOARD 🏆</h2>
+            <div id="leaderboardContainer" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 350px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Embedded YouTube Audio Player (Hidden visual stream) -->
         <div id="audioPlayerContainer">
             <div id="youtubePlayer"></div>
         </div>
     </div>
 
+    <!-- Advert Overlay -->
+    <div id="advertOverlay">
+        <h2 style="color: var(--neon-yellow); font-size: 2rem; margin-bottom: 1rem;">📢 SPONSOR ANNOUNCEMENT</h2>
+        <p id="advertTextDisplay" style="font-size: 1.8rem; max-width: 800px; line-height: 1.4;"></p>
+        <div id="advertImageContainer" style="margin-top: 1.5rem;"></div>
+    </div>
+
     <footer style="color: var(--text-muted); font-size: 1.1rem;" id="venueFooter">Get your phones ready to play!</footer>
 
-    <!-- YouTube IFrame API Script -->
+    <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
@@ -58,27 +102,70 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtubePlayer', {
-                height: '180',
-                width: '320',
+                height: '0',
+                width: '0',
                 videoId: '',
-                playerVars: { 'autoplay': 1, 'controls': 1 },
-                events: {
-                    'onReady': () => { apiReady = true; }
-                }
+                playerVars: { 'autoplay': 1, 'controls': 0 },
+                events: { 'onReady': () => { apiReady = true; } }
             });
         }
 
         socket.on('state-update', (state) => {
             document.getElementById('venueFooter').innerText = state.venueDetails || 'Get your phones ready to play!';
             document.getElementById('headerTitle').innerText = state.welcomeHeader || 'TriviaMania Live';
+            document.getElementById('welcomeHeading').innerText = state.welcomeHeader || 'Welcome to TriviaMania!';
+            document.getElementById('venueDisplayDetails').innerText = state.venueDetails || 'Get your phones ready to play!';
+
+            // Lobby & Polls
+            if (state.lobbySettings) {
+                document.getElementById('factBox').style.display = state.lobbySettings.showFact ? 'block' : 'none';
+                document.getElementById('factTextDisplay').innerText = state.lobbySettings.factText || '';
+                
+                document.getElementById('pollBox').style.display = state.lobbySettings.showPoll ? 'block' : 'none';
+                document.getElementById('pollQuestionDisplay').innerText = state.lobbySettings.pollQuestion || '';
+                
+                if (state.lobbySettings.pollOptions) {
+                    const votes = state.lobbySettings.votes || {};
+                    const totalVotes = Object.keys(votes).length;
+                    const counts = {};
+                    state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
+                    
+                    Object.values(votes).forEach(val => {
+                        if (counts[val] !== undefined) counts[val]++;
+                    });
+
+                    const resultsDiv = document.getElementById('pollResultsDisplay');
+                    resultsDiv.innerHTML = state.lobbySettings.pollOptions.map(opt => {
+                        const count = counts[opt] || 0;
+                        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                        return `
+                            <div style="background: rgba(0,243,255,0.1); padding: 0.5rem 1rem; border-radius: 6px; position: relative; overflow: hidden;">
+                                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: ${pct}%; background: rgba(0,243,255,0.3); transition: width 0.3s;"></div>
+                                <div style="display: flex; justify-content: space-between; position: relative; z-index: 2; font-size: 1rem;">
+                                    <span>${opt}</span>
+                                    <span><strong>${pct}%</strong> (${count})</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // Game States
+            const idleView = document.getElementById('idleView');
+            const questionView = document.getElementById('questionView');
+            const leaderboardView = document.getElementById('leaderboardView');
 
             if (state.status === 'QUESTION') {
+                idleView.style.display = 'none';
+                leaderboardView.style.display = 'none';
+                questionView.style.display = 'block';
+
                 const round = state.playlist[state.currentRoundIndex];
                 if (round && round.questions) {
                     const q = round.questions[state.currentQuestionIndex];
                     if (q) {
                         document.getElementById('displayQuestion').innerText = q.question;
-                        
                         const optionsGrid = document.getElementById('displayOptions');
                         if (q.options && q.options.length > 0) {
                             optionsGrid.style.display = 'grid';
@@ -87,33 +174,63 @@
                             optionsGrid.style.display = 'none';
                         }
 
-                        document.getElementById('timerBarContainer').style.display = 'block';
-                        
-                        // Check if question contains a YouTube link or search query for audio
+                        // Stream audio if question has YouTube ID
                         if (q.youtubeId && apiReady) {
-                            document.getElementById('audioPlayerContainer').style.display = 'block';
                             player.loadVideoById(q.youtubeId);
                         }
                     }
                 }
             } else if (state.status === 'LEADERBOARD') {
-                document.getElementById('displayQuestion').innerText = '🏆 FINAL LEADERBOARD 🏆';
-                document.getElementById('displayOptions').innerHTML = '';
-                document.getElementById('timerBarContainer').style.display = 'none';
+                idleView.style.display = 'none';
+                questionView.style.display = 'none';
+                leaderboardView.style.display = 'block';
                 stopAudio();
-            } else if (state.status === 'IDLE' || state.status === 'PAUSED') {
-                document.getElementById('displayQuestion').innerText = state.welcomeHeader || 'Waiting for host to start game...';
-                document.getElementById('displayOptions').innerHTML = '';
-                document.getElementById('timerBarContainer').style.display = 'none';
+
+                const lbContainer = document.getElementById('leaderboardContainer');
+                const sortedPlayers = Object.values(state.scores || {}).sort((a, b) => b.score - a.score);
+                if (sortedPlayers.length > 0) {
+                    lbContainer.innerHTML = sortedPlayers.map((p, idx) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 1.5rem; background:rgba(5,10,20,0.8); border-radius:8px; border:1px solid rgba(0,243,255,0.3);">
+                            <span style="font-size: 1.4rem; font-weight: bold;">#${idx + 1} ${p.name}</span>
+                            <span style="font-size: 1.4rem; color: var(--neon-green);">🔥 x${p.streak || 0} | <strong>${p.score} pts</strong></span>
+                        </div>
+                    `).join('');
+                } else {
+                    lbContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 1.2rem;">No players scored yet.</p>';
+                }
+            } else {
+                questionView.style.display = 'none';
+                leaderboardView.style.display = 'none';
+                idleView.style.display = 'block';
                 stopAudio();
             }
         });
 
         socket.on('timer-tick', (timeLeft) => {
-            const stateMax = 15; // fallback
-            const pct = (timeLeft / stateMax) * 100;
+            const pct = (timeLeft / 15) * 100;
             const bar = document.getElementById('timerBar');
             if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+        });
+
+        socket.on('trigger-floating-emoji', (emoji) => {
+            const container = document.getElementById('mainDisplayCard');
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = emoji;
+            el.style.left = Math.random() * 80 + 10 + '%';
+            el.style.bottom = '10px';
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        });
+
+        socket.on('broadcast-advert-screen', (ad) => {
+            document.getElementById('advertTextDisplay').innerText = ad.text;
+            document.getElementById('advertImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 250px; border-radius: 8px; border: 2px solid var(--neon-blue);">` : '';
+            document.getElementById('advertOverlay').style.display = 'flex';
+        });
+
+        socket.on('hide-advert-screen', () => {
+            document.getElementById('advertOverlay').style.display = 'none';
         });
 
         socket.on('stop-audio', () => {
@@ -124,8 +241,6 @@
             if (player && typeof player.stopVideo === 'function') {
                 player.stopVideo();
             }
-            const container = document.getElementById('audioPlayerContainer');
-            if (container) container.style.display = 'none';
         }
     </script>
 </body>
