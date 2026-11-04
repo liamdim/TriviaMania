@@ -23,8 +23,23 @@ let samplePolls = [
     { question: 'What is your team’s pre-trivia drink of choice?', options: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤'] },
     { question: 'Which decade had the absolute best music?', options: ['70s 🕺', '80s 🎸', '90s 📼', '00s 🎧'] },
     { question: 'How confident is your team tonight?', options: ['Total Winners 🏆', 'Just for Fun 🍻', 'Clueless 🤷', 'Robbed Last Week 😡'] },
-    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] }
+    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] },
+    { question: 'Who is the most famous fictional wizard?', options: ['Gandalf 🧙‍♂️', 'Harry Potter ⚡', 'Merlin 📜', 'Dumbledore 🔮'] },
+    { question: 'What superpower would you choose?', options: ['Invisibility 👻', 'Flight ✈️', 'Time Travel ⏳', 'Super Strength 💪'] }
 ];
+
+let sampleFacts = [
+    'Did you know? The pub record score is 480 points!',
+    'Fun Fact: Honey never spoils. Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old!',
+    'Did you know? Bananas are curved because they grow towards the sun against gravity.',
+    'Trivia Fact: A group of flamingos is called a "flamboyance".',
+    'Fun Fact: Earth is the only planet not named after a god or goddess.',
+    'Did you know? Octopuses have three hearts and blue blood.',
+    'Trivia Fact: Shakespeare invented over 1,700 words used in the English language today.',
+    'Fun Fact: Sea otters hold hands while sleeping so they don’t drift apart.'
+];
+
+let usedFactsHistory = [];
 
 let gameState = {
     status: 'IDLE',
@@ -48,7 +63,7 @@ let gameState = {
     ],
     lobbySettings: {
         showFact: true,
-        factText: 'Did you know? The pub record score is 480 points!',
+        factText: sampleFacts[0],
         showPoll: true,
         pollQuestion: samplePolls[0].question,
         pollOptions: samplePolls[0].options,
@@ -59,8 +74,6 @@ let gameState = {
 
 let timerInterval = null;
 let disconnectedPlayers = {};
-
-// Keep track of used question indices per category filename to prevent repeats until pool is exhausted
 let categoryHistory = {};
 
 function triggerNewPoll() {
@@ -68,6 +81,20 @@ function triggerNewPoll() {
     gameState.lobbySettings.pollQuestion = randomPoll.question;
     gameState.lobbySettings.pollOptions = randomPoll.options;
     gameState.lobbySettings.votes = {};
+    gameState.lobbySettings.showPoll = true;
+    io.emit('state-update', gameState);
+}
+
+function generateNewFact() {
+    if (usedFactsHistory.length >= sampleFacts.length) {
+        usedFactsHistory = [];
+    }
+    let availableFacts = sampleFacts.filter((_, idx) => !usedFactsHistory.includes(idx));
+    let randomIndex = Math.floor(Math.random() * availableFacts.length);
+    let originalIndex = sampleFacts.indexOf(availableFacts[randomIndex]);
+    
+    usedFactsHistory.push(originalIndex);
+    gameState.lobbySettings.factText = sampleFacts[originalIndex];
     io.emit('state-update', gameState);
 }
 
@@ -118,15 +145,12 @@ function editDistance(s1, s2) {
     return costs[s2.length];
 }
 
-// --- AI QUIZ GENERATOR ENDPOINT ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
-    
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(400).json({ success: false, error: 'GEMINI_API_KEY is not set on the server.' });
         }
-
         const prompt = `Generate a ${difficulty} difficulty pub trivia round about "${topic}" containing exactly ${count} questions.
         You MUST format your response strictly as plain text using the following format for each question, with no extra conversational filler or markdown code blocks:
         
@@ -135,104 +159,57 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
         B. [Second option]
         C. [Third option]
         D. [Fourth option]
-        ^ [Exact correct option text from above]
-        
-        Ensure all questions make complete factual sense, have distinct answers, and avoid ambiguity.`;
+        ^ [Exact correct option text from above]`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3.8-flash',
             contents: prompt
         });
-
-        const textOutput = response.text;
-        res.json({ success: true, raw: textOutput });
+        res.json({ success: true, raw: response.text });
     } catch (err) {
-        console.error('AI Generation Error:', err);
-        res.status(500).json({ success: false, error: err.message || 'Failed to generate AI questions.' });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
-function parseRawTextQuestions(text) {
-    const lines = text.split(/\r?\n/);
-    const questions = [];
-    let currentQ = null;
-
-    for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
-        if (line.startsWith('#Q')) {
-            if (currentQ) questions.push(currentQ);
-            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '' };
-        } else if (line.startsWith('^')) {
-            if (currentQ) currentQ.answer = line.replace('^', '').trim();
-        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
-            if (currentQ) {
-                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
-                currentQ.options.push(optText);
-            }
-        }
-    }
-    if (currentQ) questions.push(currentQ);
-    return questions;
-}
-
-// --- LOAD LOCAL CATEGORIES ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
-    if (!fs.existsSync(catsDir)) {
-        catsDir = path.join(process.cwd(), 'categories');
-    }
-    
+    if (!fs.existsSync(catsDir)) catsDir = path.join(process.cwd(), 'categories');
     if (!fs.existsSync(catsDir)) {
         fs.mkdirSync(catsDir, { recursive: true });
         return res.json({ success: true, categories: [] });
     }
 
     fs.readdir(catsDir, (err, files) => {
-        if (err) {
-            return res.status(500).json({ success: false, error: 'Could not read categories directory.' });
-        }
-
+        if (err) return res.status(500).json({ success: false, error: 'Could not read categories directory.' });
         const categories = [];
         files.forEach(file => {
             if (file.startsWith('.')) return;
-
             try {
                 const filePath = path.join(catsDir, file);
-                const stats = fs.statSync(filePath);
-                
-                if (stats.isFile()) {
+                if (fs.statSync(filePath).isFile()) {
                     const content = fs.readFileSync(filePath, 'utf8');
                     let questionsArr = [];
                     let categoryName = file.replace(/-/g, ' ').toUpperCase();
-
                     try {
                         const parsed = JSON.parse(content);
-                        if (Array.isArray(parsed)) {
-                            questionsArr = parsed;
-                        } else if (parsed.questions && Array.isArray(parsed.questions)) {
-                            questionsArr = parsed.questions;
-                            categoryName = parsed.name || parsed.title || categoryName;
-                        } else if (parsed.data && Array.isArray(parsed.data)) {
-                            questionsArr = parsed.data;
-                        }
-                    } catch (jsonErr) {
-                        questionsArr = parseRawTextQuestions(content);
-                    }
-
-                    if (questionsArr.length > 0) {
-                        categories.push({
-                            filename: file,
-                            name: categoryName,
-                            questions: questionsArr
+                        if (Array.isArray(parsed)) questionsArr = parsed;
+                        else if (parsed.questions) { questionsArr = parsed.questions; categoryName = parsed.name || categoryName; }
+                    } catch (e) {
+                        // parse text
+                        const lines = content.split(/\r?\n/);
+                        let curQ = null;
+                        lines.forEach(l => {
+                            l = l.trim();
+                            if (l.startsWith('#Q')) { if (curQ) questionsArr.push(curQ); curQ = { question: l.replace('#Q','').trim(), options: [], answer: '' }; }
+                            else if (l.startsWith('^')) { if (curQ) curQ.answer = l.replace('^','').trim(); }
+                            else if (/^[A-D][\.\s]/.test(l)) { if (curQ) curQ.options.push(l.replace(/^[A-D][\.\s]+/,'').trim()); }
                         });
+                        if (curQ) questionsArr.push(curQ);
                     }
+                    if (questionsArr.length > 0) categories.push({ filename: file, name: categoryName, questions: questionsArr });
                 }
-            } catch (e) {
-                console.error(`Error processing category file ${file}:`, e);
-            }
+            } catch (e) {}
         });
-
         res.json({ success: true, categories });
     });
 });
@@ -242,66 +219,30 @@ io.on('connection', (socket) => {
 
     socket.on('player-join', (playerName) => {
         const cleanName = sanitizeText(playerName) || 'Anonymous';
-        if (disconnectedPlayers[cleanName]) {
-            clearTimeout(disconnectedPlayers[cleanName].timeout);
-            gameState.scores[socket.id] = disconnectedPlayers[cleanName].playerData;
-            delete disconnectedPlayers[cleanName];
-        } else {
-            gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
-        }
+        gameState.scores[socket.id] = { name: cleanName, score: 0, streak: 0 };
         io.emit('state-update', gameState);
     });
 
     socket.on('submit-answer', ({ answer, timeRemaining }) => {
         if (gameState.status !== 'QUESTION') return;
         const player = gameState.scores[socket.id];
-        if (!player) return;
+        if (!player || player.hasAnsweredCurrent) return;
 
         const currentRound = gameState.playlist[gameState.currentRoundIndex];
-        if (!currentRound || !currentRound.questions) return;
-
-        const currentQ = currentRound.questions[gameState.currentQuestionIndex];
+        const currentQ = currentRound?.questions[gameState.currentQuestionIndex];
         if (!currentQ) return;
 
-        if (player.hasAnsweredCurrent) return;
-
-        let isCorrect = false;
-        const cleanAns = (answer || '').trim().toLowerCase();
-        const correctAnswer = (currentQ.answer || '').trim().toLowerCase();
-
-        if (currentQ.options && currentQ.options.length > 0) {
-            isCorrect = cleanAns === correctAnswer;
-        } else {
-            const similarity = calculateSimilarity(cleanAns, correctAnswer);
-            isCorrect = similarity >= 0.78 || cleanAns === correctAnswer;
-        }
-
+        let isCorrect = (answer || '').trim().toLowerCase() === (currentQ.answer || '').trim().toLowerCase();
         let pointsEarned = 0;
         if (isCorrect) {
-            if (!currentQ.fastestPlayerId) currentQ.fastestPlayerId = socket.id;
-            const isFastest = currentQ.fastestPlayerId === socket.id;
-
             player.streak = (player.streak || 0) + 1;
-            const streakMultiplier = player.streak >= 3 ? 1.5 : (player.streak >= 2 ? 1.25 : 1.0);
-            
-            const timeBonus = Math.floor((timeRemaining / gameState.timerMax) * 40);
-            const speedBonus = isFastest ? 25 : 0;
-            
-            pointsEarned = Math.round((50 + Math.max(0, timeBonus) + speedBonus) * streakMultiplier);
+            pointsEarned = Math.round((50 + Math.floor((timeRemaining / gameState.timerMax) * 40)) * (player.streak >= 3 ? 1.5 : 1));
             player.score += pointsEarned;
         } else {
             player.streak = 0;
         }
-
         player.hasAnsweredCurrent = true;
-
-        socket.emit('answer-result', { 
-            correct: isCorrect, 
-            points: pointsEarned, 
-            streak: player.streak, 
-            correctAnswer: currentQ.answer,
-            isFastest: currentQ.fastestPlayerId === socket.id 
-        });
+        socket.emit('answer-result', { correct: isCorrect, points: pointsEarned, correctAnswer: currentQ.answer });
         io.emit('state-update', gameState);
     });
 
@@ -311,196 +252,55 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    socket.on('mute-player', (targetId) => {
-        gameState.mutedPlayers[targetId] = true;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('unmute-player', (targetId) => {
-        delete gameState.mutedPlayers[targetId];
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-projector-text', ({ header, details }) => {
-        if (header !== undefined) gameState.welcomeHeader = sanitizeText(header);
-        if (details !== undefined) gameState.venueDetails = sanitizeText(details);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-lobby-settings', (settings) => {
-        if (settings) {
-            gameState.lobbySettings.showFact = !!settings.showFact;
-            gameState.lobbySettings.factText = sanitizeText(settings.factText);
-            gameState.lobbySettings.showPoll = !!settings.showPoll;
-            gameState.lobbySettings.pollQuestion = sanitizeText(settings.pollQuestion);
-            if (Array.isArray(settings.pollOptions)) {
-                gameState.lobbySettings.pollOptions = settings.pollOptions.map(o => sanitizeText(o));
-            }
-        }
-        io.emit('state-update', gameState);
-    });
-
     socket.on('trigger-new-poll', () => {
         triggerNewPoll();
     });
 
-    socket.on('update-custom-emojis', (emojis) => {
-        if (Array.isArray(emojis) && emojis.length > 0) {
-            gameState.customEmojis = emojis.slice(0, 10).map(e => sanitizeText(e));
-            io.emit('state-update', gameState);
-        }
+    socket.on('trigger-new-fact', () => {
+        generateNewFact();
     });
 
-    socket.on('save-new-advert', (adObj) => {
-        if (adObj && (adObj.text || adObj.image)) {
-            gameState.adverts.push({
-                text: sanitizeText(adObj.text || ''),
-                image: adObj.image || ''
-            });
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('delete-advert', (index) => {
-        if (gameState.adverts && gameState.adverts[index]) {
-            gameState.adverts.splice(index, 1);
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('broadcast-advert-screen', (adData) => {
-        gameState.activeScreenAdvert = adData ? { text: sanitizeText(adData.text), image: adData.image || '' } : null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('broadcast-advert-mobile', (adData) => {
-        gameState.activeMobileAdvert = adData ? { text: sanitizeText(adData.text), image: adData.image || '' } : null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-screen', () => {
-        gameState.activeScreenAdvert = null;
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('hide-advert-mobile', () => {
-        gameState.activeMobileAdvert = null;
-        io.emit('state-update', gameState);
-    });
-
-    // --- ADD ROUND WITH NON-REPEATING QUESTION SELECTION & TIMER ---
     socket.on('add-custom-picture-round', (roundObj) => {
-        if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
-
+        if (!roundObj || !roundObj.questions) return;
         const fileKey = roundObj.filename || roundObj.name;
-        if (!categoryHistory[fileKey]) {
-            categoryHistory[fileKey] = [];
-        }
-
-        let allQuestions = [...roundObj.questions];
-        let usedIndices = categoryHistory[fileKey];
-
-        // If all questions have been used, reset tracking pool
-        if (usedIndices.length >= allQuestions.length) {
-            usedIndices = [];
-            categoryHistory[fileKey] = [];
-        }
-
-        // Filter out already used questions
-        let availableIndices = allQuestions
-            .map((_, idx) => idx)
-            .filter(idx => !usedIndices.includes(idx));
-
-        // Shuffle available indices
-        availableIndices.sort(() => Math.random() - 0.5);
-
-        // Determine how many questions to pick (5, 10, 15, 20, or all available)
-        const requestedCount = parseInt(roundObj.questionCount) || 10;
-        const countToPick = Math.min(requestedCount, availableIndices.length);
-
-        const chosenIndices = availableIndices.slice(0, countToPick);
-        
-        // Mark these indices as used
-        categoryHistory[fileKey].push(...chosenIndices);
-
-        const selectedQuestions = chosenIndices.map(idx => allQuestions[idx]);
+        if (!categoryHistory[fileKey]) categoryHistory[fileKey] = [];
+        let allQ = [...roundObj.questions];
+        if (categoryHistory[fileKey].length >= allQ.length) categoryHistory[fileKey] = [];
+        let available = allQ.map((_, i) => i).filter(i => !categoryHistory[fileKey].includes(i));
+        available.sort(() => Math.random() - 0.5);
+        let picked = available.slice(0, parseInt(roundObj.questionCount) || 10);
+        categoryHistory[fileKey].push(...picked);
 
         gameState.playlist.push({
-            name: roundObj.name || '🖼️ Custom Round',
-            genre: roundObj.genre || 'Custom Round',
+            name: roundObj.name || 'Custom Round',
             timer: parseInt(roundObj.timer) || 15,
-            questions: selectedQuestions
+            questions: picked.map(i => allQ[i])
         });
-
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('player-chat', (message) => {
-        if (gameState.mutedPlayers[socket.id]) return;
-        const player = gameState.scores[socket.id];
-        const name = player ? player.name : 'Player';
-        const cleanMsg = sanitizeText(message);
-        if (cleanMsg) io.emit('chat-message', { name: name, text: cleanMsg });
-    });
-
-    socket.on('host-chat-broadcast', (message) => {
-        const cleanMsg = sanitizeText(message);
-        if (!cleanMsg) return;
-        io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
-    });
-
-    socket.on('move-round', ({ index, direction }) => {
-        if (!gameState.playlist || gameState.playlist.length === 0) return;
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        if (targetIndex >= 0 && targetIndex < gameState.playlist.length) {
-            const item = gameState.playlist.splice(index, 1)[0];
-            gameState.playlist.splice(targetIndex, 0, item);
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('delete-round', (index) => {
-        if (!gameState.playlist) return;
-        gameState.playlist.splice(index, 1);
-        if (gameState.currentRoundIndex >= gameState.playlist.length) {
-            gameState.currentRoundIndex = Math.max(0, gameState.playlist.length - 1);
-        }
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('clear-playlist', () => {
-        gameState.playlist = [];
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
         io.emit('state-update', gameState);
     });
 
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
-        if (timerInterval) clearInterval(timerInterval);
-
         gameState.status = 'QUESTION';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
-        gameState.timerMax = getCurrentRoundTimer();
+        gameState.timerMax = parseInt(gameState.playlist[0].timer) || 15;
         gameState.timer = gameState.timerMax;
-
+        gameState.lobbySettings.showPoll = false; // Hide poll on start
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
         io.emit('state-update', gameState);
         startQuestionTimer();
     });
 
     socket.on('start-next-round', () => {
-        if (timerInterval) clearInterval(timerInterval);
         if (gameState.currentRoundIndex + 1 < gameState.playlist.length) {
             gameState.currentRoundIndex++;
             gameState.currentQuestionIndex = 0;
             gameState.status = 'QUESTION';
-            gameState.timerMax = getCurrentRoundTimer();
+            gameState.timerMax = parseInt(gameState.playlist[gameState.currentRoundIndex].timer) || 15;
             gameState.timer = gameState.timerMax;
-
+            gameState.lobbySettings.showPoll = false; // Hide poll on start
             Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-            triggerNewPoll();
             io.emit('state-update', gameState);
             startQuestionTimer();
         } else {
@@ -509,61 +309,18 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('next-question', () => {
-        advanceToNextQuestion();
-    });
-
-    socket.on('stop-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'PAUSED';
-        triggerNewPoll();
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('restart-game', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        triggerNewPoll();
-        Object.values(gameState.scores).forEach(p => {
-            p.score = 0; p.streak = 0; p.hasAnsweredCurrent = false;
-        });
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('stop-reset', () => {
-        if (timerInterval) clearInterval(timerInterval);
-        gameState.status = 'IDLE';
-        gameState.currentRoundIndex = 0;
-        gameState.currentQuestionIndex = 0;
-        gameState.scores = {};
-        gameState.mutedPlayers = {};
-        disconnectedPlayers = {};
-        triggerNewPoll();
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('disconnect', () => {
-        delete gameState.mutedPlayers[socket.id];
-        io.emit('state-update', gameState);
-    });
+    socket.on('next-question', () => { advanceToNextQuestion(); });
+    socket.on('stop-game', () => { gameState.status = 'PAUSED'; io.emit('state-update', gameState); });
+    socket.on('restart-game', () => { gameState.status = 'IDLE'; gameState.currentRoundIndex = 0; gameState.currentQuestionIndex = 0; io.emit('state-update', gameState); });
+    socket.on('stop-reset', () => { gameState.status = 'IDLE'; gameState.currentRoundIndex = 0; gameState.currentQuestionIndex = 0; gameState.scores = {}; io.emit('state-update', gameState); });
 });
-
-function getCurrentRoundTimer() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (round && round.timer) return parseInt(round.timer);
-    return gameState.settings.questionTime || 15;
-}
 
 function startQuestionTimer() {
     if (timerInterval) clearInterval(timerInterval);
-
     timerInterval = setInterval(() => {
         if (gameState.status === 'QUESTION') {
             gameState.timer--;
             io.emit('timer-tick', gameState.timer);
-
             if (gameState.timer <= 0) {
                 clearInterval(timerInterval);
                 advanceToNextQuestion();
@@ -574,30 +331,20 @@ function startQuestionTimer() {
 
 function advanceToNextQuestion() {
     if (timerInterval) clearInterval(timerInterval);
-
     const round = gameState.playlist[gameState.currentRoundIndex];
-    if (!round || !round.questions) return;
-
+    if (!round) return;
     Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
-
     gameState.currentQuestionIndex++;
-
     if (gameState.currentQuestionIndex >= round.questions.length) {
         gameState.status = 'INTERMISSION';
-        triggerNewPoll();
         io.emit('state-update', gameState);
         return;
     }
-
     gameState.status = 'QUESTION';
-    gameState.timerMax = getCurrentRoundTimer();
+    gameState.timerMax = parseInt(round.timer) || 15;
     gameState.timer = gameState.timerMax;
-    
     io.emit('state-update', gameState);
     startQuestionTimer();
 }
 
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => {
-    console.log('TriviaMania server running on port ' + PORT);
-});
+server.listen(process.env.PORT || 10000);
