@@ -97,7 +97,7 @@
             <button class="btn-green" style="padding: 0.4rem; font-size: 0.85rem;" onclick="updateCustomEmojis()">💾 Update Emojis</button>
         </div>
 
-        <!-- HOST CHAT BROADCAST & CONNECTED TEAMS -->
+        <!-- HOST CHAT BROADCAST & CONNECTED TEAMS WITH MUTE -->
         <div class="card">
             <h3>📢 Live Chat & Host Broadcast</h3>
             <div id="hostChatFeed" class="chat-feed"></div>
@@ -105,7 +105,7 @@
             <button class="btn-green" style="padding: 0.5rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="sendHostBroadcast()">Broadcast Message</button>
 
             <h3 style="font-size: 1rem;">👥 Connected Teams (<span id="playerCountDisplay">0</span>)</h3>
-            <div id="playersListContainer" style="max-height: 100px; overflow-y: auto;">
+            <div id="playersListContainer" style="max-height: 120px; overflow-y: auto;">
                 <p style="color: var(--text-muted);">No teams connected yet.</p>
             </div>
         </div>
@@ -113,8 +113,10 @@
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
+        let latestState = {};
 
         socket.on('state-update', (state) => {
+            latestState = state;
             document.getElementById('gameStatusDisplay').innerText = state.status;
             document.getElementById('playerCountDisplay').innerText = Object.keys(state.scores || {}).length;
 
@@ -154,12 +156,25 @@
 
             const pContainer = document.getElementById('playersListContainer');
             const scores = Object.entries(state.scores || {});
-            pContainer.innerHTML = scores.length > 0 ? scores.map(([id, p]) => `
-                <div style="display: flex; justify-content: space-between; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 3px; font-size: 0.85rem;">
-                    <span>${p.name}</span>
-                    <span style="color: var(--neon-green); font-weight: bold;">${p.score} pts</span>
-                </div>
-            `).join('') : '<p style="color: var(--text-muted);">No teams connected yet.</p>';
+            const muted = state.mutedPlayers || {};
+
+            pContainer.innerHTML = scores.length > 0 ? scores.map(([id, p]) => {
+                const isMuted = muted[id];
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem;">
+                        <div>
+                            <span>${p.name}</span>
+                            <span style="color: var(--neon-green); font-weight: bold; margin-left: 8px;">${p.score} pts</span>
+                        </div>
+                        <div>
+                            ${isMuted ? 
+                                `<button class="btn-green" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="socket.emit('unmute-player', '${id}')">Unmute</button>` : 
+                                `<button class="btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="socket.emit('mute-player', '${id}')">Mute 🔇</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<p style="color: var(--text-muted);">No teams connected yet.</p>';
         });
 
         function updateProjectorText() {
