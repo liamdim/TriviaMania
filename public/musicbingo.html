@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>TriviaMania - Music Bingo Setup</title>
+    <title>TriviaMania - Music Bingo Native Setup</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
@@ -73,22 +73,11 @@
                     <label><input type="radio" name="importMode" value="replace" checked> Replace list</label>
                     <label><input type="radio" name="importMode" value="add"> Add to list</label>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">Works with public links from Spotify, Apple Music, Amazon Music, or YouTube Music[cite: 1].</p>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">Pasting a link will automatically pull and populate the track list below[cite: 1].</p>
             </div>
 
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Playlist Tracks (One song per line, Title - Artist)</label>
-            <textarea id="playlistTextArea" style="height: 180px;">Bohemian Rhapsody - Queen
-Billie Jean - Michael Jackson
-Like a Prayer - Madonna
-Smells Like Teen Spirit - Nirvana
-Hey Ya! - OutKast
-Dancing Queen - ABBA
-Mr. Brightside - The Killers
-Superstition - Stevie Wonder
-Wannabe - Spice Girls
-Uptown Funk - Mark Ronson ft. Bruno Mars
-Hotel California - Eagles
-Don't Stop Believin' - Journey</textarea>
+            <textarea id="playlistTextArea" style="height: 180px;"></textarea>
 
             <button class="btn-action btn-shuffle" onclick="shufflePlaylist()">🔀 Reshuffle Playlist</button>
             <button class="btn-action btn-green" onclick="pushToTriviaQueue()">🚀 Add Music Bingo Directly to Trivia Queue</button>
@@ -122,9 +111,9 @@ Don't Stop Believin' - Journey</textarea>
                     } else {
                         textarea.value = textarea.value.trim() + '\n' + data.tracks.join('\n');
                     }
-                    alert('Successfully imported tracks from playlist link!');
+                    alert(`Successfully imported ${data.tracks.length} tracks from your link!`);
                 } else {
-                    alert('Could not auto-extract tracks from this link. Please check the URL.');
+                    alert('Could not extract tracks. Please check the URL.');
                 }
             } catch (err) {
                 alert('Error connecting to playlist import service.');
