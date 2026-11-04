@@ -42,8 +42,8 @@
         <!-- LOCAL CATEGORIES FOLDER CARD -->
         <div class="card">
             <h3>📂 Stored Quizzes (`categories/` folder)</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Select a pre-made quiz file from your repository to load directly into the game queue:</p>
-            <div id="localCategoriesList" style="max-height: 220px; overflow-y: auto; margin-bottom: 1rem;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Select question count and timer before loading a round into the game queue:</p>
+            <div id="localCategoriesList" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">
                 <p style="color: var(--text-muted);">Loading local categories...</p>
             </div>
             <button class="btn-blue" onclick="fetchLocalCategories()">🔄 Refresh Category List</button>
@@ -99,6 +99,7 @@
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
         let parsedQuestionsCache = [];
+        let categoriesCache = [];
 
         async function fetchLocalCategories() {
             try {
@@ -107,33 +108,68 @@
                 const container = document.getElementById('localCategoriesList');
 
                 if (data.success && data.categories.length > 0) {
-                    container.innerHTML = data.categories.map((cat) => `
-                        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong style="color: var(--neon-blue);">${cat.name}</strong>
-                                <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">${cat.questions.length} Questions (${cat.filename})</span>
+                    categoriesCache = data.categories;
+                    container.innerHTML = data.categories.map((cat, idx) => `
+                        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div>
+                                    <strong style="color: var(--neon-blue); font-size: 1.05rem;">${cat.name}</strong>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">Total Pool: ${cat.questions.length} Questions</span>
+                                </div>
                             </div>
-                            <button class="btn-green" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick='loadCategoryToQueue(${JSON.stringify(cat).replace(/'/g, "&#39;")})'>📥 Load Round</button>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: center;">
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block;">Count:</label>
+                                    <select id="count-${idx}" style="margin-bottom: 0; padding: 0.4rem; font-size: 0.85rem;">
+                                        <option value="5">5 Qs</option>
+                                        <option value="10" selected>10 Qs</option>
+                                        <option value="15">15 Qs</option>
+                                        <option value="20">20 Qs</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--text-muted); display: block;">Timer:</label>
+                                    <select id="timer-${idx}" style="margin-bottom: 0; padding: 0.4rem; font-size: 0.85rem;">
+                                        <option value="5">5s</option>
+                                        <option value="10">10s</option>
+                                        <option value="15" selected>15s</option>
+                                        <option value="20">20s</option>
+                                        <option value="30">30s</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: flex-end; height: 100%;">
+                                    <button class="btn-green" style="padding: 0.45rem; font-size: 0.85rem;" onclick="loadCategory(${idx})">📥 Load</button>
+                                </div>
+                            </div>
                         </div>
                     `).join('');
                 } else {
-                    container.innerHTML = '<p style="color: var(--text-muted);">No JSON quiz files found in the "categories" folder.</p>';
+                    container.innerHTML = '<p style="color: var(--text-muted);">No category files found in the "categories" folder.</p>';
                 }
             } catch (err) {
                 document.getElementById('localCategoriesList').innerHTML = '<p style="color: var(--neon-red);">Failed to load local categories.</p>';
             }
         }
 
-        function loadCategoryToQueue(cat) {
-            if (!cat.questions || cat.questions.length === 0) {
-                alert('This category file has no valid questions.');
+        function loadCategory(idx) {
+            const cat = categoriesCache[idx];
+            if (!cat || !cat.questions || cat.questions.length === 0) {
+                alert('No questions in this category.');
                 return;
             }
+
+            const questionCount = document.getElementById(`count-${idx}`).value;
+            const timer = document.getElementById(`timer-${idx}`).value;
+
             socket.emit('add-custom-picture-round', {
                 name: cat.name,
-                questions: cat.questions
+                filename: cat.filename,
+                questions: cat.questions,
+                questionCount: questionCount,
+                timer: timer
             });
-            alert(`Successfully added "${cat.name}" (${cat.questions.length} questions) to the trivia queue!`);
+
+            alert(`Successfully added "${cat.name}" (${questionCount} questions, ${timer}s timer) to the trivia queue! (Will not repeat until pool exhausts)`);
         }
 
         window.addEventListener('DOMContentLoaded', fetchLocalCategories);
@@ -226,7 +262,9 @@
             
             socket.emit('add-custom-picture-round', {
                 name: roundName,
-                questions: parsedQuestionsCache
+                questions: parsedQuestionsCache,
+                questionCount: parsedQuestionsCache.length,
+                timer: 15
             });
             alert(`Added "${roundName}" to queue!`);
         }
