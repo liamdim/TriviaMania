@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
     <title>TriviaMania - Player Controller</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.95);
+            --panel-bg: #0f172a;
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
@@ -18,353 +18,154 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; justify-content: space-between; background-image: radial-gradient(circle at 50% 20%, #1a103c 0%, #05050a 85%); }
-        header { text-align: center; padding: 0.75rem; background: rgba(10, 15, 30, 0.9); border-bottom: 1px solid rgba(0, 243, 255, 0.3); border-radius: 8px; margin-bottom: 1rem; }
-        header h1 { font-size: 1.25rem; color: var(--neon-blue); }
-        .container { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 500px; width: 100%; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); margin-bottom: 1rem; }
-        button { padding: 1rem; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 1.1rem; width: 100%; transition: 0.2s; margin-bottom: 0.75rem; }
-        button:hover { filter: brightness(1.2); }
-        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
-        .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
-        input[type="text"] { width: 100%; padding: 1rem; background: rgba(5, 10, 20, 0.9); border: 1px solid rgba(0, 243, 255, 0.4); color: white; border-radius: 8px; font-size: 1.1rem; margin-bottom: 1rem; text-align: center; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; }
+        .hidden { display: none !important; }
         
-        .options-container { display: flex; flex-direction: column; gap: 0.75rem; }
-        .option-btn { background: rgba(0, 243, 255, 0.15); border: 2px solid var(--neon-blue); color: white; padding: 1.2rem; border-radius: 10px; font-size: 1.2rem; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; }
-        .option-btn:hover:not(:disabled) { background: rgba(0, 243, 255, 0.3); }
-        .option-btn:disabled { cursor: not-allowed; opacity: 0.8; }
-        .option-btn.reveal-correct { background: var(--neon-green) !important; color: #000 !important; border-color: var(--neon-green) !important; box-shadow: 0 0 15px var(--neon-green); }
-
-        #mobileAdvertOverlay { position: fixed; inset: 0; background: rgba(5,5,10,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 100%; max-width: 450px; margin: auto; }
+        h2 { color: var(--neon-blue); text-align: center; margin-bottom: 1rem; font-size: 1.4rem; }
+        input[type="text"] { width: 100%; padding: 0.85rem; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; text-align: center; }
+        button { width: 100%; padding: 0.85rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
+        
+        .option-btn { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; padding: 1rem; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 0.75rem; text-align: center; }
+        .option-btn:hover, .option-btn:active { background: var(--neon-blue); color: #000; }
     </style>
 </head>
 <body>
-    <header>
-        <h1 id="appTitle">⚡ TriviaMania</h1>
-    </header>
 
-    <div class="container">
-        <!-- JOIN SCREEN -->
-        <div class="card" id="joinScreen">
-            <h3 style="color: var(--neon-blue); margin-bottom: 1rem; text-align: center;">Enter Player / Team Name</h3>
-            <input type="text" id="playerNameInput" placeholder="Your Team Name..." maxlength="25">
-            <button class="btn-green" onclick="joinGame()">🚀 Join Trivia Game</button>
-        </div>
-
-        <!-- WAITING / LOBBY & LEADERBOARD SCREEN -->
-        <div class="card" id="waitingScreen" style="display: none; text-align: center;">
-            <h3 style="color: var(--neon-green); margin-bottom: 0.5rem;" id="waitingHeader">You're In!</h3>
-            <p style="color: var(--text-muted); margin-bottom: 1rem;" id="waitingSubtext">Waiting for host to start the game...</p>
-            <p id="personalScoreDisplay" style="color: var(--neon-yellow); font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem;"></p>
-            
-            <div id="pollSection" style="background: rgba(5,10,20,0.6); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2); margin-top: 1rem; display: none;">
-                <h4 style="color: var(--neon-yellow); margin-bottom: 0.5rem;" id="pollQ">Lobby Poll</h4>
-                <div id="pollBtns" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
-            </div>
-
-            <div id="mobileLeaderboardSection" style="background: rgba(5,10,20,0.8); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.3); margin-top: 1rem;">
-                <h4 style="color: var(--neon-blue); margin-bottom: 0.75rem;">🏆 Live Rankings</h4>
-                <div id="mobileLeaderboardList" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y: auto; text-align: left;"></div>
-            </div>
-        </div>
-
-        <!-- QUESTION SCREEN -->
-        <div class="card" id="questionScreen" style="display: none;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
-                <span id="qCounter">Question 1</span>
-                <span id="timerDisplay" style="color: var(--neon-yellow); font-weight: bold;">Time: 15s</span>
-            </div>
-            <h3 id="activeQuestionText" style="font-size: 1.2rem; margin-bottom: 1rem; text-align: center; line-height: 1.3;">Question text...</h3>
-            
-            <!-- Mobile Image Container for Picture Rounds -->
-            <div id="mobileImageContainer" style="margin-bottom: 1rem; text-align: center; display: none;">
-                <img id="mobileQuestionImg" src="" alt="Question Image" style="max-height: 220px; max-width: 100%; border-radius: 8px; border: 2px solid var(--neon-blue);">
-            </div>
-
-            <div class="options-container" id="questionOptionsContainer"></div>
-            <p id="answerFeedbackBanner" style="text-align: center; margin-top: 1rem; font-weight: bold; font-size: 1.1rem;"></p>
-        </div>
-
-        <!-- LIVE CHAT BOX -->
-        <div class="card" id="chatCard" style="display: none; margin-top: auto;">
-            <h4 style="color: var(--neon-blue); margin-bottom: 0.5rem; font-size: 0.95rem;">💬 Table Chat</h4>
-            <div id="chatFeed" style="height: 80px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 6px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-muted);"></div>
-            <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="chatInput" placeholder="Send message..." style="margin-bottom: 0; font-size: 0.9rem; padding: 0.5rem;">
-                <button class="btn-blue" style="width: 80px; padding: 0.5rem; margin-bottom: 0; font-size: 0.9rem;" onclick="sendChatMessage()">Send</button>
-            </div>
-        </div>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="card">
+        <h2>TriviaMania</h2>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Enter your team or player name to join:</p>
+        <input type="text" id="playerNameInput" placeholder="Player / Team Name" maxlength="20">
+        <button class="btn-green" onclick="joinGame()">Join Game 🚀</button>
     </div>
 
-    <!-- Mobile Advert Overlay -->
-    <div id="mobileAdvertOverlay">
-        <h3 style="color: var(--neon-yellow); margin-bottom: 1rem;">📢 SPONSOR MESSAGE</h3>
-        <p id="mobileAdvertText" style="font-size: 1.2rem; margin-bottom: 1.5rem; line-height: 1.4;"></p>
-        <div id="mobileAdvertImageContainer" style="margin-bottom: 1.5rem;"></div>
-        <button class="btn-blue" onclick="dismissMobileAdvert()">Got It / Close</button>
+    <!-- GAME PLAY SCREEN -->
+    <div id="gameScreen" class="card hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+            <span id="displayPlayerName" style="color: var(--neon-blue); font-weight: bold;">Player</span>
+            <span id="displayPlayerScore" style="color: var(--neon-green); font-weight: bold;">0 pts</span>
+        </div>
+
+        <div id="statusMessage" style="text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; color: var(--neon-yellow);">Waiting for host to start...</div>
+
+        <!-- QUESTION CONTAINER -->
+        <div id="questionContainer" class="hidden">
+            <p id="questionText" style="font-size: 1rem; margin-bottom: 1rem; text-align: center;"></p>
+            <div id="optionsContainer"></div>
+        </div>
+
+        <!-- DIGITAL MUSIC BINGO TICKET CONTAINER -->
+        <div id="musicBingoContainer" class="hidden" style="text-align: center; margin-top: 1rem;">
+            <h3 style="color: var(--neon-green); margin-bottom: 0.3rem; font-size: 1.1rem;">🎵 Music Bingo Ticket</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tap songs as they play to dab!</p>
+            <div id="playerBingoGrid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 100%;"></div>
+        </div>
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        let playerName = '';
-        let hasAnswered = false;
-        let hasVotedPoll = false;
-        let currentQuestionIndexTracker = -1;
-
-        // Web Audio API Synthesizer for game sound effects
-        let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
-
-        function playSound(type) {
-            try {
-                initAudio();
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                const now = audioCtx.currentTime;
-                if (type === 'lock') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(440, now);
-                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                    osc.start(now);
-                    osc.stop(now + 0.15);
-                } else if (type === 'correct') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.setValueAtTime(659.25, now + 0.1);
-                    osc.frequency.setValueAtTime(783.99, now + 0.2);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                    osc.start(now);
-                    osc.stop(now + 0.4);
-                } else if (type === 'wrong') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(220, now);
-                    osc.frequency.setValueAtTime(150, now + 0.2);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                    osc.start(now);
-                    osc.stop(now + 0.3);
-                }
-            } catch (e) {}
-        }
+        let myName = '';
 
         function joinGame() {
-            initAudio();
             const input = document.getElementById('playerNameInput');
-            playerName = input.value.trim();
-            if (!playerName) { alert('Please enter your team name!'); return; }
-
-            socket.emit('player-join', playerName);
-            document.getElementById('joinScreen').style.display = 'none';
-            document.getElementById('waitingScreen').style.display = 'block';
-            document.getElementById('chatCard').style.display = 'block';
-            document.getElementById('appTitle').innerText = '👤 ' + playerName;
+            myName = input.value.trim();
+            if (!myName) {
+                alert('Please enter your name.');
+                return;
+            }
+            socket.emit('player-join', myName);
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('displayPlayerName').innerText = myName;
         }
 
         socket.on('state-update', (state) => {
+            // Update personal score
             if (state.scores) {
-                const myId = socket.id;
-                const me = state.scores[myId];
+                const me = Object.values(state.scores).find(p => p.name === myName);
                 if (me) {
-                    document.getElementById('personalScoreDisplay').innerText = `Your Score: ${me.score} pts | Streak: 🔥 x${me.streak || 0}`;
-                }
-
-                const sortedPlayers = Object.values(state.scores).sort((a, b) => b.score - a.score);
-                const lbList = document.getElementById('mobileLeaderboardList');
-                if (sortedPlayers.length > 0) {
-                    lbList.innerHTML = sortedPlayers.map((p, idx) => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0.5rem; background:rgba(0,243,255,0.05); border-radius:4px; font-size:0.9rem;">
-                            <span>#${idx + 1} ${p.name}</span>
-                            <span style="color:var(--neon-green); font-weight:bold;">${p.score} pts</span>
-                        </div>
-                    `).join('');
-                } else {
-                    lbList.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No scores recorded yet.</p>';
+                    document.getElementById('displayPlayerScore').innerText = me.score + ' pts';
                 }
             }
 
-            if (state.status === 'QUESTION') {
-                if (currentQuestionIndexTracker !== state.currentQuestionIndex) {
-                    currentQuestionIndexTracker = state.currentQuestionIndex;
-                    hasAnswered = false;
-                    document.getElementById('answerFeedbackBanner').innerText = '';
-                }
+            const statusMsg = document.getElementById('statusMessage');
+            const qContainer = document.getElementById('questionContainer');
 
-                document.getElementById('waitingScreen').style.display = 'none';
-                document.getElementById('questionScreen').style.display = 'block';
+            if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'INTERMISSION') {
+                statusMsg.innerText = state.status === 'INTERMISSION' ? 'Round Intermission' : 'Waiting for host...';
+                qContainer.classList.add('hidden');
+            } else if (state.status === 'QUESTION') {
+                statusMsg.innerText = 'Question Live! Make your pick:';
+                qContainer.classList.remove('hidden');
 
                 const round = state.playlist[state.currentRoundIndex];
                 if (round && round.questions) {
                     const q = round.questions[state.currentQuestionIndex];
                     if (q) {
-                        document.getElementById('qCounter').innerText = `Round ${state.currentRoundIndex + 1} // Q ${state.currentQuestionIndex + 1}`;
+                        document.getElementById('questionText').innerText = q.question;
+                        const optsContainer = document.getElementById('optionsContainer');
                         
-                        // Check for picture tag [IMG:url]
-                        const rawQText = q.question || '';
-                        const imgMatch = rawQText.match(/\[IMG:(.*?)\]/);
-                        
-                        if (imgMatch) {
-                            const imgUrl = imgMatch[1];
-                            const cleanText = rawQText.replace(/\[IMG:.*?\]/, '').trim();
-                            document.getElementById('activeQuestionText').innerText = cleanText;
-                            document.getElementById('mobileQuestionImg').src = imgUrl;
-                            document.getElementById('mobileImageContainer').style.display = 'block';
+                        if (q.gameType === 'higher-lower') {
+                            optsContainer.innerHTML = `
+                                <button class="option-btn" style="background:rgba(0,255,102,0.2); border-color:#00ff66;" onclick="submitAnswer('Higher')">📈 Higher</button>
+                                <button class="option-btn" style="background:rgba(255,0,85,0.2); border-color:#ff0055;" onclick="submitAnswer('Lower')">📉 Lower</button>
+                            `;
+                        } else if (q.options && q.options.length > 0) {
+                            optsContainer.innerHTML = q.options.map(opt => `
+                                <button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                            `).join('');
                         } else {
-                            document.getElementById('activeQuestionText').innerText = rawQText;
-                            document.getElementById('mobileImageContainer').style.display = 'none';
-                        }
-
-                        const container = document.getElementById('questionOptionsContainer');
-                        if (!hasAnswered) {
-                            if (q.options && q.options.length > 0) {
-                                container.innerHTML = q.options.map((opt, idx) => `
-                                    <button class="option-btn" id="opt-btn-${idx}" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}', this)">${opt}</button>
-                                `).join('');
-                            } else {
-                                container.innerHTML = `
-                                    <input type="text" id="textAnswerInput" placeholder="Type your answer..." style="margin-bottom:0.75rem;">
-                                    <button class="btn-green" id="textSubmitBtn" onclick="submitTextAnswer()">Submit Answer</button>
-                                `;
-                            }
+                            optsContainer.innerHTML = `
+                                <input type="text" id="textAnswerInput" placeholder="Type answer...">
+                                <button class="btn-green" onclick="submitTextAnswer()">Submit Answer</button>
+                            `;
                         }
                     }
-                }
-            } else if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'LEADERBOARD' || state.status === 'INTERMISSION') {
-                if (playerName) {
-                    document.getElementById('waitingScreen').style.display = 'block';
-                    document.getElementById('questionScreen').style.display = 'none';
-                }
-
-                if (state.lobbySettings && state.lobbySettings.showPoll) {
-                    const votes = state.lobbySettings.votes || {};
-                    const hasAlreadyVoted = votes[socket.id] !== undefined;
-
-                    document.getElementById('pollSection').style.display = 'block';
-                    document.getElementById('pollQ').innerText = state.lobbySettings.pollQuestion;
-                    const pollBtns = document.getElementById('pollBtns');
-
-                    if (!hasVotedPoll && !hasAlreadyVoted) {
-                        pollBtns.innerHTML = state.lobbySettings.pollOptions.map(opt => `
-                            <button class="btn-blue" style="padding: 0.6rem; font-size: 0.95rem; margin-bottom:0.3rem;" onclick="votePoll('${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                        `).join('');
-                    } else {
-                        const totalVotes = Object.keys(votes).length;
-                        const counts = {};
-                        state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
-                        Object.values(votes).forEach(val => { if (counts[val] !== undefined) counts[val]++; });
-
-                        pollBtns.innerHTML = '<p style="color:var(--neon-green); font-size:0.9rem; margin-bottom:0.4rem;">✅ Vote Recorded! Live Results:</p>' + 
-                            state.lobbySettings.pollOptions.map(opt => {
-                                const c = counts[opt] || 0;
-                                const p = totalVotes > 0 ? Math.round((c / totalVotes) * 100) : 0;
-                                return `
-                                    <div style="background: rgba(0,243,255,0.1); padding: 0.4rem 0.8rem; border-radius: 6px; display:flex; justify-content:space-between; font-size:0.9rem;">
-                                        <span>${opt}</span>
-                                        <span><strong>${p}%</strong> (${c})</span>
-                                    </div>
-                                `;
-                            }).join('');
-                    }
-                } else {
-                    hasVotedPoll = false;
-                    document.getElementById('pollSection').style.display = 'none';
                 }
             }
         });
 
-        function votePoll(option) {
-            hasVotedPoll = true;
-            playSound('lock');
-            socket.emit('poll-vote', option);
-        }
-
-        function submitAnswer(ans, btnElement) {
-            if (hasAnswered) return;
-            hasAnswered = true;
-            playSound('lock');
-
-            const allBtns = document.querySelectorAll('.option-btn');
-            allBtns.forEach(b => b.disabled = true);
-
+        function submitAnswer(ans) {
             socket.emit('submit-answer', { answer: ans, timeRemaining: 15 });
+            document.getElementById('optionsContainer').innerHTML = '<p style="text-align:center; color:var(--neon-green); font-weight:bold;">Answer Locked In! ✓</p>';
         }
 
         function submitTextAnswer() {
-            const input = document.getElementById('textAnswerInput');
-            const submitBtn = document.getElementById('textSubmitBtn');
-            if (!input || hasAnswered) return;
-            hasAnswered = true;
-            playSound('lock');
-            if (submitBtn) submitBtn.disabled = true;
-            if (input) input.disabled = true;
-            
-            socket.emit('submit-answer', { answer: input.value.trim(), timeRemaining: 15 });
+            const val = document.getElementById('textAnswerInput').value.trim();
+            if (val) submitAnswer(val);
         }
 
-        socket.on('answer-result', (res) => {
-            const allBtns = document.querySelectorAll('.option-btn');
-            allBtns.forEach(b => {
-                const text = b.innerText.trim();
-                if (text.toLowerCase() === res.correctAnswer.toLowerCase()) {
-                    b.classList.add('reveal-correct');
-                }
-            });
-
-            const banner = document.getElementById('answerFeedbackBanner');
-            if (res.correct) {
-                playSound('correct');
-                banner.innerText = `✅ Correct! +${res.points} pts (Streak 🔥 x${res.streak})`;
-                banner.style.color = 'var(--neon-green)';
-            } else {
-                playSound('wrong');
-                banner.innerText = `❌ Incorrect! Correct answer was: ${res.correctAnswer}`;
-                banner.style.color = 'var(--neon-red)';
+        // Native Digital Music Bingo Ticket Handlers
+        socket.on('music-bingo-cards-assigned', (allCards) => {
+            const myCardData = allCards[socket.id];
+            if (myCardData) {
+                renderPlayerBingoCard(myCardData);
+                document.getElementById('musicBingoContainer').classList.remove('hidden');
             }
         });
 
-        socket.on('timer-tick', (timeLeft) => {
-            const t = document.getElementById('timerDisplay');
-            if (t) t.innerText = `Time: ${timeLeft}s`;
+        socket.on('bingo-card-updated', (updatedCard) => {
+            renderPlayerBingoCard(updatedCard);
         });
 
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const msg = input.value.trim();
-            if (!msg) return;
-            socket.emit('player-chat', msg);
-            input.value = '';
-        }
-
-        socket.on('chat-message', (msg) => {
-            const feed = document.getElementById('chatFeed');
-            if (feed) {
-                feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
-                feed.scrollTop = feed.scrollHeight;
-            }
+        socket.on('bingo-winner', (data) => {
+            alert(`🎉 BINGO! We have a winner: ${data.name}!`);
         });
 
-        socket.on('broadcast-advert-mobile', (ad) => {
-            document.getElementById('mobileAdvertText').innerText = ad.text;
-            document.getElementById('mobileAdvertImageContainer').innerHTML = ad.image ? `<img src="${ad.image}" style="max-height: 180px; border-radius: 6px; border: 1px solid var(--neon-blue);">` : '';
-            document.getElementById('mobileAdvertOverlay').style.display = 'flex';
-        });
-
-        socket.on('hide-advert-mobile', () => {
-            dismissMobileAdvert();
-        });
-
-        function dismissMobileAdvert() {
-            document.getElementById('mobileAdvertOverlay').style.display = 'none';
+        function renderPlayerBingoCard(cardData) {
+            const grid = document.getElementById('playerBingoGrid');
+            grid.innerHTML = cardData.card.map((song, idx) => {
+                const isMarked = cardData.marked[idx];
+                const bg = isMarked ? '#00ff66' : 'rgba(0,243,255,0.1)';
+                const color = isMarked ? '#000' : '#fff';
+                return `
+                    <div onclick="socket.emit('mark-bingo-tile', ${idx})" style="background: ${bg}; color: ${color}; border: 1px solid #00f3ff; border-radius: 4px; padding: 6px 2px; font-size: 0.65rem; font-weight: bold; min-height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; word-break: break-word; text-align: center;">
+                        ${song}
+                    </div>
+                `;
+            }).join('');
         }
     </script>
 </body>
