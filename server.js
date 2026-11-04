@@ -149,9 +149,12 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     }
 });
 
-// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER (Extension-agnostic) ---
+// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER (Robust path resolution) ---
 app.get('/api/load-categories', (req, res) => {
-    const catsDir = path.join(__dirname, 'categories');
+    let catsDir = path.join(__dirname, 'categories');
+    if (!fs.existsSync(catsDir)) {
+        catsDir = path.join(process.cwd(), 'categories');
+    }
     
     if (!fs.existsSync(catsDir)) {
         fs.mkdirSync(catsDir, { recursive: true });
