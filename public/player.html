@@ -74,7 +74,7 @@
                 <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 0.75rem; font-size: 1rem;"></div>
             </div>
 
-            <!-- WAITING / INTERMISSION -->
+            <!-- WAITING / INTERMISSION & MOBILE LEADERBOARD -->
             <div id="waitingContainer" style="text-align: center; padding: 0.5rem 0;">
                 <h3 style="color: var(--neon-yellow); font-size: 1rem;" id="waitingTitle">⏳ Get Ready!</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;" id="waitingSubtext">You are in the waiting room. The host will start shortly.</p>
@@ -86,8 +86,8 @@
             </div>
         </div>
 
-        <!-- LOBBY POLL CARD -->
-        <div id="pollCard" class="card">
+        <!-- LOBBY POLL CARD (Hides automatically on quiz start) -->
+        <div id="pollCard" class="card hidden">
             <h3 id="pollQuestionTitle" style="font-size: 0.95rem;">📊 Live Crowd Poll</h3>
             <div id="pollOptionsContainer"></div>
         </div>
@@ -137,24 +137,18 @@
         }
 
         socket.on('state-update', (state) => {
-            // Handle Mobile Ad Broadcast
             const adOverlay = document.getElementById('mobileAdOverlay');
             if (state.activeMobileAdvert) {
                 adOverlay.classList.remove('hidden');
                 document.getElementById('mobileAdContent').innerText = state.activeMobileAdvert.text || '';
                 const imgContainer = document.getElementById('mobileAdImageContainer');
-                if (state.activeMobileAdvert.image) {
-                    imgContainer.innerHTML = `<img src="${state.activeMobileAdvert.image}" style="max-width: 100%; max-height: 220px; border-radius: 6px;">`;
-                } else {
-                    imgContainer.innerHTML = '';
-                }
+                imgContainer.innerHTML = state.activeMobileAdvert.image ? `<img src="${state.activeMobileAdvert.image}" style="max-width: 100%; max-height: 220px; border-radius: 6px;">` : '';
             } else {
                 adOverlay.classList.add('hidden');
             }
 
             if (state.customEmojis) {
-                const emojiGrid = document.getElementById('emojiGridContainer');
-                emojiGrid.innerHTML = state.customEmojis.map(emoji => `
+                document.getElementById('emojiGridContainer').innerHTML = state.customEmojis.map(emoji => `
                     <div class="emoji-box" onclick="sendEmoji('${emoji}')">${emoji}</div>
                 `).join('');
             }
@@ -162,28 +156,22 @@
             if (state.scores) {
                 const scoresArr = Object.values(state.scores).sort((a, b) => b.score - a.score);
                 const me = scoresArr.find(p => p.name === myName);
-                if (me) {
-                    document.getElementById('playerScoreDisplay').innerText = me.score;
-                }
+                if (me) document.getElementById('playerScoreDisplay').innerText = me.score;
 
                 const lbList = document.getElementById('miniLeaderboardList');
-                if (scoresArr.length > 0) {
-                    lbList.innerHTML = scoresArr.slice(0, 5).map((p, idx) => `
-                        <div style="display: flex; justify-content: space-between; padding: 1px 0; ${p.name === myName ? 'color: var(--neon-green); font-weight: bold;' : ''}">
-                            <span>${idx + 1}. ${p.name}</span>
-                            <span>${p.score} pts</span>
-                        </div>
-                    `).join('');
-                } else {
-                    lbList.innerHTML = 'No scores recorded yet.';
-                }
+                lbList.innerHTML = scoresArr.length > 0 ? scoresArr.slice(0, 5).map((p, idx) => `
+                    <div style="display: flex; justify-content: space-between; padding: 1px 0; ${p.name === myName ? 'color: var(--neon-green); font-weight: bold;' : ''}">
+                        <span>${idx + 1}. ${p.name}</span>
+                        <span>${p.score} pts</span>
+                    </div>
+                `).join('') : 'No scores recorded yet.';
             }
 
+            // Poll visibility (shows when host triggers it, hides when quiz starts)
             if (state.lobbySettings && state.lobbySettings.showPoll) {
                 document.getElementById('pollCard').classList.remove('hidden');
                 document.getElementById('pollQuestionTitle').innerText = '📊 ' + state.lobbySettings.pollQuestion;
                 const pollOpts = document.getElementById('pollOptionsContainer');
-                
                 const votes = state.lobbySettings.votes || {};
                 const totalVotes = Object.keys(votes).length;
 
@@ -195,15 +183,13 @@
                     const counts = {};
                     state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
                     Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
-
                     pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => {
                         const count = counts[opt] || 0;
                         const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
                         return `
                             <div style="margin-bottom: 0.4rem; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 6px;">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
-                                    <span>${opt}</span>
-                                    <span>${count} (${pct}%)</span>
+                                    <span>${opt}</span><span>${count} (${pct}%)</span>
                                 </div>
                                 <div style="background: rgba(255,255,255,0.1); height: 5px; border-radius: 3px; overflow: hidden;">
                                     <div style="background: var(--neon-blue); width: ${pct}%; height: 100%;"></div>
@@ -223,23 +209,17 @@
             if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
                 wContainer.classList.add('hidden');
                 qContainer.classList.remove('hidden');
-
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round.questions[state.currentQuestionIndex];
                 if (q) {
                     document.getElementById('questionText').innerText = q.question;
                     const optsBox = document.getElementById('optionsContainer');
-                    
-                    if (q.options && q.options.length > 0) {
-                        optsBox.innerHTML = q.options.map(opt => `
-                            <button class="btn-option" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                        `).join('');
-                    } else {
-                        optsBox.innerHTML = `
-                            <input type="text" id="textAnswerInput" placeholder="Type answer..." style="font-size:0.9rem;">
-                            <button class="btn-blue" onclick="submitTextAnswer()">Submit Answer</button>
-                        `;
-                    }
+                    optsBox.innerHTML = q.options && q.options.length > 0 ? q.options.map(opt => `
+                        <button class="btn-option" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                    `).join('') : `
+                        <input type="text" id="textAnswerInput" placeholder="Type answer..." style="font-size:0.9rem;">
+                        <button class="btn-blue" onclick="submitTextAnswer()">Submit Answer</button>
+                    `;
                 }
             } else {
                 qContainer.classList.add('hidden');
@@ -250,11 +230,11 @@
                 const wSub = document.getElementById('waitingSubtext');
 
                 if (state.status === 'INTERMISSION') {
-                    wTitle.innerText = '☕ Round Complete!';
-                    wSub.innerText = 'Check standings below while waiting for the next round.';
+                    wTitle.innerText = '☕ Round Complete - Standings';
+                    wSub.innerText = 'Check out the live leaderboard below!';
                 } else if (state.status === 'LEADERBOARD') {
-                    wTitle.innerText = '🏆 Game Over!';
-                    wSub.innerText = 'Final standings are on the big screen!';
+                    wTitle.innerText = '🏆 Final Leaderboard';
+                    wSub.innerText = 'Check out the final rankings!';
                 } else {
                     wTitle.innerText = '⏳ Waiting Room';
                     wSub.innerText = 'Locked in! The host will start shortly.';
@@ -281,11 +261,7 @@
 
         socket.on('answer-result', (res) => {
             const fb = document.getElementById('answerFeedback');
-            if (res.correct) {
-                fb.innerHTML = `<span style="color: var(--neon-green);">✅ Correct! +${res.points} pts</span>`;
-            } else {
-                fb.innerHTML = `<span style="color: var(--neon-red);">❌ Incorrect. Correct was: ${res.correctAnswer}</span>`;
-            }
+            fb.innerHTML = res.correct ? `<span style="color: var(--neon-green);">✅ Correct! +${res.points} pts</span>` : `<span style="color: var(--neon-red);">❌ Incorrect. Correct was: ${res.correctAnswer}</span>`;
         });
 
         function votePoll(option) {
@@ -294,10 +270,6 @@
         }
 
         function sendEmoji(emoji) {
-            triggerFloatingEmoji(emoji);
-        }
-
-        function triggerFloatingEmoji(emoji) {
             const el = document.createElement('div');
             el.className = 'floating-emoji';
             el.innerText = emoji;
@@ -308,18 +280,15 @@
 
         function sendChat() {
             const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text) return;
-            socket.emit('player-chat', text);
+            if (!input.value.trim()) return;
+            socket.emit('player-chat', input.value.trim());
             input.value = '';
         }
 
         socket.on('chat-message', (msg) => {
             const feed = document.getElementById('chatFeed');
-            if (feed) {
-                feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
-                feed.scrollTop = feed.scrollHeight;
-            }
+            feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
+            feed.scrollTop = feed.scrollHeight;
         });
     </script>
 </body>
