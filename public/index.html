@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>TriviaMania - Host Control Room</title>
+    <title>TriviaMania - Host Control Dashboard</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.85);
+            --panel-bg: rgba(15, 23, 42, 0.95);
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
@@ -18,226 +18,147 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
-        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
-        header h1 { font-size: 1.5rem; color: var(--neon-blue); }
-        .nav-links { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-        .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
-        .nav-links a:hover { background: rgba(0, 243, 255, 0.3); }
-        .container { flex: 1; padding: 2rem; max-width: 1200px; width: 100%; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); grid-column: span 2; }
-        .card.half { grid-column: span 1; }
-        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); font-weight: 600; }
-        button { padding: 0.75rem 1.2rem; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 2rem; min-height: 100vh; background-image: radial-gradient(circle at 50% 10%, #1a103c 0%, #05050a 85%); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
+        header h1 { color: var(--neon-blue); font-size: 1.8rem; }
+        .nav-links { display: flex; gap: 1rem; }
+        .nav-links a { color: var(--neon-yellow); text-decoration: none; font-weight: bold; background: rgba(255,238,0,0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(255,238,0,0.3); }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .card h3 { color: var(--neon-blue); margin-bottom: 1rem; font-size: 1.2rem; }
+        button { padding: 0.75rem 1.2rem; border-radius: 8px; border: none; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
         button:hover { filter: brightness(1.2); }
         .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
         .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
-        .btn-yellow { background: linear-gradient(135deg, #aa7700, var(--neon-yellow)); color: #000; }
         .btn-red { background: linear-gradient(135deg, #aa0033, var(--neon-red)); color: white; }
-        input[type="text"], select { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; font-size: 0.95rem; margin-bottom: 0.75rem; }
-        .control-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .btn-yellow { background: linear-gradient(135deg, #aa8800, var(--neon-yellow)); color: #000; }
+        input[type="text"] { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; margin-bottom: 0.75rem; }
+        .playlist-item { background: rgba(5,10,20,0.8); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <header>
-        <h1>⚡ TriviaMania // HOST CONTROL ROOM</h1>
+        <h1>🎮 TriviaMania - Host Control Dashboard</h1>
         <div class="nav-links">
-            <a href="/builder.html">📝 Quiz Builder</a>
-            <a href="/minigames.html">🎮 Mini-Games</a>
-            <a href="/adverts.html">📢 Adverts</a>
-            <a href="/lobby.html">🌐 Lobby Studio</a>
-            <a href="/display.html" target="_blank" style="background: rgba(0,255,102,0.15); border-color: var(--neon-green); color: var(--neon-green);">📺 Open Projector ↗</a>
+            <a href="/builder.html">📝 Quiz Builder & Categories</a>
+            <a href="/adverts.html">📢 Adverts Manager</a>
+            <a href="/display.html" target="_blank">📺 Big Screen Projector</a>
         </div>
     </header>
 
     <div class="container">
-        <!-- MASTER CONTROLS -->
+        <!-- LIVE GAME CONTROLS -->
         <div class="card">
-            <h3>Master Game Controls</h3>
-            <div class="control-row">
-                <button class="btn-green" onclick="socket.emit('start-round')">▶️ Start Game / Next Q</button>
-                <button class="btn-blue" onclick="socket.emit('next-question')">⏭️ Skip Question</button>
-                <button class="btn-yellow" onclick="socket.emit('stop-game')">⏸️ Pause Game</button>
-                <button class="btn-yellow" onclick="socket.emit('restart-game')">🔄 Reset Round</button>
-                <button class="btn-green" onclick="socket.emit('start-next-round')">▶️ Start Next Round</button>
-                <button class="btn-red" onclick="socket.emit('stop-reset')">🛑 Full Reset</button>
+            <h3>⚡ Live Game Controls</h3>
+            <p style="margin-bottom: 0.5rem; color: var(--text-muted);">Current Status: <strong id="gameStatusDisplay" style="color: var(--neon-yellow);">IDLE</strong></p>
+            <p style="margin-bottom: 1rem; color: var(--text-muted);">Current Round / Question: <strong id="roundProgressDisplay" style="color: var(--neon-blue);">None</strong></p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                <button class="btn-green" onclick="socket.emit('start-round')">▶ Start Game / Round</button>
+                <button class="btn-blue" onclick="socket.emit('next-question')">⏭ Next Question</button>
+                <button class="btn-yellow" onclick="socket.emit('start-next-round')">⏩ Next Round</button>
+                <button class="btn-red" onclick="socket.emit('stop-game')">⏸ Pause Game</button>
             </div>
-            <p style="color: var(--text-muted); font-size: 1rem;">Game Status: <strong id="statusDisplay" style="color: var(--neon-yellow);">IDLE</strong></p>
-        </div>
-
-        <!-- LOADED PLAYLIST QUEUE -->
-        <div class="card half">
-            <h3>Loaded Playlist Queue</h3>
-            <div id="playlistQueueContainer" style="max-height: 280px; overflow-y: auto;">
-                <p style="color: var(--text-muted);">No rounds loaded yet.</p>
-            </div>
-            <button class="btn-red" style="margin-top: 1rem; width: 100%;" onclick="socket.emit('clear-playlist')">🗑️ Clear Entire Playlist</button>
-        </div>
-
-        <!-- NEXT QUESTION PREVIEW -->
-        <div class="card half">
-            <h3>Next Question Preview</h3>
-            <div id="nextQuestionPreviewBox" style="background: rgba(5,10,20,0.8); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2); min-height: 120px;">
-                <p style="color: var(--text-muted);">No active question or preview available.</p>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-blue" style="flex: 1;" onclick="socket.emit('trigger-new-poll')">📊 Open Crowd Poll</button>
+                <button class="btn-red" style="flex: 1;" onclick="if(confirm('Full reset game?')) socket.emit('stop-reset')">🔄 Full Reset</button>
             </div>
         </div>
 
-        <!-- QUICK ADVERT DISPLAY CONTROLS -->
+        <!-- PLAYLIST QUEUE -->
         <div class="card">
-            <h3>Quick Advert Display Controls</h3>
-            <div style="border-top: 1px solid rgba(0,243,255,0.2); padding-top: 0.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Select Advert from Saved Library:</label>
-                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
-                    <select id="advertSelect" style="flex: 1; min-width: 250px; margin-bottom: 0;">
-                        <option value="">-- No saved adverts found --</option>
-                    </select>
-                    <button class="btn-blue" onclick="broadcastSelectedAd('screen')">📺 Show on Screen</button>
-                    <button class="btn-green" onclick="broadcastSelectedAd('mobile')">📱 Show on Mobile</button>
-                    <button class="btn-red" onclick="socket.emit('hide-advert-screen')">🚫 Hide Screen Ad</button>
-                    <button class="btn-red" onclick="socket.emit('hide-advert-mobile')">🚫 Hide Mobile Ad</button>
-                </div>
+            <h3>🎶 Active Trivia Playlist Queue</h3>
+            <div id="playlistContainer" style="max-height: 220px; overflow-y: auto; margin-bottom: 1rem;">
+                <p style="color: var(--text-muted);">Playlist is empty. Add rounds from the Quiz Builder!</p>
             </div>
+            <button class="btn-red" style="padding: 0.5rem; font-size: 0.85rem;" onclick="socket.emit('clear-playlist')">🗑️ Clear Entire Queue</button>
         </div>
 
-        <!-- CONNECTED PLAYERS & MUTE CONTROLS -->
-        <div class="card half">
-            <h3>Connected Players & Chat Mute</h3>
-            <div id="connectedPlayersContainer" style="max-height: 180px; overflow-y: auto;">
-                <p style="color: var(--text-muted);">No players connected.</p>
-            </div>
+        <!-- PROJECTOR & LOBBY STUDIO -->
+        <div class="card">
+            <h3>📺 Projector & Lobby Settings</h3>
+            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Welcome Header</label>
+            <input type="text" id="welcomeHeaderInput" placeholder="Welcome header...">
+            
+            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Venue Details / Subtext</label>
+            <input type="text" id="venueDetailsInput" placeholder="Venue details...">
+            <button class="btn-blue" style="padding: 0.5rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="updateProjectorText()">💾 Save Projector Text</button>
+
+            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Random Fact Display</label>
+            <div id="currentFactDisplay" style="background: rgba(0,0,0,0.4); padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; color: var(--neon-blue); margin-bottom: 0.4rem;">Loading fact...</div>
+            <button class="btn-blue" style="padding: 0.4rem; font-size: 0.85rem;" onclick="socket.emit('trigger-new-fact')">💡 New Fact</button>
         </div>
 
-        <!-- HOST CHAT & ANNOUNCEMENTS -->
-        <div class="card half">
-            <h3>Host Announcement & Chat Broadcast</h3>
-            <input type="text" id="hostAnnouncementInput" placeholder="Send announcement to mobile phones...">
-            <button class="btn-green" style="width: 100%;" onclick="sendHostAnnouncement()">📢 Broadcast to All Players</button>
-            <div id="hostChatFeed" style="margin-top: 1rem; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; font-size: 0.85rem; color: var(--text-muted);"></div>
+        <!-- CONNECTED PLAYERS / TEAMS -->
+        <div class="card">
+            <h3>👥 Connected Teams (<span id="playerCountDisplay">0</span>)</h3>
+            <div id="playersListContainer" style="max-height: 220px; overflow-y: auto;">
+                <p style="color: var(--text-muted);">No teams connected yet.</p>
+            </div>
         </div>
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        let currentAdvertsLibrary = [];
 
         socket.on('state-update', (state) => {
-            document.getElementById('statusDisplay').innerText = state.status;
+            document.getElementById('gameStatusDisplay').innerText = state.status;
+            document.getElementById('playerCountDisplay').innerText = Object.keys(state.scores || {}).length;
 
-            const advertSelect = document.getElementById('advertSelect');
-            if (state.adverts && state.adverts.length > 0) {
-                currentAdvertsLibrary = state.adverts;
-                advertSelect.innerHTML = state.adverts.map((ad, idx) => `
-                    <option value="${idx}">Advert #${idx + 1}: ${ad.text.substring(0, 50)}...</option>
+            if (state.welcomeHeader && document.activeElement !== document.getElementById('welcomeHeaderInput')) {
+                document.getElementById('welcomeHeaderInput').value = state.welcomeHeader;
+            }
+            if (state.venueDetails && document.activeElement !== document.getElementById('venueDetailsInput')) {
+                document.getElementById('venueDetailsInput').value = state.venueDetails;
+            }
+            if (state.lobbySettings && state.lobbySettings.factText) {
+                document.getElementById('currentFactDisplay').innerText = state.lobbySettings.factText;
+            }
+
+            // Playlist display
+            const plContainer = document.getElementById('playlistContainer');
+            if (state.playlist && state.playlist.length > 0) {
+                plContainer.innerHTML = state.playlist.map((round, idx) => `
+                    <div class="playlist-item">
+                        <div>
+                            <strong style="color: var(--neon-blue);">${idx + 1}. ${round.name}</strong>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">${round.questions.length} Questions | Timer: ${round.timer}s</span>
+                        </div>
+                        <div style="display: flex; gap: 0.3rem;">
+                            <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('move-round', {index: ${idx}, direction: 'up'})">▲</button>
+                            <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('move-round', {index: ${idx}, direction: 'down'})">▼</button>
+                            <button class="btn-red" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('delete-round', ${idx})">❌</button>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('roundProgressDisplay').innerText = `Round ${state.currentRoundIndex + 1} of ${state.playlist.length} (Q: ${state.currentQuestionIndex + 1})`;
+            } else {
+                plContainer.innerHTML = '<p style="color: var(--text-muted);">Playlist is empty. Add rounds from the Quiz Builder!</p>';
+                document.getElementById('roundProgressDisplay').innerText = 'None';
+            }
+
+            // Players list
+            const pContainer = document.getElementById('playersListContainer');
+            const scores = Object.entries(state.scores || {});
+            if (scores.length > 0) {
+                pContainer.innerHTML = scores.map(([id, p]) => `
+                    <div style="display: flex; justify-content: space-between; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px;">
+                        <span>${p.name}</span>
+                        <span style="color: var(--neon-green); font-weight: bold;">${p.score} pts</span>
+                    </div>
                 `).join('');
             } else {
-                currentAdvertsLibrary = [];
-                advertSelect.innerHTML = '<option value="">No saved adverts available</option>';
-            }
-
-            const queueContainer = document.getElementById('playlistQueueContainer');
-            if (state.playlist && state.playlist.length > 0) {
-                queueContainer.innerHTML = state.playlist.map((round, idx) => {
-                    const currentTimer = round.timer || 15;
-                    return `
-                        <div style="background:rgba(5,10,20,0.8); padding:0.75rem; border-radius:6px; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(0,243,255,0.2);">
-                            <div>
-                                <strong style="color:var(--neon-blue);">${idx + 1}. ${round.name}</strong>
-                                <span style="color:#8b9bb4; font-size:0.85rem; margin-left:0.75rem;">(${round.questions.length} items)</span>
-                            </div>
-                            <div style="display:flex; gap:0.4rem; align-items:center;">
-                                <select onchange="updateRoundTimer(${idx}, this.value)" style="padding:0.2rem; background:rgba(0,0,0,0.5); color:var(--neon-yellow); border:1px solid rgba(0,243,255,0.3); border-radius:4px; font-size:0.85rem; margin-bottom:0;">
-                                    <option value="5" ${currentTimer === 5 ? 'selected' : ''}>5s</option>
-                                    <option value="10" ${currentTimer === 10 ? 'selected' : ''}>10s</option>
-                                    <option value="15" ${currentTimer === 15 ? 'selected' : ''}>15s</option>
-                                    <option value="20" ${currentTimer === 20 ? 'selected' : ''}>20s</option>
-                                    <option value="30" ${currentTimer === 30 ? 'selected' : ''}>30s</option>
-                                </select>
-                                <button onclick="socket.emit('move-round', {index: ${idx}, direction: 'up'})" style="padding:0.2rem 0.5rem; background:rgba(0,243,255,0.2); border:none; color:white; border-radius:4px; cursor:pointer;">⬆️</button>
-                                <button onclick="socket.emit('move-round', {index: ${idx}, direction: 'down'})" style="padding:0.2rem 0.5rem; background:rgba(0,243,255,0.2); border:none; color:white; border-radius:4px; cursor:pointer;">⬇️</button>
-                                <button onclick="socket.emit('delete-round', ${idx})" style="padding:0.2rem 0.5rem; background:rgba(255,0,85,0.3); border:none; color:white; border-radius:4px; cursor:pointer;">❌</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                queueContainer.innerHTML = '<p style="color: var(--text-muted);">No rounds loaded yet.</p>';
-            }
-
-            const previewBox = document.getElementById('nextQuestionPreviewBox');
-            if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
-                const round = state.playlist[state.currentRoundIndex];
-                const nextQIndex = state.currentQuestionIndex + 1;
-                const nextQ = round.questions[nextQIndex] || round.questions[state.currentQuestionIndex];
-                previewBox.innerHTML = `
-                    <p style="color:var(--neon-green); font-weight:bold; margin-bottom:0.3rem;">Current / Next Q (${nextQIndex + 1}/${round.questions.length}):</p>
-                    <p style="font-size:0.95rem;">${nextQ ? nextQ.question : 'End of round'}</p>
-                    <p style="color:var(--neon-yellow); margin-top:0.3rem; font-size:0.85rem;">Answer: ${nextQ ? nextQ.answer : '-'}</p>
-                `;
-            } else if (state.status === 'INTERMISSION') {
-                previewBox.innerHTML = `
-                    <p style="color:var(--neon-yellow); font-weight:bold; font-size:1.1rem; margin-bottom:0.3rem;">⏸️ Round Finished!</p>
-                    <p style="font-size:0.95rem;">Click <strong style="color:var(--neon-green);">"Start Next Round"</strong> above when you are ready to proceed.</p>
-                `;
-            } else {
-                previewBox.innerHTML = '<p style="color: var(--text-muted);">Quiz is idle or paused.</p>';
-            }
-
-            const playersContainer = document.getElementById('connectedPlayersContainer');
-            const scoresEntries = Object.entries(state.scores || {});
-            if (scoresEntries.length > 0) {
-                playersContainer.innerHTML = scoresEntries.map(([id, p]) => {
-                    const isMuted = state.mutedPlayers && state.mutedPlayers[id];
-                    return `
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0.6rem; background:rgba(5,10,20,0.6); border-radius:6px; margin-bottom:0.3rem;">
-                            <span>${p.name} (${p.score} pts)</span>
-                            <div>
-                                ${isMuted ? 
-                                    `<button class="btn-green" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="socket.emit('unmute-player', '${id}')">Unmute</button>` : 
-                                    `<button class="btn-red" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="socket.emit('mute-player', '${id}')">Mute</button>`
-                                }
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                playersContainer.innerHTML = '<p style="color: var(--text-muted);">No players connected.</p>';
+                pContainer.innerHTML = '<p style="color: var(--text-muted);">No teams connected yet.</p>';
             }
         });
 
-        function updateRoundTimer(index, timerVal) {
-            socket.emit('update-round-timer', { index: index, timer: timerVal });
+        function updateProjectorText() {
+            const header = document.getElementById('welcomeHeaderInput').value;
+            const details = document.getElementById('venueDetailsInput').value;
+            socket.emit('update-projector-text', { header, details });
+            alert('Projector text updated!');
         }
-
-        function sendHostAnnouncement() {
-            const input = document.getElementById('hostAnnouncementInput');
-            const text = input.value.trim();
-            if (!text) return;
-            socket.emit('host-chat-broadcast', text);
-            input.value = '';
-        }
-
-        function broadcastSelectedAd(target) {
-            const select = document.getElementById('advertSelect');
-            const idx = select.value;
-            if (idx === '' || !currentAdvertsLibrary[idx]) return;
-            
-            const selectedAd = currentAdvertsLibrary[idx];
-            const adData = { text: selectedAd.text, image: selectedAd.image || '' };
-            
-            if (target === 'screen') {
-                socket.emit('broadcast-advert-screen', adData);
-            } else {
-                socket.emit('broadcast-advert-mobile', adData);
-            }
-        }
-
-        socket.on('chat-message', (msg) => {
-            const feed = document.getElementById('hostChatFeed');
-            if (feed) {
-                feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
-                feed.scrollTop = feed.scrollHeight;
-            }
-        });
     </script>
 </body>
 </html>
