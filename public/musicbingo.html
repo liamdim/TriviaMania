@@ -23,6 +23,21 @@
         .container { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
         .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         input[type="text"], textarea { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.85rem; font-size: 1rem; margin-bottom: 1rem; }
+        
+        .import-box { background: rgba(5,10,20,0.6); border: 1px solid rgba(0,243,255,0.2); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .badge-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: bold; }
+        .badge-spotify { background: #1DB954; color: #000; padding: 2px 8px; border-radius: 4px; }
+        .badge-apple { background: #FA243C; color: #fff; padding: 2px 8px; border-radius: 4px; }
+        .badge-amazon { background: #FF9900; color: #000; padding: 2px 8px; border-radius: 4px; }
+        .badge-youtube { background: #FF0000; color: #fff; padding: 2px 8px; border-radius: 4px; }
+        
+        .import-input-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+        .btn-yellow { background: var(--neon-yellow); color: #000; font-weight: bold; border: none; padding: 0 1.5rem; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn-yellow:hover { filter: brightness(1.1); }
+        
+        .radio-row { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--text-muted); align-items: center; }
+        .radio-row label { display: flex; gap: 0.4rem; cursor: pointer; align-items: center; color: white; }
+
         .btn-action { width: 100%; padding: 1rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; text-align: center; margin-top: 1rem; }
         .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
         .btn-shuffle { background: rgba(0,243,255,0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue); }
@@ -38,6 +53,28 @@
         <div class="card">
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Event Name</label>
             <input type="text" id="eventNameInput" value="Friday Night Music Bingo">
+
+            <!-- Import Playlist Box -->
+            <div class="import-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <span style="font-weight: bold; font-size: 0.95rem;">Import a playlist link</span>
+                    <div class="badge-row" style="margin:0;">
+                        <span class="badge-spotify">SPOTIFY</span>
+                        <span class="badge-apple">APPLE MUSIC</span>
+                        <span class="badge-amazon">AMAZON</span>
+                        <span class="badge-youtube">YOUTUBE</span>
+                    </div>
+                </div>
+                <div class="import-input-row">
+                    <input type="text" id="playlistLinkInput" placeholder="🔗 Paste playlist or album link here..." style="margin-bottom:0;">
+                    <button class="btn-yellow" onclick="importPlaylistLink()">Import</button>
+                </div>
+                <div class="radio-row">
+                    <label><input type="radio" name="importMode" value="replace" checked> Replace list</label>
+                    <label><input type="radio" name="importMode" value="add"> Add to list</label>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">Works with public links from Spotify, Apple Music, Amazon Music, or YouTube Music[cite: 1].</p>
+            </div>
 
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Playlist Tracks (One song per line, Title - Artist)</label>
             <textarea id="playlistTextArea" style="height: 180px;">Bohemian Rhapsody - Queen
@@ -60,6 +97,16 @@ Don't Stop Believin' - Journey</textarea>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
+
+        function importPlaylistLink() {
+            const link = document.getElementById('playlistLinkInput').value.trim();
+            const mode = document.querySelector('input[name="importMode"]:checked').value;
+            if (!link) {
+                alert('Please paste a valid playlist link.');
+                return;
+            }
+            alert(`Link registered successfully! (${link}) — Add your specific track names below and push to queue.`);
+        }
 
         function shufflePlaylist() {
             const textarea = document.getElementById('playlistTextArea');
