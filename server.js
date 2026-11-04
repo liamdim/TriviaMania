@@ -103,12 +103,15 @@ function sanitizeText(text) {
     return clean;
 }
 
+// --- ROBUST AI QUIZ GENERATOR ENDPOINT WITH AUTO-RETRY ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
+    
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(400).json({ success: false, error: 'GEMINI_API_KEY is not set on the server.' });
         }
+
         const prompt = `Generate a ${difficulty} difficulty pub trivia round about "${topic}" containing exactly ${count} questions.
         You MUST format your response strictly as plain text using the following format for each question, with no extra conversational filler or markdown code blocks:
         
@@ -119,16 +122,35 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
         D. [Fourth option]
         ^ [Exact correct option text from above]`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
-            contents: prompt
-        });
+        let response;
+        let modelsToTry = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+        let lastError = null;
+
+        for (let modelName of modelsToTry) {
+            try {
+                response = await ai.models.generateContent({
+                    model: modelName,
+                    contents: prompt
+                });
+                if (response && response.text) break;
+            } catch (modelErr) {
+                console.warn(`Model ${modelName} failed or busy, trying next...`);
+                lastError = modelErr;
+            }
+        }
+
+        if (!response || !response.text) {
+            throw lastError || new Error('All Gemini models are currently busy. Please try again in a moment.');
+        }
+
         res.json({ success: true, raw: response.text });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('AI Generation Error:', err);
+        res.status(500).json({ success: false, error: 'AI server is experiencing high demand (503). Please click Generate again in a few seconds!' });
     }
 });
 
+// --- LOAD LOCAL CATEGORIES (JSON & Raw Text Support) ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(catsDir)) catsDir = path.join(process.cwd(), 'categories');
@@ -213,7 +235,6 @@ io.on('connection', (socket) => {
     socket.on('hide-poll', () => { gameState.lobbySettings.showPoll = false; io.emit('state-update', gameState); });
     socket.on('trigger-new-fact', () => { generateNewFact(); });
 
-    // Host Chat & Mini-Games Handlers
     socket.on('host-chat-broadcast', (message) => {
         const cleanMsg = sanitizeText(message);
         if (cleanMsg) io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
@@ -249,14 +270,12 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Projector text updates
     socket.on('update-projector-text', ({ header, details }) => {
         if (header !== undefined) gameState.welcomeHeader = sanitizeText(header);
         if (details !== undefined) gameState.venueDetails = sanitizeText(details);
         io.emit('state-update', gameState);
     });
 
-    // Adverts Handlers
     socket.on('save-new-advert', (adObj) => {
         if (adObj && (adObj.text || adObj.image)) {
             gameState.adverts.push({ text: sanitizeText(adObj.text || ''), image: adObj.image || '' });
