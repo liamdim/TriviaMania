@@ -261,6 +261,37 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // --- LOBBY & PROJECTOR TEXT UPDATES ---
+    socket.on('update-projector-text', ({ header, details }) => {
+        if (header !== undefined) gameState.welcomeHeader = sanitizeText(header);
+        if (details !== undefined) gameState.venueDetails = sanitizeText(details);
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('update-lobby-settings', (settings) => {
+        if (settings) {
+            gameState.lobbySettings.showFact = !!settings.showFact;
+            gameState.lobbySettings.factText = sanitizeText(settings.factText);
+            gameState.lobbySettings.showPoll = !!settings.showPoll;
+            gameState.lobbySettings.pollQuestion = sanitizeText(settings.pollQuestion);
+            if (Array.isArray(settings.pollOptions)) {
+                gameState.lobbySettings.pollOptions = settings.pollOptions.map(o => sanitizeText(o));
+            }
+        }
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('trigger-new-poll', () => {
+        triggerNewPoll();
+    });
+
+    socket.on('update-custom-emojis', (emojis) => {
+        if (Array.isArray(emojis) && emojis.length > 0) {
+            gameState.customEmojis = emojis.map(e => sanitizeText(e));
+        }
+        io.emit('state-update', gameState);
+    });
+
     socket.on('add-custom-picture-round', (roundObj) => {
         if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
         gameState.playlist.push({
