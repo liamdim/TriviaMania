@@ -30,8 +30,8 @@
         .btn-option { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; margin-bottom: 0.5rem; text-align: left; padding: 1rem; border-radius: 8px; font-size: 1rem; }
         .btn-option:active { background: var(--neon-blue); color: #000; }
         .hidden { display: none !important; }
-        .emoji-bar { display: flex; gap: 0.5rem; justify-content: space-around; margin-top: 0.5rem; }
-        .emoji-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.5rem; padding: 0.5rem; border-radius: 8px; cursor: pointer; flex: 1; }
+        .emoji-bar { display: flex; gap: 0.4rem; justify-content: space-around; margin-top: 0.5rem; flex-wrap: wrap; }
+        .emoji-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.3rem; padding: 0.4rem; border-radius: 8px; cursor: pointer; min-width: 36px; }
         .chat-feed { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; height: 120px; overflow-y: auto; padding: 8px; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-muted); }
         
         /* Floating Emojis Animation */
@@ -88,15 +88,10 @@
             <div id="pollOptionsContainer"></div>
         </div>
 
-        <!-- FLOATING EMOJI BAR -->
+        <!-- DYNAMIC FLOATING EMOJI BAR (UP TO 10) -->
         <div class="card" style="padding: 0.75rem;">
-            <div class="emoji-bar">
-                <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
-                <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
-                <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
-                <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
-                <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
-                <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
+            <div id="emojiBarContainer" class="emoji-bar">
+                <!-- Dynamically updated from lobby studio -->
             </div>
         </div>
 
@@ -131,6 +126,14 @@
         }
 
         socket.on('state-update', (state) => {
+            // Update mobile emoji toolbar live from server state (up to 10)
+            if (state.customEmojis) {
+                const emojiBar = document.getElementById('emojiBarContainer');
+                emojiBar.innerHTML = state.customEmojis.map(emoji => `
+                    <button class="emoji-btn" onclick="sendEmoji('${emoji}')">${emoji}</button>
+                `).join('');
+            }
+
             // Update score and Mini Leaderboard
             if (state.scores) {
                 const scoresArr = Object.values(state.scores).sort((a, b) => b.score - a.score);
@@ -162,12 +165,10 @@
                 const totalVotes = Object.keys(votes).length;
 
                 if (!hasVotedCurrentPoll) {
-                    // Show clickable voting options
                     pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => `
                         <button class="btn-option" style="text-align: center; margin-bottom: 0.4rem;" onclick="votePoll('${opt}')">${opt}</button>
                     `).join('');
                 } else {
-                    // Show live vote results breakdown
                     const counts = {};
                     state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
                     Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
@@ -190,7 +191,7 @@
                 }
             } else {
                 document.getElementById('pollCard').classList.add('hidden');
-                hasVotedCurrentPoll = false; // Reset when poll changes
+                hasVotedCurrentPoll = false;
             }
 
             // Game Status
