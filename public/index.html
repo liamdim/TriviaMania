@@ -21,7 +21,7 @@
         body { background-color: var(--bg-color); color: var(--text); padding: 2rem; min-height: 100vh; background-image: radial-gradient(circle at 50% 10%, #1a103c 0%, #05050a 85%); }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
         header h1 { color: var(--neon-blue); font-size: 1.8rem; }
-        .nav-links { display: flex; gap: 1rem; }
+        .nav-links { display: flex; gap: 1rem; flex-wrap: wrap; }
         .nav-links a { color: var(--neon-yellow); text-decoration: none; font-weight: bold; background: rgba(255,238,0,0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(255,238,0,0.3); }
         .container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 1200px; margin: 0 auto; }
         .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
@@ -34,6 +34,7 @@
         .btn-yellow { background: linear-gradient(135deg, #aa8800, var(--neon-yellow)); color: #000; }
         input[type="text"] { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; margin-bottom: 0.75rem; }
         .playlist-item { background: rgba(5,10,20,0.8); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .chat-feed { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; height: 140px; overflow-y: auto; padding: 8px; font-size: 0.85rem; margin-bottom: 0.75rem; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -41,6 +42,7 @@
         <h1>🎮 TriviaMania - Host Control Dashboard</h1>
         <div class="nav-links">
             <a href="/builder.html">📝 Quiz Builder</a>
+            <a href="/minigames.html">🎮 Mini-Games Studio</a>
             <a href="/adverts.html">📢 Adverts Manager</a>
             <a href="/display.html" target="_blank">📺 Big Screen Projector</a>
         </div>
@@ -71,7 +73,7 @@
         <div class="card">
             <h3>🎶 Active Trivia Playlist Queue</h3>
             <div id="playlistContainer" style="max-height: 220px; overflow-y: auto; margin-bottom: 1rem;">
-                <p style="color: var(--text-muted);">Playlist is empty. Add rounds from the Quiz Builder!</p>
+                <p style="color: var(--text-muted);">Playlist is empty. Add rounds from Quiz Builder or Mini-Games!</p>
             </div>
             <button class="btn-red" style="padding: 0.5rem; font-size: 0.85rem;" onclick="socket.emit('clear-playlist')">🗑️ Clear Entire Queue</button>
         </div>
@@ -93,12 +95,13 @@
 
         <!-- HOST CHAT BROADCAST & CONNECTED TEAMS -->
         <div class="card">
-            <h3>📢 Host Chat Broadcast</h3>
-            <input type="text" id="hostChatInput" placeholder="Broadcast message to all players..." onkeypress="if(event.key==='Enter') sendHostBroadcast()">
+            <h3>📢 Live Chat & Host Broadcast</h3>
+            <div id="hostChatFeed" class="chat-feed"></div>
+            <input type="text" id="hostChatInput" placeholder="Broadcast message to players..." onkeypress="if(event.key==='Enter') sendHostBroadcast()">
             <button class="btn-green" style="padding: 0.5rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="sendHostBroadcast()">Broadcast Message</button>
 
             <h3 style="font-size: 1rem;">👥 Connected Teams (<span id="playerCountDisplay">0</span>)</h3>
-            <div id="playersListContainer" style="max-height: 120px; overflow-y: auto;">
+            <div id="playersListContainer" style="max-height: 100px; overflow-y: auto;">
                 <p style="color: var(--text-muted);">No teams connected yet.</p>
             </div>
         </div>
@@ -138,7 +141,7 @@
                 `).join('');
                 document.getElementById('roundProgressDisplay').innerText = `Round ${state.currentRoundIndex + 1} of ${state.playlist.length}`;
             } else {
-                plContainer.innerHTML = '<p style="color: var(--text-muted);">Playlist is empty. Add rounds from the Quiz Builder!</p>';
+                plContainer.innerHTML = '<p style="color: var(--text-muted);">Playlist is empty. Add rounds from Quiz Builder or Mini-Games!</p>';
                 document.getElementById('roundProgressDisplay').innerText = 'None';
             }
 
@@ -164,8 +167,13 @@
             if (!input.value.trim()) return;
             socket.emit('host-chat-broadcast', input.value.trim());
             input.value = '';
-            alert('Broadcast sent!');
         }
+
+        socket.on('chat-message', (msg) => {
+            const feed = document.getElementById('hostChatFeed');
+            feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
+            feed.scrollTop = feed.scrollHeight;
+        });
     </script>
 </body>
 </html>
