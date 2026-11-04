@@ -27,8 +27,8 @@
         button:hover { filter: brightness(1.2); }
         .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
         .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
-        .btn-option { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; margin-bottom: 0.35rem; text-align: left; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; }
-        .btn-option:active { background: var(--neon-blue); color: #000; }
+        .btn-option { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; margin-bottom: 0.35rem; text-align: left; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; width: 100%; }
+        .btn-option:active { filter: brightness(1.2); }
         .hidden { display: none !important; }
         
         .emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 0.25rem; }
@@ -120,6 +120,8 @@
         let myName = '';
         let currentTimerValue = 15;
         let hasVotedCurrentPoll = false;
+        let hasAnsweredCurrentQ = false;
+        let currentQuestionIndexCache = -1;
 
         function joinGame() {
             const input = document.getElementById('playerNameInput');
@@ -207,21 +209,31 @@
                 wContainer.classList.add('hidden');
                 qContainer.classList.remove('hidden');
                 const round = state.playlist[state.currentRoundIndex];
+                
+                // Reset answer lock when question changes
+                if (currentQuestionIndexCache !== state.currentQuestionIndex) {
+                    currentQuestionIndexCache = state.currentQuestionIndex;
+                    hasAnsweredCurrentQ = false;
+                    document.getElementById('answerFeedback').innerText = '';
+                }
+
                 const q = round.questions[state.currentQuestionIndex];
                 if (q) {
                     document.getElementById('questionText').innerText = q.question;
                     const optsBox = document.getElementById('optionsContainer');
-                    optsBox.innerHTML = q.options && q.options.length > 0 ? q.options.map(opt => `
-                        <button class="btn-option" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                    `).join('') : `
-                        <input type="text" id="textAnswerInput" placeholder="Type answer..." style="font-size:0.9rem;">
-                        <button class="btn-blue" onclick="submitTextAnswer()">Submit Answer</button>
-                    `;
+                    
+                    if (!hasAnsweredCurrentQ) {
+                        optsBox.innerHTML = q.options && q.options.length > 0 ? q.options.map(opt => `
+                            <button class="btn-option answer-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}', this)">${opt}</button>
+                        `).join('') : `
+                            <input type="text" id="textAnswerInput" placeholder="Type answer..." style="font-size:0.9rem;">
+                            <button class="btn-blue" onclick="submitTextAnswer()">Submit Answer</button>
+                        `;
+                    }
                 }
             } else {
                 qContainer.classList.add('hidden');
                 wContainer.classList.remove('hidden');
-                document.getElementById('answerFeedback').innerText = '';
                 
                 const wTitle = document.getElementById('waitingTitle');
                 const wSub = document.getElementById('waitingSubtext');
@@ -245,16 +257,58 @@
             if (tDisplay) tDisplay.innerText = timeLeft + 's';
         });
 
-        function submitAnswer(ans) {
-            document.getElementById('optionsContainer').innerHTML = `<p style="color: var(--neon-green); text-align:center; font-weight:bold;">Answer submitted: "${ans}"</p>`;
+        function submitAnswer(ans, btnElement) {
+            if (hasAnsweredCurrentQ) return; // One press only
+            hasAnsweredCurrentQ = true;
+
+            // Disable all option buttons immediately
+            const allBtns = document.querySelectorAll('.answer-btn');
+            allBtns.forEach(b => {
+                b.style.pointerEvents = 'none';
+                b.style.opacity = '0.6';
+            });
+
+            if (btnElement) {
+                btnElement.dataset.userChoice = ans;
+            }
+
             socket.emit('submit-answer', { answer: ans, timeRemaining: currentTimerValue });
         }
 
         function submitTextAnswer() {
+            if (hasAnsweredCurrentQ) return;
             const val = document.getElementById('textAnswerInput').value.trim();
             if (!val) return;
-            submitAnswer(val);
+            hasAnsweredCurrentQ = true;
+            document.getElementById('textAnswerInput').disabled = true;
+            submitAnswer(val, null);
         }
+
+        socket.on('answer-result', (res) => {
+            const fb = document.getElementById('answerFeedback');
+            const allBtns = document.querySelectorAll('.answer-btn');
+            
+            allBtns.forEach(b => {
+                const text = b.innerText.replace(/^[A-D]\.\s*/, '').trim();
+                const correctText = (res.correctAnswer || '').trim();
+                const isThisCorrect = text.toLowerCase() === correctText.toLowerCase();
+                const wasChosen = b.dataset.userChoice && b.dataset.userChoice.toLowerCase() === text.toLowerCase();
+
+                if (isThisCorrect) {
+                    b.style.background = 'var(--neon-green)';
+                    b.style.color = '#000';
+                    b.style.borderColor = 'var(--neon-green)';
+                } else if (wasChosen && !res.correct) {
+                    b.style.background = 'var(--neon-red)';
+                    b.style.color = '#fff';
+                    b.style.borderColor = 'var(--neon-red)';
+                }
+            });
+
+            fb.innerHTML = res.correct ? 
+                `<span style="color: var(--neon-green);">✅ Correct! +${res.points} pts</span>` : 
+                `<span style="color: var(--neon-red);">❌ Incorrect. Correct answer: ${res.correctAnswer}</span>`;
+        });
 
         function votePoll(option) {
             hasVotedCurrentPoll = true;
