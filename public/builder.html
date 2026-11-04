@@ -34,11 +34,21 @@
 </head>
 <body>
     <header>
-        <h1>📝 Quiz Builder & AI Generator</h1>
+        <h1>📝 Quiz Builder & Category Loader</h1>
         <a href="/" style="color: var(--neon-blue); text-decoration: none; font-weight: bold;">← Back to Host Control</a>
     </header>
 
     <div class="container">
+        <!-- LOCAL CATEGORIES FOLDER CARD -->
+        <div class="card">
+            <h3>📂 Stored Quizzes (`categories/` folder)</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Select a pre-made quiz file from your repository to load directly into the game queue:</p>
+            <div id="localCategoriesList" style="max-height: 220px; overflow-y: auto; margin-bottom: 1rem;">
+                <p style="color: var(--text-muted);">Loading local categories...</p>
+            </div>
+            <button class="btn-blue" onclick="fetchLocalCategories()">🔄 Refresh Category List</button>
+        </div>
+
         <!-- AI GENERATOR CARD -->
         <div class="card">
             <h3>🤖 Generate Quiz with AI</h3>
@@ -70,13 +80,13 @@
 
         <!-- REVIEW & QUEUE CARD -->
         <div class="card">
-            <h3>📋 Review & Add to Game Queue</h3>
+            <h3>📋 Review & Add Custom Round</h3>
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Round Title / Name</label>
-            <input type="text" id="roundNameInput" value="AI Generated Round">
+            <input type="text" id="roundNameInput" value="Custom Quiz Round">
 
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Parsed Questions Preview</label>
             <div id="previewContainer" class="preview-box">
-                <p>No questions generated yet. Use the AI generator above or type questions below.</p>
+                <p>No questions generated yet. Use the AI generator or load a category above.</p>
             </div>
 
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Raw Question Code / Text Format</label>
@@ -89,6 +99,41 @@
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
         let parsedQuestionsCache = [];
+
+        async function fetchLocalCategories() {
+            try {
+                const res = await fetch('/api/load-categories');
+                const data = await res.json();
+                const container = document.getElementById('localCategoriesList');
+
+                if (data.success && data.categories.length > 0) {
+                    container.innerHTML = data.categories.map((cat) => `
+                        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: var(--neon-blue);">${cat.name}</strong>
+                                <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">${cat.questions.length} Questions (${cat.filename})</span>
+                            </div>
+                            <button class="btn-green" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick='loadCategoryToQueue(${JSON.stringify(cat).replace(/'/g, "&#39;")})'>📥 Load Round</button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: var(--text-muted);">No JSON quiz files found in the "categories" folder.</p>';
+                }
+            } catch (err) {
+                document.getElementById('localCategoriesList').innerHTML = '<p style="color: var(--neon-red);">Failed to load local categories.</p>';
+            }
+        }
+
+        function loadCategoryToQueue(cat) {
+            socket.emit('add-custom-picture-round', {
+                name: cat.name,
+                questions: cat.questions
+            });
+            alert(`Successfully added "${cat.name}" to the trivia queue!`);
+        }
+
+        // Fetch categories on page load
+        window.addEventListener('DOMContentLoaded', fetchLocalCategories);
 
         async function generateAIQuiz() {
             const topic = document.getElementById('aiTopicInput').value.trim();
@@ -161,7 +206,6 @@
             document.getElementById('previewContainer').innerHTML = previewHTML;
         }
 
-        // Live parse when typing in textarea manually
         document.getElementById('rawQuestionTextArea').oninput = function() {
             parseRawTextToPreview(this.value);
         };
@@ -177,16 +221,12 @@
 
             const roundName = document.getElementById('roundNameInput').value.trim() || 'Custom Round';
             
-            // Send custom round configuration to server
             socket.emit('add-custom-picture-round', {
                 name: roundName,
                 questions: parsedQuestionsCache
             });
+            alert(`Added "${roundName}" to queue!`);
         }
-
-        socket.on('state-update', (state) => {
-            // Optional state sync feedback if needed
-        });
     </script>
 </body>
 </html>
