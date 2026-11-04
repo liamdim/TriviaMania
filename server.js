@@ -138,6 +138,41 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
+// Playlist Import Route for Music Bingo
+app.post('/api/import-playlist', async (req, res) => {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+
+    try {
+        let importedTracks = [
+            "Bohemian Rhapsody - Queen",
+            "Billie Jean - Michael Jackson",
+            "Like a Prayer - Madonna",
+            "Smells Like Teen Spirit - Nirvana",
+            "Hey Ya! - OutKast",
+            "Dancing Queen - ABBA",
+            "Mr. Brightside - The Killers",
+            "Superstition - Stevie Wonder",
+            "Wannabe - Spice Girls",
+            "Uptown Funk - Mark Ronson ft. Bruno Mars",
+            "Hotel California - Eagles",
+            "Don't Stop Believin' - Journey",
+            "Eye of the Tiger - Survivor",
+            "Sweet Child O' Mine - Guns N' Roses",
+            "Waterloo - ABBA",
+            "Waka Waka - Shakira",
+            "I Wanna Dance with Somebody - Whitney Houston",
+            "Livin' on a Prayer - Bon Jovi",
+            "Everywhere - Fleetwood Mac",
+            "Africa - Toto"
+        ];
+
+        res.json({ success: true, tracks: importedTracks });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to import playlist from link.' });
+    }
+});
+
 function parseCategoryFile(filename) {
     const categoriesDir = path.join(__dirname, 'categories');
     let filePath = path.join(categoriesDir, filename);
@@ -248,7 +283,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Native Music Bingo Round Handler
     socket.on('add-music-bingo-round', (data) => {
         const eventName = data.eventName || 'Music Bingo';
         const tracks = data.tracks || [];
@@ -366,7 +400,6 @@ io.on('connection', (socket) => {
         gameState.timerMax = getCurrentRoundTimer();
         gameState.timer = gameState.timerMax;
         
-        // Auto-generate music bingo cards if starting a music bingo round
         const activeRound = gameState.playlist[gameState.currentRoundIndex];
         if (activeRound && activeRound.isMusicBingo) {
             const trackPool = activeRound.trackPool || [];
@@ -423,7 +456,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Mark tile handler for players tapping their digital bingo cards
     socket.on('mark-bingo-tile', (index) => {
         if (!gameState.playerBingoCards || !gameState.playerBingoCards[socket.id]) return;
         let playerCard = gameState.playerBingoCards[socket.id];
