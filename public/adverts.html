@@ -59,6 +59,10 @@
             <div id="advertsLibraryContainer" style="max-height: 320px; overflow-y: auto;">
                 <p style="color: var(--text-muted);">No saved adverts found.</p>
             </div>
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                <button class="btn-red" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;" onclick="socket.emit('hide-advert-screen')">Hide Screen Ad</button>
+                <button class="btn-red" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;" onclick="socket.emit('hide-advert-mobile')">Hide Mobile Ad</button>
+            </div>
         </div>
     </div>
 
@@ -71,7 +75,6 @@
             const fileInput = document.getElementById('adImageFile');
             let imageBase64 = '';
 
-            // Read file on-demand with async/await to prevent race conditions
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 imageBase64 = await new Promise((resolve) => {
@@ -91,7 +94,6 @@
                 image: imageBase64
             });
 
-            // Reset form
             document.getElementById('adTextInput').value = '';
             fileInput.value = '';
             alert('Advert saved successfully!');
@@ -107,15 +109,15 @@
                         <div class="ad-item">
                             <div>
                                 <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
-                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">${ad.text ? ad.text.substring(0, 60) + '...' : '[Image Advert]'}</p>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">${ad.text ? ad.text.substring(0, 50) + '...' : '[Image Advert]'}</p>
                                 ${ad.image ? '<span style="color: var(--neon-green); font-size: 0.75rem;">🖼️ Has Image</span>' : ''}
                             </div>
                             <div style="display: flex; gap: 0.4rem; flex-direction: column;">
                                 <div style="display: flex; gap: 0.3rem;">
-                                    <button class="btn-blue" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="broadcastAd(${idx}, 'screen')">📺 Screen</button>
-                                    <button class="btn-green" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="broadcastAd(${idx}, 'mobile')">📱 Mobile</button>
+                                    <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="broadcastAd(${idx}, 'screen')">📺 Screen</button>
+                                    <button class="btn-green" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="broadcastAd(${idx}, 'mobile')">📱 Mobile</button>
                                 </div>
-                                <button class="btn-red" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" onclick="socket.emit('delete-advert', ${idx})">❌ Delete</button>
+                                <button class="btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="socket.emit('delete-advert', ${idx})">❌ Delete</button>
                             </div>
                         </div>
                     `).join('');
