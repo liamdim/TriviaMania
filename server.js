@@ -53,8 +53,7 @@ let gameState = {
         pollOptions: samplePolls[0].options,
         votes: {}
     },
-    settings: { questionTime: 15 },
-    playerBingoCards: {}
+    settings: { questionTime: 15 }
 };
 
 let timerInterval = null;
@@ -115,26 +114,33 @@ function editDistance(s1, s2) {
     return costs[s2.length];
 }
 
-function checkBingoWin(marked) {
-    const lines = [
-        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
-        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
-        [0,6,12,18,24], [4,8,12,16,20]
-    ];
-    return lines.some(line => line.every(index => marked[index]));
-}
-
-app.get('/api/categories', (req, res) => {
-    const categoriesDir = path.join(__dirname, 'categories');
-    if (!fs.existsSync(categoriesDir)) return res.json([]);
+// --- AI QUIZ GENERATOR ENDPOINT ---
+app.post('/api/generate-ai-quiz', async (req, res) => {
+    const { topic, count = 10, difficulty = 'medium' } = req.body;
+    
     try {
-        const files = fs.readdirSync(categoriesDir);
-        const categories = files
-            .filter(file => fs.statSync(path.join(categoriesDir, file)).isFile())
-            .map(file => file.replace(/\.[^/.]+$/, ''));
-        res.json(categories);
+        const prompt = `Generate a ${difficulty} difficulty pub trivia round about "${topic}" containing exactly ${count} questions.
+        You MUST format your response strictly as plain text using the following format for each question, with no extra conversational filler or markdown code blocks:
+        
+        #Q [Insert clear, factually accurate question here]
+        A. [First option]
+        B. [Second option]
+        C. [Third option]
+        D. [Fourth option]
+        ^ [Exact correct option text from above]
+        
+        Ensure all questions make complete factual sense, have distinct answers, and avoid ambiguity.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+
+        const textOutput = response.text;
+        res.json({ success: true, raw: textOutput });
     } catch (err) {
-        res.json([]);
+        console.error('AI Generation Error:', err);
+        res.status(500).json({ success: false, error: 'Failed to generate AI questions.' });
     }
 });
 
@@ -156,15 +162,7 @@ app.post('/api/import-playlist', async (req, res) => {
             "Wannabe - Spice Girls",
             "Uptown Funk - Mark Ronson ft. Bruno Mars",
             "Hotel California - Eagles",
-            "Don't Stop Believin' - Journey",
-            "Eye of the Tiger - Survivor",
-            "Sweet Child O' Mine - Guns N' Roses",
-            "Waterloo - ABBA",
-            "Waka Waka - Shakira",
-            "I Wanna Dance with Somebody - Whitney Houston",
-            "Livin' on a Prayer - Bon Jovi",
-            "Everywhere - Fleetwood Mac",
-            "Africa - Toto"
+            "Don't Stop Believin' - Journey"
         ];
 
         res.json({ success: true, tracks: importedTracks });
@@ -172,42 +170,6 @@ app.post('/api/import-playlist', async (req, res) => {
         res.status(500).json({ error: 'Failed to import playlist from link.' });
     }
 });
-
-function parseCategoryFile(filename) {
-    const categoriesDir = path.join(__dirname, 'categories');
-    let filePath = path.join(categoriesDir, filename);
-    if (!fs.existsSync(filePath)) filePath = path.join(categoriesDir, filename + '.txt');
-    if (!fs.existsSync(filePath)) return [];
-
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    const lines = fileContent.split(/\r?\n/);
-    const questions = [];
-    let currentQ = null;
-
-    for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
-        if (line.startsWith('#Q')) {
-            if (currentQ) {
-                currentQ.options.sort(() => 0.5 - Math.random());
-                questions.push(currentQ);
-            }
-            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '', fastestPlayerId: null };
-        } else if (line.startsWith('^')) {
-            if (currentQ) currentQ.answer = line.replace('^', '').trim();
-        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
-            if (currentQ) {
-                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
-                currentQ.options.push(optText);
-            }
-        }
-    }
-    if (currentQ) {
-        currentQ.options.sort(() => 0.5 - Math.random());
-        questions.push(currentQ);
-    }
-    return questions.sort(() => 0.5 - Math.random());
-}
 
 function getCurrentRoundTimer() {
     const round = gameState.playlist[gameState.currentRoundIndex];
@@ -283,33 +245,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    socket.on('add-music-bingo-round', (data) => {
-        const eventName = data.eventName || 'Music Bingo';
-        const tracks = data.tracks || [];
-        
-        if (tracks.length === 0) return;
-
-        const questions = tracks.map(track => ({
-            gameType: 'music-bingo',
-            question: `🎵 MUSIC BINGO: Listen & mark your card!`,
-            answer: track,
-            options: [],
-            fastestPlayerId: null
-        }));
-
-        gameState.playlist.push({
-            name: '🎵 ' + eventName,
-            genre: 'Music Bingo',
-            timer: 30,
-            questions: questions,
-            isMusicBingo: true,
-            trackPool: tracks
-        });
-
-        io.emit('state-update', gameState);
-        socket.emit('music-bingo-added', { success: true });
-    });
-
     socket.on('poll-vote', (option) => {
         if (!gameState.lobbySettings.votes) gameState.lobbySettings.votes = {};
         gameState.lobbySettings.votes[socket.id] = option;
@@ -326,24 +261,11 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    socket.on('add-round', (roundConfig) => {
-        const questions = parseCategoryFile(roundConfig.genre);
-        const selectedQuestions = questions.slice(0, roundConfig.count || 10);
-        
-        gameState.playlist.push({
-            name: roundConfig.name || roundConfig.genre,
-            genre: roundConfig.genre,
-            timer: 15,
-            questions: selectedQuestions
-        });
-        io.emit('state-update', gameState);
-    });
-
     socket.on('add-custom-picture-round', (roundObj) => {
         if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
         gameState.playlist.push({
-            name: roundObj.name || '🖼️ Picture Round',
-            genre: 'Picture Round',
+            name: roundObj.name || '🖼️ Custom Round',
+            genre: 'Custom Round',
             timer: 20,
             questions: roundObj.questions
         });
@@ -399,22 +321,6 @@ io.on('connection', (socket) => {
         gameState.currentQuestionIndex = 0;
         gameState.timerMax = getCurrentRoundTimer();
         gameState.timer = gameState.timerMax;
-        
-        const activeRound = gameState.playlist[gameState.currentRoundIndex];
-        if (activeRound && activeRound.isMusicBingo) {
-            const trackPool = activeRound.trackPool || [];
-            Object.keys(gameState.scores).forEach(socketId => {
-                let shuffledTracks = [...trackPool].sort(() => 0.5 - Math.random());
-                let cardTracks = shuffledTracks.slice(0, 24);
-                cardTracks.splice(12, 0, '★ FREE SPACE ★');
-                gameState.playerBingoCards[socketId] = {
-                    card: cardTracks,
-                    marked: Array(25).fill(false)
-                };
-                gameState.playerBingoCards[socketId].marked[12] = true;
-            });
-            io.emit('music-bingo-cards-assigned', gameState.playerBingoCards);
-        }
 
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
         io.emit('state-update', gameState);
@@ -430,22 +336,6 @@ io.on('connection', (socket) => {
             gameState.timerMax = getCurrentRoundTimer();
             gameState.timer = gameState.timerMax;
 
-            const activeRound = gameState.playlist[gameState.currentRoundIndex];
-            if (activeRound && activeRound.isMusicBingo) {
-                const trackPool = activeRound.trackPool || [];
-                Object.keys(gameState.scores).forEach(socketId => {
-                    let shuffledTracks = [...trackPool].sort(() => 0.5 - Math.random());
-                    let cardTracks = shuffledTracks.slice(0, 24);
-                    cardTracks.splice(12, 0, '★ FREE SPACE ★');
-                    gameState.playerBingoCards[socketId] = {
-                        card: cardTracks,
-                        marked: Array(25).fill(false)
-                    };
-                    gameState.playerBingoCards[socketId].marked[12] = true;
-                });
-                io.emit('music-bingo-cards-assigned', gameState.playerBingoCards);
-            }
-
             Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
             triggerNewPoll();
             io.emit('state-update', gameState);
@@ -453,19 +343,6 @@ io.on('connection', (socket) => {
         } else {
             gameState.status = 'LEADERBOARD';
             io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('mark-bingo-tile', (index) => {
-        if (!gameState.playerBingoCards || !gameState.playerBingoCards[socket.id]) return;
-        let playerCard = gameState.playerBingoCards[socket.id];
-        
-        if (index >= 0 && index < 25) {
-            playerCard.marked[index] = !playerCard.marked[index];
-            if (checkBingoWin(playerCard.marked)) {
-                io.emit('bingo-winner', { name: gameState.scores[socket.id].name });
-            }
-            socket.emit('bingo-card-updated', playerCard);
         }
     });
 
@@ -499,7 +376,6 @@ io.on('connection', (socket) => {
         gameState.currentQuestionIndex = 0;
         gameState.scores = {};
         gameState.mutedPlayers = {};
-        gameState.playerBingoCards = {};
         disconnectedPlayers = {};
         triggerNewPoll();
         io.emit('state-update', gameState);
