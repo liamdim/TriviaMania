@@ -3,159 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:,">
-    <title>TriviaMania - Music Bingo Setup</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <title>TriviaMania - Music Bingo</title>
     <style>
-        :root {
-            --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.95);
-            --neon-blue: #00f3ff;
-            --neon-green: #00ff66;
-            --neon-yellow: #ffee00;
-            --text: #ffffff;
-            --text-muted: #8b9bb4;
-        }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); padding: 2rem; min-height: 100vh; background-image: radial-gradient(circle at 50% 10%, #1a103c 0%, #05050a 85%); }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
-        header h1 { color: var(--neon-blue); font-size: 1.5rem; }
-        .container { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        input[type="text"], textarea { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.85rem; font-size: 1rem; margin-bottom: 1rem; }
-        
-        .import-box { background: rgba(5,10,20,0.6); border: 1px solid rgba(0,243,255,0.2); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
-        .badge-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: bold; }
-        .badge-spotify { background: #1DB954; color: #000; padding: 2px 8px; border-radius: 4px; }
-        .badge-apple { background: #FA243C; color: #fff; padding: 2px 8px; border-radius: 4px; }
-        .badge-amazon { background: #FF9900; color: #000; padding: 2px 8px; border-radius: 4px; }
-        .badge-youtube { background: #FF0000; color: #fff; padding: 2px 8px; border-radius: 4px; }
-        
-        .import-input-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
-        .btn-yellow { background: var(--neon-yellow); color: #000; font-weight: bold; border: none; padding: 0 1.5rem; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .btn-yellow:hover { filter: brightness(1.1); }
-        
-        .radio-row { display: flex; gap: 1.5rem; font-size: 0.9rem; color: var(--text-muted); align-items: center; }
-        .radio-row label { display: flex; gap: 0.4rem; cursor: pointer; align-items: center; color: white; }
-
-        .btn-action { width: 100%; padding: 1rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; text-align: center; margin-top: 1rem; }
-        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
-        .btn-shuffle { background: rgba(0,243,255,0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue); }
+        body { background-color: #05050a; color: #ffffff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: rgba(10, 15, 30, 0.9); padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
+        h1 { font-size: 1.2rem; color: #00f3ff; }
+        .back-btn { background: #1f2937; color: #38bdf8; border: 1px solid #374151; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.85rem; }
+        .back-btn:hover { background: #374151; }
+        iframe { flex: 1; width: 100%; height: calc(100vh - 55px); border: none; background: #030712; }
     </style>
 </head>
 <body>
     <header>
-        <h1>🎵 Music Bingo Setup</h1>
-        <a href="/" style="color: var(--neon-blue); text-decoration: none; font-weight: bold;">← Back to Host Control</a>
+        <a href="/" class="back-btn">← Back to TriviaMania Host Control</a>
+        <h1>🎵 Music Bingo Card Generator</h1>
     </header>
-
-    <div class="container">
-        <div class="card">
-            <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Event Name</label>
-            <input type="text" id="eventNameInput" value="Friday Night Music Bingo">
-
-            <!-- Import Playlist Box -->
-            <div class="import-box">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                    <span style="font-weight: bold; font-size: 0.95rem;">Import a playlist link</span>
-                    <div class="badge-row" style="margin:0;">
-                        <span class="badge-spotify">SPOTIFY</span>
-                        <span class="badge-apple">APPLE MUSIC</span>
-                        <span class="badge-amazon">AMAZON</span>
-                        <span class="badge-youtube">YOUTUBE</span>
-                    </div>
-                </div>
-                <div class="import-input-row">
-                    <input type="text" id="playlistLinkInput" placeholder="🔗 Paste playlist or album link here..." style="margin-bottom:0;">
-                    <button class="btn-yellow" onclick="importPlaylistLink()">Import</button>
-                </div>
-                <div class="radio-row">
-                    <label><input type="radio" name="importMode" value="replace" checked> Replace list</label>
-                    <label><input type="radio" name="importMode" value="add"> Add to list</label>
-                </div>
-            </div>
-
-            <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Playlist Tracks (One song per line, Title - Artist)</label>
-            <textarea id="playlistTextArea" style="height: 180px;">Bohemian Rhapsody - Queen
-Billie Jean - Michael Jackson
-Like a Prayer - Madonna
-Smells Like Teen Spirit - Nirvana
-Hey Ya! - OutKast
-Dancing Queen - ABBA
-Mr. Brightside - The Killers
-Superstition - Stevie Wonder
-Wannabe - Spice Girls
-Uptown Funk - Mark Ronson ft. Bruno Mars
-Hotel California - Eagles
-Don't Stop Believin' - Journey</textarea>
-
-            <button class="btn-action btn-shuffle" onclick="shufflePlaylist()">🔀 Reshuffle Playlist</button>
-            <button class="btn-action btn-green" onclick="pushToTriviaQueue()">🚀 Add Music Bingo Directly to Trivia Queue</button>
-        </div>
-    </div>
-
-    <script>
-        const socket = io({ transports: ['websocket', 'polling'] });
-
-        async function importPlaylistLink() {
-            const link = document.getElementById('playlistLinkInput').value.trim();
-            const mode = document.querySelector('input[name="importMode"]:checked').value;
-            
-            if (!link) {
-                alert('Please paste a valid playlist link.');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/import-playlist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: link })
-                });
-                const data = await response.json();
-
-                if (data.success && data.tracks) {
-                    const textarea = document.getElementById('playlistTextArea');
-                    if (mode === 'replace' || !textarea.value.trim()) {
-                        textarea.value = data.tracks.join('\n');
-                    } else {
-                        textarea.value = textarea.value.trim() + '\n' + data.tracks.join('\n');
-                    }
-                    alert('Successfully imported tracks from playlist link!');
-                } else {
-                    alert('Could not extract tracks. Please check the URL.');
-                }
-            } catch (err) {
-                alert('Error connecting to playlist import service.');
-            }
-        }
-
-        function shufflePlaylist() {
-            const textarea = document.getElementById('playlistTextArea');
-            let lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            lines.sort(() => 0.5 - Math.random());
-            textarea.value = lines.join('\n');
-        }
-
-        function pushToTriviaQueue() {
-            const eventName = document.getElementById('eventNameInput').value.trim() || 'Music Bingo';
-            const textarea = document.getElementById('playlistTextArea');
-            let tracks = textarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-            if (tracks.length < 10) {
-                alert('Please provide at least 10 tracks for a proper Music Bingo game.');
-                return;
-            }
-
-            socket.emit('add-music-bingo-round', { eventName, tracks });
-        }
-
-        socket.on('music-bingo-added', (res) => {
-            if (res.success) {
-                alert('Music Bingo added directly to your main TriviaMania queue! Taking you back to host control...');
-                window.location.href = '/';
-            }
-        });
-    </script>
+    <iframe src="https://music-bingo-tau.vercel.app" allow="autoplay; microphone; clipboard-write"></iframe>
 </body>
 </html>
