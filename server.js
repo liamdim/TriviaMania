@@ -285,11 +285,12 @@ io.on('connection', (socket) => {
         triggerNewPoll();
     });
 
+    // --- CUSTOM EMOJIS UPDATE (MAX 10) ---
     socket.on('update-custom-emojis', (emojis) => {
         if (Array.isArray(emojis) && emojis.length > 0) {
-            gameState.customEmojis = emojis.map(e => sanitizeText(e));
+            gameState.customEmojis = emojis.slice(0, 10).map(e => sanitizeText(e));
+            io.emit('state-update', gameState);
         }
-        io.emit('state-update', gameState);
     });
 
     socket.on('add-custom-picture-round', (roundObj) => {
