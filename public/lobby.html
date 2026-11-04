@@ -87,10 +87,10 @@
 
         <!-- LIVE EMOJI REACTIONS EDITOR -->
         <div class="card full">
-            <h3>🎨 Custom Floating Emojis Editor</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Customize the floating reaction emojis available on mobile phones (comma-separated):</p>
-            <input type="text" id="customEmojisInput" value="🔥, 🍻, 👏, 😂, 🎉, 💡">
-            <button class="btn-green" onclick="updateEmojis()">💾 Save Emoji Toolbar</button>
+            <h3>🎨 Custom Floating Emojis Editor (Max 10)</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Customize the floating reaction emojis available on mobile phones (comma-separated, up to 10):</p>
+            <input type="text" id="customEmojisInput" value="🔥, 🍻, 👏, 😂, 🎉, 💡" oninput="updateEmojisLive()">
+            <button class="btn-green" onclick="updateEmojisLive()">💾 Save Emoji Toolbar</button>
         </div>
     </div>
 
@@ -157,11 +157,13 @@
             });
         }
 
-        function updateEmojis() {
+        function updateEmojisLive() {
             const raw = document.getElementById('customEmojisInput').value;
-            const emojis = raw.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            let emojis = raw.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            if (emojis.length > 10) {
+                emojis = emojis.slice(0, 10);
+            }
             socket.emit('update-custom-emojis', emojis);
-            alert('Emoji toolbar updated!');
         }
     </script>
 </body>
