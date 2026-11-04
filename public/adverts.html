@@ -9,7 +9,7 @@
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.85);
+            --panel-bg: rgba(15, 23, 42, 0.95);
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
@@ -18,132 +18,123 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
-        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
-        header h1 { font-size: 1.5rem; color: var(--neon-blue); }
-        .nav-links { display: flex; gap: 0.75rem; }
-        .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
-        .container { flex: 1; padding: 2rem; max-width: 900px; width: 100%; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 2rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); margin-bottom: 1.5rem; }
-        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); font-weight: 600; }
-        .form-group { margin-bottom: 1.2rem; text-align: left; }
-        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        input[type="text"], textarea { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; font-size: 1rem; }
-        textarea { resize: vertical; min-height: 80px; }
-        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 1rem; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 2rem; min-height: 100vh; background-image: radial-gradient(circle at 50% 10%, #1a103c 0%, #05050a 85%); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
+        header h1 { color: var(--neon-blue); font-size: 1.5rem; }
+        .container { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); grid-column: span 1; }
+        .card.full { grid-column: span 2; }
+        .card h3 { color: var(--neon-blue); margin-bottom: 1rem; }
+        textarea, input[type="file"] { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; margin-bottom: 0.75rem; }
+        button { padding: 0.75rem 1.2rem; border-radius: 8px; border: none; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
         button:hover { filter: brightness(1.2); }
-        .ad-item { background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.2); padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; width: 100%; }
+        .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
+        .btn-red { background: linear-gradient(135deg, #aa0033, var(--neon-red)); color: white; }
+        .ad-item { background: rgba(5,10,20,0.8); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <header>
-        <h1>📢 Adverts Manager</h1>
-        <div class="nav-links">
-            <a href="/index.html">⚡ Live Controls</a>
-        </div>
+        <h1>📢 Adverts & Sponsor Manager</h1>
+        <a href="/" style="color: var(--neon-blue); text-decoration: none; font-weight: bold;">← Back to Host Control</a>
     </header>
+
     <div class="container">
+        <!-- CREATE / UPLOAD ADVERT -->
         <div class="card">
-            <h3>Add New Sponsor Advert</h3>
-            <div class="form-group">
-                <label>Advert Message / Text:</label>
-                <textarea id="adTextInput" placeholder="Enter sponsor message, drink deals, or special announcements..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>Sponsor Image / Pic (Optional):</label>
-                <input type="file" id="adImageFile" accept="image/*" style="color: white; margin-bottom: 0.5rem;">
-                <input type="hidden" id="adImageBase64" value="">
-            </div>
-            <button onclick="saveAdvert()">➕ Save Advert to Library</button>
+            <h3>➕ Create New Advert / Sponsor Slide</h3>
+            <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Advert Text / Message</label>
+            <textarea id="adTextInput" placeholder="Enter sponsor text or special announcement..." style="height: 100px;"></textarea>
+
+            <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Upload Image / Flyer (Optional)</label>
+            <input type="file" id="adImageFile" accept="image/*">
+
+            <button class="btn-green" onclick="saveNewAdvert()" style="margin-top: 0.5rem;">💾 Save Advert to Library</button>
         </div>
 
+        <!-- SAVED ADVERTS LIBRARY -->
         <div class="card">
-            <h3>Saved Adverts Library</h3>
-            <div id="advertsListContainer">
-                <p style="color: var(--text-muted);">No saved adverts yet.</p>
+            <h3>📚 Saved Adverts Library</h3>
+            <div id="advertsLibraryContainer" style="max-height: 320px; overflow-y: auto;">
+                <p style="color: var(--text-muted);">No saved adverts found.</p>
             </div>
         </div>
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        let advertsList = [];
+        let advertsCache = [];
+        let uploadedImageBase64 = '';
 
-        // Compress image to prevent payload size issues
-        document.getElementById('adImageFile').addEventListener('change', function(e) {
+        // Convert uploaded image file to Base64 string for storage
+        document.getElementById('adImageFile').onchange = function(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(uploadEvent) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    const MAX_HEIGHT = 600;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    } else {
-                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    document.getElementById('adImageBase64').value = canvas.toDataURL('image/jpeg', 0.7);
-                };
-                img.src = uploadEvent.target.result;
+                uploadedImageBase64 = uploadEvent.target.result;
             };
             reader.readAsDataURL(file);
-        });
+        };
+
+        function saveNewAdvert() {
+            const text = document.getElementById('adTextInput').value.trim();
+            if (!text && !uploadedImageBase64) {
+                alert('Please enter text or upload an image for the advert.');
+                return;
+            }
+
+            socket.emit('save-new-advert', {
+                text: text,
+                image: uploadedImageBase64
+            });
+
+            // Reset form
+            document.getElementById('adTextInput').value = '';
+            document.getElementById('adImageFile').value = '';
+            uploadedImageBase64 = '';
+            alert('Advert saved successfully!');
+        }
 
         socket.on('state-update', (state) => {
             if (state.adverts) {
-                advertsList = state.adverts;
-                renderAdvertsList();
+                advertsCache = state.adverts;
+                const container = document.getElementById('advertsLibraryContainer');
+                
+                if (state.adverts.length > 0) {
+                    container.innerHTML = state.adverts.map((ad, idx) => `
+                        <div class="ad-item">
+                            <div>
+                                <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">${ad.text ? ad.text.substring(0, 60) + '...' : '[Image Advert]'}</p>
+                                ${ad.image ? '<span style="color: var(--neon-green); font-size: 0.75rem;">🖼️ Has Image</span>' : ''}
+                            </div>
+                            <div style="display: flex; gap: 0.4rem; flex-direction: column;">
+                                <div style="display: flex; gap: 0.3rem;">
+                                    <button class="btn-blue" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="broadcastAd(${idx}, 'screen')">📺 Screen</button>
+                                    <button class="btn-green" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="broadcastAd(${idx}, 'mobile')">📱 Mobile</button>
+                                </div>
+                                <button class="btn-red" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" onclick="socket.emit('delete-advert', ${idx})">❌ Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: var(--text-muted);">No saved adverts found.</p>';
+                }
             }
         });
 
-        function saveAdvert() {
-            const text = document.getElementById('adTextInput').value.trim();
-            const image = document.getElementById('adImageBase64').value;
-            if (!text && !image) { alert('Please enter advert text or upload a picture!'); return; }
-
-            advertsList.push({ text: text || 'Sponsor Advertisement', image: image });
-            socket.emit('update-adverts-library', advertsList);
-
-            document.getElementById('adTextInput').value = '';
-            document.getElementById('adImageBase64').value = '';
-            document.getElementById('adImageFile').value = '';
-            alert('Advert successfully saved and synced to the host screen dropdown!');
-        }
-
-        function deleteAdvert(index) {
-            advertsList.splice(index, 1);
-            socket.emit('update-adverts-library', advertsList);
-        }
-
-        function renderAdvertsList() {
-            const container = document.getElementById('advertsListContainer');
-            if (advertsList.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted);">No saved adverts yet.</p>';
-                return;
+        function broadcastAd(index, target) {
+            const ad = advertsCache[index];
+            if (!ad) return;
+            if (target === 'screen') {
+                socket.emit('broadcast-advert-screen', ad);
+                alert('Advert broadcasted to big screen!');
+            } else {
+                socket.emit('broadcast-advert-mobile', ad);
+                alert('Advert broadcasted to mobile phones!');
             }
-            container.innerHTML = advertsList.map((ad, idx) => `
-                <div class="ad-item">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        ${ad.image ? `<img src="${ad.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--neon-blue);">` : ''}
-                        <div>
-                            <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
-                            <p style="font-size: 0.95rem; margin-top: 0.25rem;">${ad.text}</p>
-                        </div>
-                    </div>
-                    <button onclick="deleteAdvert(${idx})" style="background: rgba(255,0,85,0.3); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Delete</button>
-                </div>
-            `).join('');
         }
     </script>
 </body>
