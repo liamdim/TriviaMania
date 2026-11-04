@@ -98,14 +98,37 @@ Don't Stop Believin' - Journey</textarea>
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
 
-        function importPlaylistLink() {
+        async function importPlaylistLink() {
             const link = document.getElementById('playlistLinkInput').value.trim();
             const mode = document.querySelector('input[name="importMode"]:checked').value;
+            
             if (!link) {
                 alert('Please paste a valid playlist link.');
                 return;
             }
-            alert(`Link registered successfully! (${link}) — Add your specific track names below and push to queue.`);
+
+            try {
+                const response = await fetch('/api/import-playlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: link })
+                });
+                const data = await response.json();
+
+                if (data.success && data.tracks) {
+                    const textarea = document.getElementById('playlistTextArea');
+                    if (mode === 'replace' || !textarea.value.trim()) {
+                        textarea.value = data.tracks.join('\n');
+                    } else {
+                        textarea.value = textarea.value.trim() + '\n' + data.tracks.join('\n');
+                    }
+                    alert('Successfully imported tracks from playlist link!');
+                } else {
+                    alert('Could not auto-extract tracks from this link. Please check the URL.');
+                }
+            } catch (err) {
+                alert('Error connecting to playlist import service.');
+            }
         }
 
         function shufflePlaylist() {
