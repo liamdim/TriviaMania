@@ -9,9 +9,9 @@
         body { background-color: #05050a; color: #ffffff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         header { background: rgba(10, 15, 30, 0.9); padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
         h1 { font-size: 1.2rem; color: #00f3ff; }
-        .back-btn { background: #1f2937; color: #38bdf8; border: 1px solid #374151; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: 0.2s; }
+        .back-btn { background: #1f2937; color: #38bdf8; border: 1px solid #374151; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.85rem; }
         .back-btn:hover { background: #374151; }
-        iframe { flex: 1; width: 100%; border: none; background: #030712; }
+        iframe { flex: 1; width: 100%; height: calc(100vh - 55px); border: none; background: #030712; }
     </style>
 </head>
 <body>
@@ -19,8 +19,6 @@
         <a href="/" class="back-btn">← Back to TriviaMania Host Control</a>
         <h1>🎱 90-Ball Bingo Caller</h1>
     </header>
-
-    <!-- Embeds your external 90-ball bingo caller tool natively -->
     <iframe src="https://marc-jones.github.io/bingo_caller/" allow="autoplay; microphone; clipboard-write"></iframe>
 </body>
 </html>
