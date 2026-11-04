@@ -31,7 +31,7 @@
         .btn-option:active { background: var(--neon-blue); color: #000; }
         .hidden { display: none !important; }
         
-        /* Compact Emoji Grid (Small Boxes) */
+        /* Compact Emoji Grid */
         .emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 0.25rem; }
         .emoji-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(0,243,255,0.2); font-size: 1.25rem; padding: 0.3rem; text-align: center; border-radius: 6px; cursor: pointer; transition: 0.1s; }
         .emoji-box:active { background: var(--neon-blue); transform: scale(0.95); }
@@ -56,7 +56,7 @@
             <button class="btn-green" onclick="joinGame()">🚀 Join Arena</button>
         </div>
 
-        <!-- GAMEPLAY ARENA (Hidden until login) -->
+        <!-- GAMEPLAY ARENA -->
         <div id="gameCard" class="card hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(0,243,255,0.2); padding-bottom: 0.4rem;">
                 <span id="playerWelcomeHeader" style="font-weight: bold; color: var(--neon-blue); font-size: 0.95rem;">Player</span>
@@ -74,7 +74,7 @@
                 <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 0.75rem; font-size: 1rem;"></div>
             </div>
 
-            <!-- WAITING / INTERMISSION & LIVE LEADERBOARD VIEW -->
+            <!-- WAITING / INTERMISSION -->
             <div id="waitingContainer" style="text-align: center; padding: 0.5rem 0;">
                 <h3 style="color: var(--neon-yellow); font-size: 1rem;" id="waitingTitle">⏳ Get Ready!</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;" id="waitingSubtext">You are in the waiting room. The host will start shortly.</p>
@@ -102,13 +102,19 @@
             </div>
         </div>
 
-        <!-- COMPACT EMOJI GRID UNDER CHAT (UP TO 10 BOXES) -->
+        <!-- COMPACT EMOJI GRID UNDER CHAT -->
         <div class="card" style="padding: 0.6rem;">
             <h3 style="font-size: 0.85rem; margin-bottom: 0.3rem; color: var(--text-muted);">Quick Reactions:</h3>
-            <div id="emojiGridContainer" class="emoji-grid">
-                <!-- Dynamically populated from lobby studio -->
-            </div>
+            <div id="emojiGridContainer" class="emoji-grid"></div>
         </div>
+    </div>
+
+    <!-- MOBILE ADVERT OVERLAY POPUP -->
+    <div id="mobileAdOverlay" class="hidden" style="position: fixed; top: 10px; left: 10px; right: 10px; bottom: 10px; z-index: 1000; background: rgba(5,10,20,0.95); border: 2px solid var(--neon-blue); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem; text-align: center; border-radius: 12px;">
+        <h3 style="color: var(--neon-yellow); margin-bottom: 0.75rem; font-size: 1.2rem;">📢 Special Announcement</h3>
+        <div id="mobileAdContent" style="font-size: 0.95rem; margin-bottom: 1rem; max-height: 40vh; overflow-y: auto; color: white;"></div>
+        <div id="mobileAdImageContainer" style="margin-bottom: 1rem; max-width: 100%; max-height: 35vh;"></div>
+        <button class="btn-blue" onclick="document.getElementById('mobileAdOverlay').classList.add('hidden')">Close Announcement</button>
     </div>
 
     <script>
@@ -131,7 +137,21 @@
         }
 
         socket.on('state-update', (state) => {
-            // Update emoji grid boxes live from server state (up to 10)
+            // Handle Mobile Ad Broadcast
+            const adOverlay = document.getElementById('mobileAdOverlay');
+            if (state.activeMobileAdvert) {
+                adOverlay.classList.remove('hidden');
+                document.getElementById('mobileAdContent').innerText = state.activeMobileAdvert.text || '';
+                const imgContainer = document.getElementById('mobileAdImageContainer');
+                if (state.activeMobileAdvert.image) {
+                    imgContainer.innerHTML = `<img src="${state.activeMobileAdvert.image}" style="max-width: 100%; max-height: 220px; border-radius: 6px;">`;
+                } else {
+                    imgContainer.innerHTML = '';
+                }
+            } else {
+                adOverlay.classList.add('hidden');
+            }
+
             if (state.customEmojis) {
                 const emojiGrid = document.getElementById('emojiGridContainer');
                 emojiGrid.innerHTML = state.customEmojis.map(emoji => `
@@ -139,7 +159,6 @@
                 `).join('');
             }
 
-            // Update score and Mini Leaderboard
             if (state.scores) {
                 const scoresArr = Object.values(state.scores).sort((a, b) => b.score - a.score);
                 const me = scoresArr.find(p => p.name === myName);
@@ -160,7 +179,6 @@
                 }
             }
 
-            // Update Poll & Results View
             if (state.lobbySettings && state.lobbySettings.showPoll) {
                 document.getElementById('pollCard').classList.remove('hidden');
                 document.getElementById('pollQuestionTitle').innerText = '📊 ' + state.lobbySettings.pollQuestion;
@@ -199,7 +217,6 @@
                 hasVotedCurrentPoll = false;
             }
 
-            // Game Status
             const qContainer = document.getElementById('questionContainer');
             const wContainer = document.getElementById('waitingContainer');
 
