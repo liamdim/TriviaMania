@@ -90,7 +90,11 @@
 
             <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Random Fact Display</label>
             <div id="currentFactDisplay" style="background: rgba(0,0,0,0.4); padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; color: var(--neon-blue); margin-bottom: 0.4rem;">Loading fact...</div>
-            <button class="btn-blue" style="padding: 0.4rem; font-size: 0.85rem;" onclick="socket.emit('trigger-new-fact')">💡 New Fact</button>
+            <button class="btn-blue" style="padding: 0.4rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="socket.emit('trigger-new-fact')">💡 New Fact</button>
+
+            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Custom Emoji Reactions (Comma separated)</label>
+            <input type="text" id="customEmojisInput" placeholder="🔥, 🍻, 👏, 😂, 🎉">
+            <button class="btn-green" style="padding: 0.4rem; font-size: 0.85rem;" onclick="updateCustomEmojis()">💾 Update Emojis</button>
         </div>
 
         <!-- HOST CHAT BROADCAST & CONNECTED TEAMS -->
@@ -122,6 +126,9 @@
             }
             if (state.lobbySettings && state.lobbySettings.factText) {
                 document.getElementById('currentFactDisplay').innerText = state.lobbySettings.factText;
+            }
+            if (state.customEmojis && document.activeElement !== document.getElementById('customEmojisInput')) {
+                document.getElementById('customEmojisInput').value = state.customEmojis.join(', ');
             }
 
             const plContainer = document.getElementById('playlistContainer');
@@ -160,6 +167,17 @@
             const details = document.getElementById('venueDetailsInput').value;
             socket.emit('update-projector-text', { header, details });
             alert('Projector text updated!');
+        }
+
+        function updateCustomEmojis() {
+            const raw = document.getElementById('customEmojisInput').value;
+            const emojis = raw.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            if (emojis.length === 0) {
+                alert('Please enter at least one emoji.');
+                return;
+            }
+            socket.emit('update-custom-emojis', emojis);
+            alert('Custom emojis updated!');
         }
 
         function sendHostBroadcast() {
