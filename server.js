@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 50 * 1024 * 1024
+    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image uploads
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -23,9 +23,7 @@ let samplePolls = [
     { question: 'What is your team’s pre-trivia drink of choice?', options: ['Beer 🍺', 'Cocktail 🍸', 'Wine 🍷', 'Soft Drink 🥤'] },
     { question: 'Which decade had the absolute best music?', options: ['70s 🕺', '80s 🎸', '90s 📼', '00s 🎧'] },
     { question: 'How confident is your team tonight?', options: ['Total Winners 🏆', 'Just for Fun 🍻', 'Clueless 🤷', 'Robbed Last Week 😡'] },
-    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] },
-    { question: 'Who is the most famous fictional wizard?', options: ['Gandalf 🧙‍♂️', 'Harry Potter ⚡', 'Merlin 📜', 'Dumbledore 🔮'] },
-    { question: 'What superpower would you choose?', options: ['Invisibility 👻', 'Flight ✈️', 'Time Travel ⏳', 'Super Strength 💪'] }
+    { question: 'What is the best pub snack?', options: ['Crisps 🥔', 'Nuts 🥜', 'Pork Crackling 🥓', 'None / Just Drinks 🍻'] }
 ];
 
 let sampleFacts = [
@@ -34,9 +32,7 @@ let sampleFacts = [
     'Did you know? Bananas are curved because they grow towards the sun against gravity.',
     'Trivia Fact: A group of flamingos is called a "flamboyance".',
     'Fun Fact: Earth is the only planet not named after a god or goddess.',
-    'Did you know? Octopuses have three hearts and blue blood.',
-    'Trivia Fact: Shakespeare invented over 1,700 words used in the English language today.',
-    'Fun Fact: Sea otters hold hands while sleeping so they don’t drift apart.'
+    'Did you know? Octopuses have three hearts and blue blood.'
 ];
 
 let usedFactsHistory = [];
@@ -86,15 +82,12 @@ function triggerNewPoll() {
 }
 
 function generateNewFact() {
-    if (usedFactsHistory.length >= sampleFacts.length) {
-        usedFactsHistory = [];
-    }
-    let availableFacts = sampleFacts.filter((_, idx) => !usedFactsHistory.includes(idx));
-    let randomIndex = Math.floor(Math.random() * availableFacts.length);
-    let originalIndex = sampleFacts.indexOf(availableFacts[randomIndex]);
-    
-    usedFactsHistory.push(originalIndex);
-    gameState.lobbySettings.factText = sampleFacts[originalIndex];
+    if (usedFactsHistory.length >= sampleFacts.length) usedFactsHistory = [];
+    let available = sampleFacts.filter((_, idx) => !usedFactsHistory.includes(idx));
+    let rand = Math.floor(Math.random() * available.length);
+    let orig = sampleFacts.indexOf(available[rand]);
+    usedFactsHistory.push(orig);
+    gameState.lobbySettings.factText = sampleFacts[orig];
     io.emit('state-update', gameState);
 }
 
@@ -108,41 +101,6 @@ function sanitizeText(text) {
         clean = clean.replace(regex, '****');
     });
     return clean;
-}
-
-function calculateSimilarity(s1, s2) {
-    let longer = s1;
-    let shorter = s2;
-    if (s1.length < s2.length) {
-        longer = s2;
-        shorter = s1;
-    }
-    let longerLength = longer.length;
-    if (longerLength === 0) return 1.0;
-    return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
-}
-
-function editDistance(s1, s2) {
-    s1 = s1.toLowerCase();
-    s2 = s2.toLowerCase();
-    let costs = new Array();
-    for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-            if (i === 0) costs[j] = j;
-            else {
-                if (j > 0) {
-                    let newValue = costs[j - 1];
-                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                    costs[j - 1] = lastValue;
-                    lastValue = newValue;
-                }
-            }
-        }
-        if (s1.length > 0) costs[s2.length] = lastValue;
-    }
-    return costs[s2.length];
 }
 
 app.post('/api/generate-ai-quiz', async (req, res) => {
@@ -195,7 +153,6 @@ app.get('/api/load-categories', (req, res) => {
                         if (Array.isArray(parsed)) questionsArr = parsed;
                         else if (parsed.questions) { questionsArr = parsed.questions; categoryName = parsed.name || categoryName; }
                     } catch (e) {
-                        // parse text
                         const lines = content.split(/\r?\n/);
                         let curQ = null;
                         lines.forEach(l => {
@@ -252,12 +209,14 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    socket.on('trigger-new-poll', () => {
-        triggerNewPoll();
-    });
+    socket.on('trigger-new-poll', () => { triggerNewPoll(); });
+    socket.on('hide-poll', () => { gameState.lobbySettings.showPoll = false; io.emit('state-update', gameState); });
+    socket.on('trigger-new-fact', () => { generateNewFact(); });
 
-    socket.on('trigger-new-fact', () => {
-        generateNewFact();
+    // Host Chat & Mini-Games Handlers
+    socket.on('host-chat-broadcast', (message) => {
+        const cleanMsg = sanitizeText(message);
+        if (cleanMsg) io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
     });
 
     socket.on('add-custom-picture-round', (roundObj) => {
@@ -279,6 +238,52 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    socket.on('add-mini-game-round', (miniGameObj) => {
+        if (!miniGameObj || !miniGameObj.questions) return;
+        gameState.playlist.push({
+            name: miniGameObj.name || '🎮 Mini-Game Round',
+            genre: 'Mini-Game',
+            timer: miniGameObj.timer || 15,
+            questions: miniGameObj.questions
+        });
+        io.emit('state-update', gameState);
+    });
+
+    // Projector text updates
+    socket.on('update-projector-text', ({ header, details }) => {
+        if (header !== undefined) gameState.welcomeHeader = sanitizeText(header);
+        if (details !== undefined) gameState.venueDetails = sanitizeText(details);
+        io.emit('state-update', gameState);
+    });
+
+    // Adverts Handlers
+    socket.on('save-new-advert', (adObj) => {
+        if (adObj && (adObj.text || adObj.image)) {
+            gameState.adverts.push({ text: sanitizeText(adObj.text || ''), image: adObj.image || '' });
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('delete-advert', (index) => {
+        if (gameState.adverts && gameState.adverts[index]) {
+            gameState.adverts.splice(index, 1);
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('broadcast-advert-screen', (adData) => {
+        gameState.activeScreenAdvert = adData ? { text: sanitizeText(adData.text), image: adData.image || '' } : null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('broadcast-advert-mobile', (adData) => {
+        gameState.activeMobileAdvert = adData ? { text: sanitizeText(adData.text), image: adData.image || '' } : null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('hide-advert-screen', () => { gameState.activeScreenAdvert = null; io.emit('state-update', gameState); });
+    socket.on('hide-advert-mobile', () => { gameState.activeMobileAdvert = null; io.emit('state-update', gameState); });
+
     socket.on('start-round', () => {
         if (gameState.playlist.length === 0) return;
         gameState.status = 'QUESTION';
@@ -286,7 +291,7 @@ io.on('connection', (socket) => {
         gameState.currentQuestionIndex = 0;
         gameState.timerMax = parseInt(gameState.playlist[0].timer) || 15;
         gameState.timer = gameState.timerMax;
-        gameState.lobbySettings.showPoll = false; // Hide poll on start
+        gameState.lobbySettings.showPoll = false;
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
         io.emit('state-update', gameState);
         startQuestionTimer();
@@ -299,7 +304,7 @@ io.on('connection', (socket) => {
             gameState.status = 'QUESTION';
             gameState.timerMax = parseInt(gameState.playlist[gameState.currentRoundIndex].timer) || 15;
             gameState.timer = gameState.timerMax;
-            gameState.lobbySettings.showPoll = false; // Hide poll on start
+            gameState.lobbySettings.showPoll = false;
             Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
             io.emit('state-update', gameState);
             startQuestionTimer();
