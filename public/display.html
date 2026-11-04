@@ -37,9 +37,7 @@
     <div class="main-stage">
         <div id="projectorCard" class="card">
             <h2 id="projectorTitle" style="color: var(--neon-yellow); font-size: 2.2rem; margin-bottom: 1rem;">Waiting for Host to Start...</h2>
-            <div id="projectorContent" style="font-size: 1.5rem; line-height: 1.4;">
-                <!-- Dynamically populated IDLE / LOBBY view -->
-            </div>
+            <div id="projectorContent" style="font-size: 1.5rem; line-height: 1.4;"></div>
         </div>
     </div>
 
@@ -52,23 +50,17 @@
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
-        let qrInitialized = false;
 
         socket.on('state-update', (state) => {
             if (state.welcomeHeader) document.getElementById('welcomeHeaderDisplay').innerText = state.welcomeHeader;
             if (state.venueDetails) document.getElementById('venueDetailsDisplay').innerText = state.venueDetails;
 
-            // Handle Screen Ad Broadcast Overlay
             const screenAdOverlay = document.getElementById('screenAdOverlay');
             if (state.activeScreenAdvert) {
                 screenAdOverlay.classList.remove('hidden');
                 document.getElementById('screenAdText').innerText = state.activeScreenAdvert.text || '';
                 const imgBox = document.getElementById('screenAdImageContainer');
-                if (state.activeScreenAdvert.image) {
-                    imgBox.innerHTML = `<img src="${state.activeScreenAdvert.image}" style="max-width: 700px; max-height: 450px; border-radius: 12px; border: 3px solid var(--neon-blue);">`;
-                } else {
-                    imgBox.innerHTML = '';
-                }
+                imgBox.innerHTML = state.activeScreenAdvert.image ? `<img src="${state.activeScreenAdvert.image}" style="max-width: 700px; max-height: 450px; border-radius: 12px; border: 3px solid var(--neon-blue);">` : '';
             } else {
                 screenAdOverlay.classList.add('hidden');
             }
@@ -77,7 +69,6 @@
             const content = document.getElementById('projectorContent');
 
             if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
-                qrInitialized = false;
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round.questions[state.currentQuestionIndex];
                 if (q) {
@@ -89,13 +80,8 @@
                         </div>
                     `;
                 }
-            } else if (state.status === 'INTERMISSION') {
-                qrInitialized = false;
-                title.innerText = '☕ Round Complete!';
-                content.innerHTML = '<p style="font-size: 1.8rem; color: var(--text-muted);">Check your mobile screens for current standings. Next round starting soon!</p>';
-            } else if (state.status === 'LEADERBOARD') {
-                qrInitialized = false;
-                title.innerText = '🏆 Final Leaderboard';
+            } else if (state.status === 'INTERMISSION' || state.status === 'LEADERBOARD') {
+                title.innerText = state.status === 'LEADERBOARD' ? '🏆 Final Leaderboard' : '☕ Round Complete - Standings';
                 const scores = Object.values(state.scores || {}).sort((a,b) => b.score - a.score);
                 content.innerHTML = `
                     <div style="max-height: 400px; overflow-y: auto; text-align: left; width: 100%;">
@@ -108,21 +94,25 @@
                     </div>
                 `;
             } else {
-                // IDLE / LOBBY SCREEN (Show QR, Fact, Poll)
+                // IDLE / LOBBY SCREEN (QR Code, Fact, Poll)
                 title.innerText = '📱 Scan to Join & Play!';
                 
-                let factHTML = '';
-                if (state.lobbySettings && state.lobbySettings.showFact && state.lobbySettings.factText) {
-                    factHTML = `<div style="margin-top: 1.2rem; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.3); padding: 1rem; border-radius: 10px; font-size: 1.2rem; color: var(--neon-blue);">💡 ${state.lobbySettings.factText}</div>`;
-                }
+                let factHTML = state.lobbySettings && state.lobbySettings.showFact && state.lobbySettings.factText ? 
+                    `<div style="margin-top: 1.2rem; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.3); padding: 1rem; border-radius: 10px; font-size: 1.2rem; color: var(--neon-blue);">💡 ${state.lobbySettings.factText}</div>` : '';
 
                 let pollHTML = '';
                 if (state.lobbySettings && state.lobbySettings.showPoll && state.lobbySettings.pollQuestion) {
+                    const votes = state.lobbySettings.votes || {};
+                    const totalVotes = Object.keys(votes).length;
+                    const counts = {};
+                    state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
+                    Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
+
                     pollHTML = `
                         <div style="margin-top: 1rem; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px; text-align: left;">
-                            <strong style="color: var(--neon-yellow); font-size: 1.2rem; display: block; margin-bottom: 0.5rem;">📊 Practice Poll: ${state.lobbySettings.pollQuestion}</strong>
+                            <strong style="color: var(--neon-yellow); font-size: 1.2rem; display: block; margin-bottom: 0.5rem;">📊 Live Poll: ${state.lobbySettings.pollQuestion}</strong>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 1rem; color: var(--text-muted);">
-                                ${state.lobbySettings.pollOptions.map(opt => `<div style="background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px;">• ${opt}</div>`).join('')}
+                                ${state.lobbySettings.pollOptions.map(opt => `<div style="background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px;">• ${opt} (${counts[opt] || 0} votes)</div>`).join('')}
                             </div>
                         </div>
                     `;
@@ -143,24 +133,14 @@
                     ${pollHTML}
                 `;
 
-                // Render QR code once if not already rendered
                 const playerUrl = window.location.origin + '/player.html';
                 document.getElementById('projectorJoinUrl').innerText = playerUrl;
                 const qrContainer = document.getElementById('projectorQR');
                 if (qrContainer && qrContainer.innerHTML.trim() === '') {
-                    new QRCode(qrContainer, {
-                        text: playerUrl,
-                        width: 180,
-                        height: 180,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
+                    new QRCode(qrContainer, { text: playerUrl, width: 180, height: 180, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
                 }
             }
         });
     </script>
-    <!-- Include QR code library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
