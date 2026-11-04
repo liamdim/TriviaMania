@@ -40,7 +40,7 @@
     <header>
         <h1>🎮 TriviaMania - Host Control Dashboard</h1>
         <div class="nav-links">
-            <a href="/builder.html">📝 Quiz Builder & Categories</a>
+            <a href="/builder.html">📝 Quiz Builder</a>
             <a href="/adverts.html">📢 Adverts Manager</a>
             <a href="/display.html" target="_blank">📺 Big Screen Projector</a>
         </div>
@@ -60,10 +60,11 @@
                 <button class="btn-red" onclick="socket.emit('stop-game')">⏸ Pause Game</button>
             </div>
             
-            <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-blue" style="flex: 1;" onclick="socket.emit('trigger-new-poll')">📊 Open Crowd Poll</button>
-                <button class="btn-red" style="flex: 1;" onclick="if(confirm('Full reset game?')) socket.emit('stop-reset')">🔄 Full Reset</button>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <button class="btn-blue" style="flex: 1;" onclick="socket.emit('trigger-new-poll')">📊 Open Poll</button>
+                <button class="btn-red" style="flex: 1;" onclick="socket.emit('hide-poll')">❌ Hide Poll</button>
             </div>
+            <button class="btn-red" style="width: 100%;" onclick="if(confirm('Full reset game?')) socket.emit('stop-reset')">🔄 Full Reset</button>
         </div>
 
         <!-- PLAYLIST QUEUE -->
@@ -90,10 +91,14 @@
             <button class="btn-blue" style="padding: 0.4rem; font-size: 0.85rem;" onclick="socket.emit('trigger-new-fact')">💡 New Fact</button>
         </div>
 
-        <!-- CONNECTED PLAYERS / TEAMS -->
+        <!-- HOST CHAT BROADCAST & CONNECTED TEAMS -->
         <div class="card">
-            <h3>👥 Connected Teams (<span id="playerCountDisplay">0</span>)</h3>
-            <div id="playersListContainer" style="max-height: 220px; overflow-y: auto;">
+            <h3>📢 Host Chat Broadcast</h3>
+            <input type="text" id="hostChatInput" placeholder="Broadcast message to all players..." onkeypress="if(event.key==='Enter') sendHostBroadcast()">
+            <button class="btn-green" style="padding: 0.5rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="sendHostBroadcast()">Broadcast Message</button>
+
+            <h3 style="font-size: 1rem;">👥 Connected Teams (<span id="playerCountDisplay">0</span>)</h3>
+            <div id="playersListContainer" style="max-height: 120px; overflow-y: auto;">
                 <p style="color: var(--text-muted);">No teams connected yet.</p>
             </div>
         </div>
@@ -116,14 +121,13 @@
                 document.getElementById('currentFactDisplay').innerText = state.lobbySettings.factText;
             }
 
-            // Playlist display
             const plContainer = document.getElementById('playlistContainer');
             if (state.playlist && state.playlist.length > 0) {
                 plContainer.innerHTML = state.playlist.map((round, idx) => `
                     <div class="playlist-item">
                         <div>
                             <strong style="color: var(--neon-blue);">${idx + 1}. ${round.name}</strong>
-                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">${round.questions.length} Questions | Timer: ${round.timer}s</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">${round.questions.length} Qs | Timer: ${round.timer}s</span>
                         </div>
                         <div style="display: flex; gap: 0.3rem;">
                             <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('move-round', {index: ${idx}, direction: 'up'})">▲</button>
@@ -132,25 +136,20 @@
                         </div>
                     </div>
                 `).join('');
-                document.getElementById('roundProgressDisplay').innerText = `Round ${state.currentRoundIndex + 1} of ${state.playlist.length} (Q: ${state.currentQuestionIndex + 1})`;
+                document.getElementById('roundProgressDisplay').innerText = `Round ${state.currentRoundIndex + 1} of ${state.playlist.length}`;
             } else {
                 plContainer.innerHTML = '<p style="color: var(--text-muted);">Playlist is empty. Add rounds from the Quiz Builder!</p>';
                 document.getElementById('roundProgressDisplay').innerText = 'None';
             }
 
-            // Players list
             const pContainer = document.getElementById('playersListContainer');
             const scores = Object.entries(state.scores || {});
-            if (scores.length > 0) {
-                pContainer.innerHTML = scores.map(([id, p]) => `
-                    <div style="display: flex; justify-content: space-between; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 4px;">
-                        <span>${p.name}</span>
-                        <span style="color: var(--neon-green); font-weight: bold;">${p.score} pts</span>
-                    </div>
-                `).join('');
-            } else {
-                pContainer.innerHTML = '<p style="color: var(--text-muted);">No teams connected yet.</p>';
-            }
+            pContainer.innerHTML = scores.length > 0 ? scores.map(([id, p]) => `
+                <div style="display: flex; justify-content: space-between; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 3px; font-size: 0.85rem;">
+                    <span>${p.name}</span>
+                    <span style="color: var(--neon-green); font-weight: bold;">${p.score} pts</span>
+                </div>
+            `).join('') : '<p style="color: var(--text-muted);">No teams connected yet.</p>';
         });
 
         function updateProjectorText() {
@@ -158,6 +157,14 @@
             const details = document.getElementById('venueDetailsInput').value;
             socket.emit('update-projector-text', { header, details });
             alert('Projector text updated!');
+        }
+
+        function sendHostBroadcast() {
+            const input = document.getElementById('hostChatInput');
+            if (!input.value.trim()) return;
+            socket.emit('host-chat-broadcast', input.value.trim());
+            input.value = '';
+            alert('Broadcast sent!');
         }
     </script>
 </body>
