@@ -18,27 +18,31 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
-        .container { max-width: 500px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        .card h3 { color: var(--neon-blue); margin-bottom: 0.75rem; font-size: 1.1rem; }
-        input[type="text"] { width: 100%; padding: 0.85rem; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 0.75rem; }
-        button { padding: 0.85rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; width: 100%; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 0.5rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
+        .container { max-width: 480px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 0.6rem; }
+        .card { background: var(--panel-bg); border-radius: 10px; padding: 0.85rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        .card h3 { color: var(--neon-blue); margin-bottom: 0.4rem; font-size: 1rem; }
+        input[type="text"] { width: 100%; padding: 0.65rem; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 6px; font-size: 0.95rem; margin-bottom: 0.5rem; }
+        button { padding: 0.65rem; border-radius: 6px; border: none; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; width: 100%; }
         button:hover { filter: brightness(1.2); }
         .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
         .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
-        .btn-option { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; margin-bottom: 0.5rem; text-align: left; padding: 1rem; border-radius: 8px; font-size: 1rem; }
+        .btn-option { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; margin-bottom: 0.35rem; text-align: left; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; }
         .btn-option:active { background: var(--neon-blue); color: #000; }
         .hidden { display: none !important; }
-        .emoji-bar { display: flex; gap: 0.4rem; justify-content: space-around; margin-top: 0.5rem; flex-wrap: wrap; }
-        .emoji-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.3rem; padding: 0.4rem; border-radius: 8px; cursor: pointer; min-width: 36px; }
-        .chat-feed { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; height: 120px; overflow-y: auto; padding: 8px; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-muted); }
+        
+        /* Compact Emoji Grid (Small Boxes) */
+        .emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 0.25rem; }
+        .emoji-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(0,243,255,0.2); font-size: 1.25rem; padding: 0.3rem; text-align: center; border-radius: 6px; cursor: pointer; transition: 0.1s; }
+        .emoji-box:active { background: var(--neon-blue); transform: scale(0.95); }
+
+        .chat-feed { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; height: 90px; overflow-y: auto; padding: 6px; font-size: 0.8rem; margin-bottom: 0.4rem; color: var(--text-muted); }
         
         /* Floating Emojis Animation */
-        .floating-emoji { position: fixed; bottom: 20px; font-size: 2.5rem; animation: floatUp 2s ease-out forwards; z-index: 999; pointer-events: none; }
+        .floating-emoji { position: fixed; bottom: 20px; font-size: 2.2rem; animation: floatUp 2s ease-out forwards; z-index: 999; pointer-events: none; }
         @keyframes floatUp {
             0% { transform: translateY(0) scale(0.5); opacity: 1; }
-            100% { transform: translateY(-400px) scale(1.5); opacity: 0; }
+            100% { transform: translateY(-350px) scale(1.4); opacity: 0; }
         }
     </style>
 </head>
@@ -47,61 +51,62 @@
         <!-- LOGIN SCREEN -->
         <div id="loginCard" class="card" style="margin-top: auto; margin-bottom: auto;">
             <h3>📱 Join TriviaMania</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Enter your team or player name to jump into the game!</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Enter your team or player name to join the game!</p>
             <input type="text" id="playerNameInput" placeholder="Team / Player Name..." onkeypress="if(event.key==='Enter') joinGame()">
             <button class="btn-green" onclick="joinGame()">🚀 Join Arena</button>
         </div>
 
         <!-- GAMEPLAY ARENA (Hidden until login) -->
         <div id="gameCard" class="card hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(0,243,255,0.2); padding-bottom: 0.5rem;">
-                <span id="playerWelcomeHeader" style="font-weight: bold; color: var(--neon-blue);">Player</span>
-                <span style="color: var(--neon-yellow); font-weight: bold;">Score: <span id="playerScoreDisplay">0</span> pts</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(0,243,255,0.2); padding-bottom: 0.4rem;">
+                <span id="playerWelcomeHeader" style="font-weight: bold; color: var(--neon-blue); font-size: 0.95rem;">Player</span>
+                <span style="color: var(--neon-yellow); font-weight: bold; font-size: 0.95rem;">Score: <span id="playerScoreDisplay">0</span> pts</span>
             </div>
 
             <!-- QUESTION VIEW -->
             <div id="questionContainer" class="hidden">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);">Question Timer:</span>
-                    <span id="timerDisplay" style="color: var(--neon-yellow); font-weight: bold; font-size: 1.1rem;">15s</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Question Timer:</span>
+                    <span id="timerDisplay" style="color: var(--neon-yellow); font-weight: bold; font-size: 1rem;">15s</span>
                 </div>
-                <h3 id="questionText" style="color: white; margin-bottom: 1rem; font-size: 1.2rem;">Waiting for next question...</h3>
+                <h3 id="questionText" style="color: white; margin-bottom: 0.75rem; font-size: 1.1rem;">Waiting for next question...</h3>
                 <div id="optionsContainer"></div>
-                <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 1rem; font-size: 1.1rem;"></div>
+                <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 0.75rem; font-size: 1rem;"></div>
             </div>
 
             <!-- WAITING / INTERMISSION & LIVE LEADERBOARD VIEW -->
-            <div id="waitingContainer" style="text-align: center; padding: 1rem 0;">
-                <h3 style="color: var(--neon-yellow);" id="waitingTitle">⏳ Get Ready!</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;" id="waitingSubtext">You are in the waiting room. The host will start shortly.</p>
+            <div id="waitingContainer" style="text-align: center; padding: 0.5rem 0;">
+                <h3 style="color: var(--neon-yellow); font-size: 1rem;" id="waitingTitle">⏳ Get Ready!</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;" id="waitingSubtext">You are in the waiting room. The host will start shortly.</p>
                 
-                <div id="miniLeaderboardBox" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 0.75rem; text-align: left;">
-                    <strong style="color: var(--neon-blue); font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">🏆 Live Standings</strong>
-                    <div id="miniLeaderboardList" style="font-size: 0.85rem; color: var(--text-muted);">Waiting for scores...</div>
+                <div id="miniLeaderboardBox" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; padding: 0.5rem; text-align: left;">
+                    <strong style="color: var(--neon-blue); font-size: 0.8rem; display: block; margin-bottom: 0.3rem;">🏆 Live Standings</strong>
+                    <div id="miniLeaderboardList" style="font-size: 0.8rem; color: var(--text-muted);">Waiting for scores...</div>
                 </div>
             </div>
         </div>
 
         <!-- LOBBY POLL CARD -->
         <div id="pollCard" class="card">
-            <h3 id="pollQuestionTitle">📊 Live Crowd Poll</h3>
+            <h3 id="pollQuestionTitle" style="font-size: 0.95rem;">📊 Live Crowd Poll</h3>
             <div id="pollOptionsContainer"></div>
-        </div>
-
-        <!-- DYNAMIC FLOATING EMOJI BAR (UP TO 10) -->
-        <div class="card" style="padding: 0.75rem;">
-            <div id="emojiBarContainer" class="emoji-bar">
-                <!-- Dynamically updated from lobby studio -->
-            </div>
         </div>
 
         <!-- PLAYER CHAT CARD -->
         <div class="card">
-            <h3>💬 Live Table Chat</h3>
+            <h3 style="font-size: 0.95rem;">💬 Live Table Chat</h3>
             <div id="chatFeed" class="chat-feed"></div>
-            <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="chatInput" placeholder="Send message to room..." style="margin-bottom: 0;" onkeypress="if(event.key==='Enter') sendChat()">
-                <button class="btn-blue" style="width: 80px;" onclick="sendChat()">Send</button>
+            <div style="display: flex; gap: 0.4rem;">
+                <input type="text" id="chatInput" placeholder="Send message..." style="margin-bottom: 0; font-size: 0.9rem;" onkeypress="if(event.key==='Enter') sendChat()">
+                <button class="btn-blue" style="width: 70px; padding: 0.5rem;" onclick="sendChat()">Send</button>
+            </div>
+        </div>
+
+        <!-- COMPACT EMOJI GRID UNDER CHAT (UP TO 10 BOXES) -->
+        <div class="card" style="padding: 0.6rem;">
+            <h3 style="font-size: 0.85rem; margin-bottom: 0.3rem; color: var(--text-muted);">Quick Reactions:</h3>
+            <div id="emojiGridContainer" class="emoji-grid">
+                <!-- Dynamically populated from lobby studio -->
             </div>
         </div>
     </div>
@@ -126,11 +131,11 @@
         }
 
         socket.on('state-update', (state) => {
-            // Update mobile emoji toolbar live from server state (up to 10)
+            // Update emoji grid boxes live from server state (up to 10)
             if (state.customEmojis) {
-                const emojiBar = document.getElementById('emojiBarContainer');
-                emojiBar.innerHTML = state.customEmojis.map(emoji => `
-                    <button class="emoji-btn" onclick="sendEmoji('${emoji}')">${emoji}</button>
+                const emojiGrid = document.getElementById('emojiGridContainer');
+                emojiGrid.innerHTML = state.customEmojis.map(emoji => `
+                    <div class="emoji-box" onclick="sendEmoji('${emoji}')">${emoji}</div>
                 `).join('');
             }
 
@@ -145,7 +150,7 @@
                 const lbList = document.getElementById('miniLeaderboardList');
                 if (scoresArr.length > 0) {
                     lbList.innerHTML = scoresArr.slice(0, 5).map((p, idx) => `
-                        <div style="display: flex; justify-content: space-between; padding: 2px 0; ${p.name === myName ? 'color: var(--neon-green); font-weight: bold;' : ''}">
+                        <div style="display: flex; justify-content: space-between; padding: 1px 0; ${p.name === myName ? 'color: var(--neon-green); font-weight: bold;' : ''}">
                             <span>${idx + 1}. ${p.name}</span>
                             <span>${p.score} pts</span>
                         </div>
@@ -166,7 +171,7 @@
 
                 if (!hasVotedCurrentPoll) {
                     pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => `
-                        <button class="btn-option" style="text-align: center; margin-bottom: 0.4rem;" onclick="votePoll('${opt}')">${opt}</button>
+                        <button class="btn-option" style="text-align: center; margin-bottom: 0.3rem;" onclick="votePoll('${opt}')">${opt}</button>
                     `).join('');
                 } else {
                     const counts = {};
@@ -177,17 +182,17 @@
                         const count = counts[opt] || 0;
                         const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
                         return `
-                            <div style="margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 2px;">
+                            <div style="margin-bottom: 0.4rem; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 6px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
                                     <span>${opt}</span>
-                                    <span>${count} votes (${pct}%)</span>
+                                    <span>${count} (${pct}%)</span>
                                 </div>
-                                <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                                <div style="background: rgba(255,255,255,0.1); height: 5px; border-radius: 3px; overflow: hidden;">
                                     <div style="background: var(--neon-blue); width: ${pct}%; height: 100%;"></div>
                                 </div>
                             </div>
                         `;
-                    }).join('') + `<p style="text-align: center; font-size: 0.75rem; color: var(--neon-green); margin-top: 6px;">✓ Vote recorded!</p>`;
+                    }).join('') + `<p style="text-align: center; font-size: 0.75rem; color: var(--neon-green); margin-top: 4px;">✓ Vote recorded!</p>`;
                 }
             } else {
                 document.getElementById('pollCard').classList.add('hidden');
@@ -214,7 +219,7 @@
                         `).join('');
                     } else {
                         optsBox.innerHTML = `
-                            <input type="text" id="textAnswerInput" placeholder="Type your answer...">
+                            <input type="text" id="textAnswerInput" placeholder="Type answer..." style="font-size:0.9rem;">
                             <button class="btn-blue" onclick="submitTextAnswer()">Submit Answer</button>
                         `;
                     }
@@ -229,13 +234,13 @@
 
                 if (state.status === 'INTERMISSION') {
                     wTitle.innerText = '☕ Round Complete!';
-                    wSub.innerText = 'Check out the live standings below while waiting for the next round.';
+                    wSub.innerText = 'Check standings below while waiting for the next round.';
                 } else if (state.status === 'LEADERBOARD') {
                     wTitle.innerText = '🏆 Game Over!';
                     wSub.innerText = 'Final standings are on the big screen!';
                 } else {
                     wTitle.innerText = '⏳ Waiting Room';
-                    wSub.innerText = 'You are locked in and ready. The host will start shortly.';
+                    wSub.innerText = 'Locked in! The host will start shortly.';
                 }
             }
         });
