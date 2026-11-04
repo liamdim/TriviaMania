@@ -233,7 +233,7 @@ async function generateAIQuestions(type, count) {
     } else if (type === 'scramble') {
         prompt = `Generate exactly ${count} famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. For each item, provide the correct answer ("word") AND 3 tricky multiple-choice options ("options" array containing 4 strings total: the correct answer and 3 deceptive decoy words that share similar letters or spelling patterns). Return ONLY a valid JSON array of exactly ${count} objects with keys "word", "scrambled" (randomly jumbled letters separated by spaces like "L E A B T S E"), "options" (array of 4 strings including the word), and "answer" (the correct word). No markdown, just raw JSON array.`;
     } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of exactly ${count} objects with keys "fact" (statement), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, just raw JSON array.`;
+        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of exactly ${count} objects with keys "fact" (statement comparison like "Google searches per second vs Wikipedia page views"), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, just raw JSON array.`;
     }
 
     try {
@@ -293,10 +293,8 @@ io.on('connection', (socket) => {
         const correctAnswer = (currentQ.answer || '').trim().toLowerCase();
 
         if (currentQ.options && currentQ.options.length > 0) {
-            // Multiple choice exact match
             isCorrect = cleanAns === correctAnswer;
         } else {
-            // Text answer with fuzzy matching (allows minor typos or close spellings > 78% similarity)
             const similarity = calculateSimilarity(cleanAns, correctAnswer);
             isCorrect = similarity >= 0.78 || cleanAns === correctAnswer;
         }
@@ -428,7 +426,7 @@ io.on('connection', (socket) => {
             gameState.playlist.push({
                 name: config.name || '🎮 AI Game Show: ' + config.type.toUpperCase(),
                 genre: 'AI Gen (' + config.type + ')',
-                timer: 20,
+                timer: 15,
                 questions: questions
             });
             io.emit('state-update', gameState);
@@ -445,22 +443,6 @@ io.on('connection', (socket) => {
 
     socket.on('update-venue-details', (details) => {
         gameState.venueDetails = sanitizeText(details);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-lobby-toolkit', (toolkitSettings) => {
-        let opts = gameState.lobbySettings.pollOptions;
-        if (toolkitSettings.pollOptionsStr) {
-            opts = toolkitSettings.pollOptionsStr.split(',').map(o => o.trim()).filter(o => o.length > 0);
-        }
-        gameState.lobbySettings = {
-            showFact: !!toolkitSettings.showFact,
-            factText: sanitizeText(toolkitSettings.factText),
-            showPoll: !!toolkitSettings.showPoll,
-            pollQuestion: sanitizeText(toolkitSettings.pollQuestion),
-            pollOptions: opts,
-            votes: gameState.lobbySettings.votes || {}
-        };
         io.emit('state-update', gameState);
     });
 
