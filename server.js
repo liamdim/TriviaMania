@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image uploads
+    maxHttpBufferSize: 50 * 1024 * 1024
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -68,7 +68,6 @@ let gameState = {
     settings: { questionTime: 15 }
 };
 
-// Auto-load playlist savegame if it exists
 const saveFile = path.join(__dirname, 'savegame.json');
 if (fs.existsSync(saveFile)) {
     try {
@@ -117,7 +116,6 @@ function sanitizeText(text) {
     return clean;
 }
 
-// --- AI QUIZ GENERATOR ENDPOINT ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
     try {
@@ -154,7 +152,6 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     }
 });
 
-// --- LOAD LOCAL CATEGORIES ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(catsDir)) catsDir = path.join(process.cwd(), 'categories');
@@ -239,7 +236,14 @@ io.on('connection', (socket) => {
     socket.on('hide-poll', () => { gameState.lobbySettings.showPoll = false; io.emit('state-update', gameState); });
     socket.on('trigger-new-fact', () => { generateNewFact(); });
 
-    // --- CHAT SYSTEM HANDLERS ---
+    // Custom Emoji Reactions Update Handler
+    socket.on('update-custom-emojis', (emojis) => {
+        if (Array.isArray(emojis) && emojis.length > 0) {
+            gameState.customEmojis = emojis.slice(0, 10).map(e => sanitizeText(e));
+            io.emit('state-update', gameState);
+        }
+    });
+
     socket.on('player-chat', (message) => {
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
@@ -255,6 +259,7 @@ io.on('connection', (socket) => {
         const cleanMsg = sanitizeText(message);
         if (cleanMsg) {
             gameState.chatHistory.push({ name: 'HOST 📢', text: cleanMsg });
+            io.emit('state-update', gameState);
             io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
         }
     });
