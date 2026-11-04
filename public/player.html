@@ -48,11 +48,11 @@
         <div id="loginCard" class="card" style="margin-top: auto; margin-bottom: auto;">
             <h3>📱 Join TriviaMania</h3>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Enter your team or player name to jump into the game!</p>
-            <input type="text" id="playerNameInput" placeholder="Team / Player Name...">
+            <input type="text" id="playerNameInput" placeholder="Team / Player Name..." onkeypress="if(event.key==='Enter') joinGame()">
             <button class="btn-green" onclick="joinGame()">🚀 Join Arena</button>
         </div>
 
-        <!-- GAMEPLAY ARENA -->
+        <!-- GAMEPLAY ARENA (Hidden until login) -->
         <div id="gameCard" class="card hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(0,243,255,0.2); padding-bottom: 0.5rem;">
                 <span id="playerWelcomeHeader" style="font-weight: bold; color: var(--neon-blue);">Player</span>
@@ -70,10 +70,15 @@
                 <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 1rem; font-size: 1.1rem;"></div>
             </div>
 
-            <!-- WAITING / INTERMISSION VIEW -->
-            <div id="waitingContainer" style="text-align: center; padding: 1.5rem 0;">
-                <h3 style="color: var(--neon-yellow);">⏳ Get Ready!</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;" id="waitingSubtext">The host will start the round shortly.</p>
+            <!-- WAITING / INTERMISSION & LIVE LEADERBOARD VIEW -->
+            <div id="waitingContainer" style="text-align: center; padding: 1rem 0;">
+                <h3 style="color: var(--neon-yellow);" id="waitingTitle">⏳ Get Ready!</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;" id="waitingSubtext">You are in the waiting room. The host will start shortly.</p>
+                
+                <div id="miniLeaderboardBox" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 0.75rem; text-align: left;">
+                    <strong style="color: var(--neon-blue); font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">🏆 Live Standings</strong>
+                    <div id="miniLeaderboardList" style="font-size: 0.85rem; color: var(--text-muted);">Waiting for scores...</div>
+                </div>
             </div>
         </div>
 
@@ -110,6 +115,7 @@
         const socket = io({ transports: ['websocket', 'polling'] });
         let myName = '';
         let currentTimerValue = 15;
+        let hasVotedCurrentPoll = false;
 
         function joinGame() {
             const input = document.getElementById('playerNameInput');
@@ -125,24 +131,66 @@
         }
 
         socket.on('state-update', (state) => {
-            // Update score
+            // Update score and Mini Leaderboard
             if (state.scores) {
-                const me = Object.values(state.scores).find(p => p.name === myName);
+                const scoresArr = Object.values(state.scores).sort((a, b) => b.score - a.score);
+                const me = scoresArr.find(p => p.name === myName);
                 if (me) {
                     document.getElementById('playerScoreDisplay').innerText = me.score;
                 }
+
+                const lbList = document.getElementById('miniLeaderboardList');
+                if (scoresArr.length > 0) {
+                    lbList.innerHTML = scoresArr.slice(0, 5).map((p, idx) => `
+                        <div style="display: flex; justify-content: space-between; padding: 2px 0; ${p.name === myName ? 'color: var(--neon-green); font-weight: bold;' : ''}">
+                            <span>${idx + 1}. ${p.name}</span>
+                            <span>${p.score} pts</span>
+                        </div>
+                    `).join('');
+                } else {
+                    lbList.innerHTML = 'No scores recorded yet.';
+                }
             }
 
-            // Update Poll
+            // Update Poll & Results View
             if (state.lobbySettings && state.lobbySettings.showPoll) {
                 document.getElementById('pollCard').classList.remove('hidden');
                 document.getElementById('pollQuestionTitle').innerText = '📊 ' + state.lobbySettings.pollQuestion;
                 const pollOpts = document.getElementById('pollOptionsContainer');
-                pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => `
-                    <button class="btn-option" style="text-align: center; margin-bottom: 0.4rem;" onclick="votePoll('${opt}')">${opt}</button>
-                `).join('');
+                
+                const votes = state.lobbySettings.votes || {};
+                const totalVotes = Object.keys(votes).length;
+
+                if (!hasVotedCurrentPoll) {
+                    // Show clickable voting options
+                    pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => `
+                        <button class="btn-option" style="text-align: center; margin-bottom: 0.4rem;" onclick="votePoll('${opt}')">${opt}</button>
+                    `).join('');
+                } else {
+                    // Show live vote results breakdown
+                    const counts = {};
+                    state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
+                    Object.values(votes).forEach(v => { if (counts[v] !== undefined) counts[v]++; });
+
+                    pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => {
+                        const count = counts[opt] || 0;
+                        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                        return `
+                            <div style="margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 2px;">
+                                    <span>${opt}</span>
+                                    <span>${count} votes (${pct}%)</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                                    <div style="background: var(--neon-blue); width: ${pct}%; height: 100%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('') + `<p style="text-align: center; font-size: 0.75rem; color: var(--neon-green); margin-top: 6px;">✓ Vote recorded!</p>`;
+                }
             } else {
                 document.getElementById('pollCard').classList.add('hidden');
+                hasVotedCurrentPoll = false; // Reset when poll changes
             }
 
             // Game Status
@@ -174,12 +222,19 @@
                 qContainer.classList.add('hidden');
                 wContainer.classList.remove('hidden');
                 document.getElementById('answerFeedback').innerText = '';
+                
+                const wTitle = document.getElementById('waitingTitle');
+                const wSub = document.getElementById('waitingSubtext');
+
                 if (state.status === 'INTERMISSION') {
-                    document.getElementById('waitingSubtext').innerText = '☕ Intermission - Round Finished!';
+                    wTitle.innerText = '☕ Round Complete!';
+                    wSub.innerText = 'Check out the live standings below while waiting for the next round.';
                 } else if (state.status === 'LEADERBOARD') {
-                    document.getElementById('waitingSubtext').innerText = '🏆 Game Over - Check the Big Screen!';
+                    wTitle.innerText = '🏆 Game Over!';
+                    wSub.innerText = 'Final standings are on the big screen!';
                 } else {
-                    document.getElementById('waitingSubtext').innerText = 'The host will start the round shortly.';
+                    wTitle.innerText = '⏳ Waiting Room';
+                    wSub.innerText = 'You are locked in and ready. The host will start shortly.';
                 }
             }
         });
@@ -211,12 +266,11 @@
         });
 
         function votePoll(option) {
+            hasVotedCurrentPoll = true;
             socket.emit('poll-vote', option);
-            alert('Vote recorded for: ' + option);
         }
 
         function sendEmoji(emoji) {
-            // Broadcast emoji locally & via socket if implemented
             triggerFloatingEmoji(emoji);
         }
 
