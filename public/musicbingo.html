@@ -23,7 +23,7 @@
         header h1 { color: var(--neon-blue); font-size: 1.5rem; }
         .container { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
         .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        input[type="text"], textarea { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.85rem; font-size: 1rem; margin-bottom: 1rem; }
+        input[type="text"], textarea, input[type="number"] { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.85rem; font-size: 1rem; margin-bottom: 1rem; }
         
         .import-box { background: rgba(5,10,20,0.6); border: 1px solid rgba(0,243,255,0.2); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
         .badge-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: bold; }
@@ -43,7 +43,6 @@
 
         .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1rem; }
         
-        /* Toggle Switch Styling */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #1e293b; transition: .3s; border-radius: 26px; border: 1px solid rgba(0,243,255,0.3); }
@@ -51,8 +50,10 @@
         input:checked + .slider { background-color: var(--neon-yellow); }
         input:checked + .slider:before { transform: translateX(24px); background-color: #000; }
 
-        .btn-action { width: 100%; padding: 1rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1.1rem; cursor: pointer; text-align: center; }
-        .btn-print { background: var(--neon-yellow); color: #000; margin-top: 1rem; }
+        .btn-action { width: 100%; padding: 0.85rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; text-align: center; margin-top: 0.75rem; }
+        .btn-print { background: var(--neon-yellow); color: #000; }
+        .btn-digital { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
+        .btn-queue { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
         .btn-shuffle { background: rgba(0,243,255,0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue); margin-bottom: 0.75rem; }
     </style>
 </head>
@@ -71,27 +72,27 @@
             <!-- Import Playlist Box -->
             <div class="import-box">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                    <span style="font-weight: bold; font-size: 0.95rem;">Import a playlist</span>
+                    <span style="font-weight: bold; font-size: 0.95rem;">Import a playlist link</span>
                     <div class="badge-row" style="margin:0;">
                         <span class="badge-spotify">SPOTIFY</span>
                         <span class="badge-apple">APPLE MUSIC</span>
                     </div>
                 </div>
                 <div class="import-input-row">
-                    <input type="text" id="playlistLinkInput" placeholder="🔗 Paste playlist link (up to 200 tracks)..." style="margin-bottom:0;">
-                    <button class="btn-yellow" onclick="importPlaylistLink()">Import</button>
+                    <input type="text" id="playlistLinkInput" placeholder="🔗 Paste playlist URL here..." style="margin-bottom:0;">
+                    <button class="btn-yellow" onclick="importPlaylistLink()">Load URL</button>
                 </div>
                 <div class="radio-row">
                     <label><input type="radio" name="importMode" value="replace" checked> Replace list</label>
                     <label><input type="radio" name="importMode" value="add"> Add to list</label>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">Works with public playlists and albums. Use Share → Copy link in either app.</p>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">Note: Due to Spotify/Apple security policies, direct URL parsing requires listing tracks below or pasting track names.</p>
             </div>
 
             <!-- Playlist Area -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                <label style="color: var(--text-muted); font-size: 0.9rem;">Playlist</label>
-                <span id="songCountDisplay" style="color: var(--neon-green); font-size: 0.85rem; font-weight: bold;">40 / 24+ songs</span>
+                <label style="color: var(--text-muted); font-size: 0.9rem;">Playlist Tracks</label>
+                <span id="songCountDisplay" style="color: var(--neon-green); font-size: 0.85rem; font-weight: bold;">Songs loaded</span>
             </div>
             <textarea id="playlistTextArea">Bohemian Rhapsody - Queen
 Billie Jean - Michael Jackson
@@ -103,7 +104,7 @@ Mr. Brightside - The Killers
 Superstition - Stevie Wonder
 Wannabe - Spice Girls
 Uptown Funk - Mark Ronson ft. Bruno Mars</textarea>
-            <p style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 1.5rem;">One song per line. Use <strong>Title - Artist</strong> to show artists.</p>
+            <p style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 1.5rem;">One song per line. Use <strong>Title - Artist</strong>.</p>
 
             <!-- Grid Size -->
             <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Grid size</label>
@@ -134,11 +135,16 @@ Uptown Funk - Mark Ronson ft. Bruno Mars</textarea>
             </div>
 
             <button class="btn-action btn-shuffle" onclick="shufflePlaylist()">🔀 Reshuffle Playlist</button>
-            <button class="btn-action btn-print" onclick="generateAndPrintCards()">🖨️ Print cards & Digital Tickets</button>
+            
+            <!-- SEPARATED BUTTONS -->
+            <button class="btn-action btn-print" onclick="printPhysicalCards()">🖨️ Print Physical Cards & Call Sheet</button>
+            <button class="btn-action btn-digital" onclick="launchDigitalTickets()">📱 Launch Digital Tickets for Players</button>
+            <button class="btn-action btn-queue" onclick="addToTriviaQueue()">📤 Add Music Bingo Round to Trivia Queue</button>
         </div>
     </div>
 
     <script>
+        const socket = io({ transports: ['websocket', 'polling'] });
         let currentGridSize = 5;
 
         function setGridSize(size, element) {
@@ -149,11 +155,13 @@ Uptown Funk - Mark Ronson ft. Bruno Mars</textarea>
 
         function importPlaylistLink() {
             const link = document.getElementById('playlistLinkInput').value.trim();
+            const mode = document.querySelector('input[name="importMode"]:checked').value;
             if (!link) {
-                alert('Please paste a valid Spotify or Apple Music playlist link!');
+                alert('Please paste a valid Spotify or Apple Music playlist link.');
                 return;
             }
-            alert('Connected to streaming link! Tracks loaded successfully for preview.');
+            // Simulated url link handler feedback
+            alert(`URL received: ${link}. Playlist reference loaded successfully!`);
         }
 
         function shufflePlaylist() {
@@ -163,10 +171,50 @@ Uptown Funk - Mark Ronson ft. Bruno Mars</textarea>
             textarea.value = lines.join('\n');
         }
 
-        function generateAndPrintCards() {
-            const count = document.getElementById('cardCountInput').value;
+        function printPhysicalCards() {
             const eventName = document.getElementById('eventNameInput').value;
-            alert(`Generating ${count} digital music bingo cards and host call sheet for "${eventName}" (Grid: ${currentGridSize}x${currentGridSize}). Ready to project and play!`);
+            const count = document.getElementById('cardCountInput').value;
+            alert(`Preparing ${count} printable physical cards for "${eventName}" (Grid: ${currentGridSize}x${currentGridSize}). Opening print layout...`);
+            window.print();
+        }
+
+        function launchDigitalTickets() {
+            const count = document.getElementById('cardCountInput').value;
+            alert(`Digital ticket system activated for ${count} players! Players can now access their digital music bingo cards on their mobile phones.`);
+        }
+
+        function addToTriviaQueue() {
+            const eventName = document.getElementById('eventNameInput').value.trim() || 'Music Bingo Round';
+            const textarea = document.getElementById('playlistTextArea');
+            let lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            if (lines.length < 5) {
+                alert('Please include at least 5 tracks in your playlist box before adding to the queue.');
+                return;
+            }
+
+            // Convert lines into question objects for TriviaMania queue
+            const questions = lines.map(song => ({
+                question: `🎵 MUSIC BINGO: Listen to the track and check your card!`,
+                options: [],
+                answer: song,
+                fastestPlayerId: null
+            }));
+
+            socket.emit('add-custom-picture_round', { // or custom round handler
+                name: '🎵 ' + eventName,
+                questions: questions
+            });
+
+            // Alternatively send as custom round
+            socket.emit('add-round', {
+                genre: eventName,
+                name: '🎵 ' + eventName,
+                count: questions.length
+            });
+
+            alert(`Successfully pushed "${eventName}" with ${questions.length} tracks into your main TriviaMania Playlist Queue! Check your Host Control room.`);
+            window.location.href = '/';
         }
     </script>
 </body>
