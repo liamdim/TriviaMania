@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>TriviaMania - Player Controller</title>
+    <title>TriviaMania - Player Arena</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: #0f172a;
+            --panel-bg: rgba(15, 23, 42, 0.95);
             --neon-blue: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
@@ -18,155 +18,232 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; }
-        .hidden { display: none !important; }
-        
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 100%; max-width: 450px; margin: auto; }
-        h2 { color: var(--neon-blue); text-align: center; margin-bottom: 1rem; font-size: 1.4rem; }
-        input[type="text"] { width: 100%; padding: 0.85rem; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 1rem; text-align: center; }
-        button { width: 100%; padding: 0.85rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding: 1rem; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
+        .container { max-width: 500px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .card h3 { color: var(--neon-blue); margin-bottom: 0.75rem; font-size: 1.1rem; }
+        input[type="text"] { width: 100%; padding: 0.85rem; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 0.75rem; }
+        button { padding: 0.85rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; width: 100%; }
+        button:hover { filter: brightness(1.2); }
         .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
+        .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
+        .btn-option { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; margin-bottom: 0.5rem; text-align: left; padding: 1rem; border-radius: 8px; font-size: 1rem; }
+        .btn-option:active { background: var(--neon-blue); color: #000; }
+        .hidden { display: none !important; }
+        .emoji-bar { display: flex; gap: 0.5rem; justify-content: space-around; margin-top: 0.5rem; }
+        .emoji-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.5rem; padding: 0.5rem; border-radius: 8px; cursor: pointer; flex: 1; }
+        .chat-feed { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; height: 120px; overflow-y: auto; padding: 8px; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-muted); }
         
-        .option-btn { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--neon-blue); color: white; padding: 1rem; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 0.75rem; text-align: center; }
-        .option-btn:hover, .option-btn:active { background: var(--neon-blue); color: #000; }
+        /* Floating Emojis Animation */
+        .floating-emoji { position: fixed; bottom: 20px; font-size: 2.5rem; animation: floatUp 2s ease-out forwards; z-index: 999; pointer-events: none; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-400px) scale(1.5); opacity: 0; }
+        }
     </style>
 </head>
 <body>
-
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="card">
-        <h2>TriviaMania</h2>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Enter your team or player name to join:</p>
-        <input type="text" id="playerNameInput" placeholder="Player / Team Name" maxlength="20">
-        <button class="btn-green" onclick="joinGame()">Join Game 🚀</button>
-    </div>
-
-    <!-- GAME PLAY SCREEN -->
-    <div id="gameScreen" class="card hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
-            <span id="displayPlayerName" style="color: var(--neon-blue); font-weight: bold;">Player</span>
-            <span id="displayPlayerScore" style="color: var(--neon-green); font-weight: bold;">0 pts</span>
+    <div class="container">
+        <!-- LOGIN SCREEN -->
+        <div id="loginCard" class="card" style="margin-top: auto; margin-bottom: auto;">
+            <h3>📱 Join TriviaMania</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Enter your team or player name to jump into the game!</p>
+            <input type="text" id="playerNameInput" placeholder="Team / Player Name...">
+            <button class="btn-green" onclick="joinGame()">🚀 Join Arena</button>
         </div>
 
-        <div id="statusMessage" style="text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; color: var(--neon-yellow);">Waiting for host to start...</div>
+        <!-- GAMEPLAY ARENA -->
+        <div id="gameCard" class="card hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(0,243,255,0.2); padding-bottom: 0.5rem;">
+                <span id="playerWelcomeHeader" style="font-weight: bold; color: var(--neon-blue);">Player</span>
+                <span style="color: var(--neon-yellow); font-weight: bold;">Score: <span id="playerScoreDisplay">0</span> pts</span>
+            </div>
 
-        <!-- QUESTION CONTAINER -->
-        <div id="questionContainer" class="hidden">
-            <p id="questionText" style="font-size: 1rem; margin-bottom: 1rem; text-align: center;"></p>
-            <div id="optionsContainer"></div>
+            <!-- QUESTION VIEW -->
+            <div id="questionContainer" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Question Timer:</span>
+                    <span id="timerDisplay" style="color: var(--neon-yellow); font-weight: bold; font-size: 1.1rem;">15s</span>
+                </div>
+                <h3 id="questionText" style="color: white; margin-bottom: 1rem; font-size: 1.2rem;">Waiting for next question...</h3>
+                <div id="optionsContainer"></div>
+                <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 1rem; font-size: 1.1rem;"></div>
+            </div>
+
+            <!-- WAITING / INTERMISSION VIEW -->
+            <div id="waitingContainer" style="text-align: center; padding: 1.5rem 0;">
+                <h3 style="color: var(--neon-yellow);">⏳ Get Ready!</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem;" id="waitingSubtext">The host will start the round shortly.</p>
+            </div>
         </div>
 
-        <!-- DIGITAL MUSIC BINGO TICKET CONTAINER -->
-        <div id="musicBingoContainer" class="hidden" style="text-align: center; margin-top: 1rem;">
-            <h3 style="color: var(--neon-green); margin-bottom: 0.3rem; font-size: 1.1rem;">🎵 Music Bingo Ticket</h3>
-            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Tap songs as they play to dab!</p>
-            <div id="playerBingoGrid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-width: 100%;"></div>
+        <!-- LOBBY POLL CARD -->
+        <div id="pollCard" class="card">
+            <h3 id="pollQuestionTitle">📊 Live Crowd Poll</h3>
+            <div id="pollOptionsContainer"></div>
+        </div>
+
+        <!-- FLOATING EMOJI BAR -->
+        <div class="card" style="padding: 0.75rem;">
+            <div class="emoji-bar">
+                <button class="emoji-btn" onclick="sendEmoji('🔥')">🔥</button>
+                <button class="emoji-btn" onclick="sendEmoji('🍻')">🍻</button>
+                <button class="emoji-btn" onclick="sendEmoji('👏')">👏</button>
+                <button class="emoji-btn" onclick="sendEmoji('😂')">😂</button>
+                <button class="emoji-btn" onclick="sendEmoji('🎉')">🎉</button>
+                <button class="emoji-btn" onclick="sendEmoji('💡')">💡</button>
+            </div>
+        </div>
+
+        <!-- PLAYER CHAT CARD -->
+        <div class="card">
+            <h3>💬 Live Table Chat</h3>
+            <div id="chatFeed" class="chat-feed"></div>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="chatInput" placeholder="Send message to room..." style="margin-bottom: 0;" onkeypress="if(event.key==='Enter') sendChat()">
+                <button class="btn-blue" style="width: 80px;" onclick="sendChat()">Send</button>
+            </div>
         </div>
     </div>
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
         let myName = '';
+        let currentTimerValue = 15;
 
         function joinGame() {
             const input = document.getElementById('playerNameInput');
             myName = input.value.trim();
             if (!myName) {
-                alert('Please enter your name.');
+                alert('Please enter a team name.');
                 return;
             }
             socket.emit('player-join', myName);
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('gameScreen').classList.remove('hidden');
-            document.getElementById('displayPlayerName').innerText = myName;
+            document.getElementById('loginCard').classList.add('hidden');
+            document.getElementById('gameCard').classList.remove('hidden');
+            document.getElementById('playerWelcomeHeader').innerText = myName;
         }
 
         socket.on('state-update', (state) => {
-            // Update personal score
+            // Update score
             if (state.scores) {
                 const me = Object.values(state.scores).find(p => p.name === myName);
                 if (me) {
-                    document.getElementById('displayPlayerScore').innerText = me.score + ' pts';
+                    document.getElementById('playerScoreDisplay').innerText = me.score;
                 }
             }
 
-            const statusMsg = document.getElementById('statusMessage');
-            const qContainer = document.getElementById('questionContainer');
+            // Update Poll
+            if (state.lobbySettings && state.lobbySettings.showPoll) {
+                document.getElementById('pollCard').classList.remove('hidden');
+                document.getElementById('pollQuestionTitle').innerText = '📊 ' + state.lobbySettings.pollQuestion;
+                const pollOpts = document.getElementById('pollOptionsContainer');
+                pollOpts.innerHTML = state.lobbySettings.pollOptions.map(opt => `
+                    <button class="btn-option" style="text-align: center; margin-bottom: 0.4rem;" onclick="votePoll('${opt}')">${opt}</button>
+                `).join('');
+            } else {
+                document.getElementById('pollCard').classList.add('hidden');
+            }
 
-            if (state.status === 'IDLE' || state.status === 'PAUSED' || state.status === 'INTERMISSION') {
-                statusMsg.innerText = state.status === 'INTERMISSION' ? 'Round Intermission' : 'Waiting for host...';
-                qContainer.classList.add('hidden');
-            } else if (state.status === 'QUESTION') {
-                statusMsg.innerText = 'Question Live! Make your pick:';
+            // Game Status
+            const qContainer = document.getElementById('questionContainer');
+            const wContainer = document.getElementById('waitingContainer');
+
+            if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
+                wContainer.classList.add('hidden');
                 qContainer.classList.remove('hidden');
 
                 const round = state.playlist[state.currentRoundIndex];
-                if (round && round.questions) {
-                    const q = round.questions[state.currentQuestionIndex];
-                    if (q) {
-                        document.getElementById('questionText').innerText = q.question;
-                        const optsContainer = document.getElementById('optionsContainer');
-                        
-                        if (q.gameType === 'higher-lower') {
-                            optsContainer.innerHTML = `
-                                <button class="option-btn" style="background:rgba(0,255,102,0.2); border-color:#00ff66;" onclick="submitAnswer('Higher')">📈 Higher</button>
-                                <button class="option-btn" style="background:rgba(255,0,85,0.2); border-color:#ff0055;" onclick="submitAnswer('Lower')">📉 Lower</button>
-                            `;
-                        } else if (q.options && q.options.length > 0) {
-                            optsContainer.innerHTML = q.options.map(opt => `
-                                <button class="option-btn" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
-                            `).join('');
-                        } else {
-                            optsContainer.innerHTML = `
-                                <input type="text" id="textAnswerInput" placeholder="Type answer...">
-                                <button class="btn-green" onclick="submitTextAnswer()">Submit Answer</button>
-                            `;
-                        }
+                const q = round.questions[state.currentQuestionIndex];
+                if (q) {
+                    document.getElementById('questionText').innerText = q.question;
+                    const optsBox = document.getElementById('optionsContainer');
+                    
+                    if (q.options && q.options.length > 0) {
+                        optsBox.innerHTML = q.options.map(opt => `
+                            <button class="btn-option" onclick="submitAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>
+                        `).join('');
+                    } else {
+                        optsBox.innerHTML = `
+                            <input type="text" id="textAnswerInput" placeholder="Type your answer...">
+                            <button class="btn-blue" onclick="submitTextAnswer()">Submit Answer</button>
+                        `;
                     }
+                }
+            } else {
+                qContainer.classList.add('hidden');
+                wContainer.classList.remove('hidden');
+                document.getElementById('answerFeedback').innerText = '';
+                if (state.status === 'INTERMISSION') {
+                    document.getElementById('waitingSubtext').innerText = '☕ Intermission - Round Finished!';
+                } else if (state.status === 'LEADERBOARD') {
+                    document.getElementById('waitingSubtext').innerText = '🏆 Game Over - Check the Big Screen!';
+                } else {
+                    document.getElementById('waitingSubtext').innerText = 'The host will start the round shortly.';
                 }
             }
         });
 
+        socket.on('timer-tick', (timeLeft) => {
+            currentTimerValue = timeLeft;
+            const tDisplay = document.getElementById('timerDisplay');
+            if (tDisplay) tDisplay.innerText = timeLeft + 's';
+        });
+
         function submitAnswer(ans) {
-            socket.emit('submit-answer', { answer: ans, timeRemaining: 15 });
-            document.getElementById('optionsContainer').innerHTML = '<p style="text-align:center; color:var(--neon-green); font-weight:bold;">Answer Locked In! ✓</p>';
+            document.getElementById('optionsContainer').innerHTML = `<p style="color: var(--neon-green); text-align:center; font-weight:bold;">Answer submitted: "${ans}"</p>`;
+            socket.emit('submit-answer', { answer: ans, timeRemaining: currentTimerValue });
         }
 
         function submitTextAnswer() {
             const val = document.getElementById('textAnswerInput').value.trim();
-            if (val) submitAnswer(val);
+            if (!val) return;
+            submitAnswer(val);
         }
 
-        // Native Digital Music Bingo Ticket Handlers
-        socket.on('music-bingo-cards-assigned', (allCards) => {
-            const myCardData = allCards[socket.id];
-            if (myCardData) {
-                renderPlayerBingoCard(myCardData);
-                document.getElementById('musicBingoContainer').classList.remove('hidden');
+        socket.on('answer-result', (res) => {
+            const fb = document.getElementById('answerFeedback');
+            if (res.correct) {
+                fb.innerHTML = `<span style="color: var(--neon-green);">✅ Correct! +${res.points} pts</span>`;
+            } else {
+                fb.innerHTML = `<span style="color: var(--neon-red);">❌ Incorrect. Correct was: ${res.correctAnswer}</span>`;
             }
         });
 
-        socket.on('bingo-card-updated', (updatedCard) => {
-            renderPlayerBingoCard(updatedCard);
-        });
-
-        socket.on('bingo-winner', (data) => {
-            alert(`🎉 BINGO! We have a winner: ${data.name}!`);
-        });
-
-        function renderPlayerBingoCard(cardData) {
-            const grid = document.getElementById('playerBingoGrid');
-            grid.innerHTML = cardData.card.map((song, idx) => {
-                const isMarked = cardData.marked[idx];
-                const bg = isMarked ? '#00ff66' : 'rgba(0,243,255,0.1)';
-                const color = isMarked ? '#000' : '#fff';
-                return `
-                    <div onclick="socket.emit('mark-bingo-tile', ${idx})" style="background: ${bg}; color: ${color}; border: 1px solid #00f3ff; border-radius: 4px; padding: 6px 2px; font-size: 0.65rem; font-weight: bold; min-height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; word-break: break-word; text-align: center;">
-                        ${song}
-                    </div>
-                `;
-            }).join('');
+        function votePoll(option) {
+            socket.emit('poll-vote', option);
+            alert('Vote recorded for: ' + option);
         }
+
+        function sendEmoji(emoji) {
+            // Broadcast emoji locally & via socket if implemented
+            triggerFloatingEmoji(emoji);
+        }
+
+        function triggerFloatingEmoji(emoji) {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = emoji;
+            el.style.left = (Math.random() * 80 + 10) + '%';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2000);
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            socket.emit('player-chat', text);
+            input.value = '';
+        }
+
+        socket.on('chat-message', (msg) => {
+            const feed = document.getElementById('chatFeed');
+            if (feed) {
+                feed.innerHTML += `<div><strong>${msg.name}:</strong> ${msg.text}</div>`;
+                feed.scrollTop = feed.scrollHeight;
+            }
+        });
     </script>
 </body>
 </html>
