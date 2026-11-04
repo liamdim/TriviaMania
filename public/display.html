@@ -23,6 +23,11 @@
         header h1 { font-size: 2.5rem; color: var(--neon-blue); letter-spacing: 2px; }
         .main-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; position: relative; }
         
+        /* Idle / Waiting Screen Layout */
+        #idleScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; width: 100%; max-width: 900px; }
+        .idle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; align-items: center; margin-top: 1rem; }
+        .idle-box { background: var(--panel-bg); border: 2px solid rgba(0, 243, 255, 0.4); border-radius: 16px; padding: 2rem; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); text-align: center; }
+
         /* Question Display Styles */
         #questionCard { background: var(--panel-bg); border: 2px solid var(--neon-blue); border-radius: 16px; padding: 2.5rem; max-width: 900px; width: 100%; box-shadow: 0 0 40px rgba(0, 243, 255, 0.2); }
         #questionText { font-size: 2.2rem; margin-bottom: 1.5rem; line-height: 1.4; }
@@ -48,11 +53,24 @@
     </header>
 
     <div class="main-stage" id="stageContainer">
-        <!-- IDLE / WAITING SCREEN -->
-        <div id="idleScreen" style="display: block;">
-            <h2 id="welcomeHeaderDisplay" style="font-size: 3.5rem; color: var(--neon-green); margin-bottom: 1rem;">Welcome to TriviaMania!</h2>
-            <p id="venueDetailsDisplay" style="font-size: 1.8rem; color: var(--text-muted); margin-bottom: 2rem;">Scan QR code or open controller to join!</p>
-            <div id="qrcode" style="background: white; padding: 15px; border-radius: 12px; display: inline-block;"></div>
+        <!-- IDLE / WAITING SCREEN (With QR Code & Lobby Poll) -->
+        <div id="idleScreen">
+            <h2 id="welcomeHeaderDisplay" style="font-size: 3rem; color: var(--neon-green); margin-bottom: 0.5rem;">Welcome to TriviaMania!</h2>
+            <p id="venueDetailsDisplay" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 1rem;">Scan QR code or open controller to join!</p>
+            
+            <div class="idle-grid">
+                <!-- QR Code Box -->
+                <div class="idle-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <h3 style="color: var(--neon-blue); margin-bottom: 1rem; font-size: 1.4rem;">📱 Scan to Join Game</h3>
+                    <div id="qrcode" style="background: white; padding: 12px; border-radius: 10px; display: inline-block;"></div>
+                </div>
+
+                <!-- Lobby Poll Box -->
+                <div class="idle-box" id="projectorPollBox" style="display: none; text-align: left;">
+                    <h3 style="color: var(--neon-yellow); margin-bottom: 0.75rem; font-size: 1.3rem; text-align: center;" id="projectorPollQ">Live Room Poll</h3>
+                    <div id="projectorPollResults" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+                </div>
+            </div>
         </div>
 
         <!-- ACTIVE QUESTION / PICTURE SCREEN -->
@@ -81,10 +99,12 @@
 
         // Generate QR code for mobile joining
         const joinUrl = window.location.origin + '/player.html';
-        new QRCode(document.getElementById("qrcode"), {
+        const qrContainer = document.getElementById("qrcode");
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
             text: joinUrl,
-            width: 180,
-            height: 180,
+            width: 160,
+            height: 160,
             colorDark: "#05050a",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
@@ -113,7 +133,6 @@
                         const imgMatch = rawQText.match(/\[IMG:(.*?)\]/);
                         
                         if (imgMatch) {
-                            // Extract image URL and clean question text
                             const imgUrl = imgMatch[1];
                             const cleanText = rawQText.replace(/\[IMG:.*?\]/, '').trim();
                             
@@ -125,7 +144,6 @@
                             document.getElementById('projectorImageContainer').style.display = 'none';
                         }
 
-                        // Render options if available (empty for text input picture rounds)
                         const optionsGrid = document.getElementById('projectorOptionsGrid');
                         if (q.options && q.options.length > 0) {
                             optionsGrid.style.display = 'grid';
@@ -133,13 +151,44 @@
                                 <div class="option-box">${['A', 'B', 'C', 'D'][idx]}. ${opt}</div>
                             `).join('');
                         } else {
-                            optionsGrid.style.display = 'none'; // Hidden during text input / picture typing rounds so players type on phones
+                            optionsGrid.style.display = 'none';
                         }
                     }
                 }
             } else {
-                document.getElementById('idleScreen').style.display = 'block';
+                document.getElementById('idleScreen').style.display = 'flex';
                 document.getElementById('questionCard').style.display = 'none';
+
+                // Render Lobby Poll on projector if active
+                if (state.lobbySettings && state.lobbySettings.showPoll) {
+                    document.getElementById('projectorPollBox').style.display = 'block';
+                    document.getElementById('projectorPollQ').innerText = state.lobbySettings.pollQuestion;
+
+                    const votes = state.lobbySettings.votes || {};
+                    const totalVotes = Object.keys(votes).length;
+                    const counts = {};
+                    state.lobbySettings.pollOptions.forEach(opt => counts[opt] = 0);
+                    Object.values(votes).forEach(val => { if (counts[val] !== undefined) counts[val]++; });
+
+                    const resultsContainer = document.getElementById('projectorPollResults');
+                    resultsContainer.innerHTML = state.lobbySettings.pollOptions.map(opt => {
+                        const c = counts[opt] || 0;
+                        const p = totalVotes > 0 ? Math.round((c / totalVotes) * 100) : 0;
+                        return `
+                            <div style="background: rgba(0,243,255,0.1); padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid rgba(0,243,255,0.3);">
+                                <div style="display:flex; justify-content:space-between; font-size:1.1rem; margin-bottom:0.3rem; font-weight:bold;">
+                                    <span>${opt}</span>
+                                    <span style="color:var(--neon-green);">${p}% (${c} votes)</span>
+                                </div>
+                                <div style="background:rgba(0,0,0,0.5); height:8px; border-radius:4px; overflow:hidden;">
+                                    <div style="background:var(--neon-blue); width:${p}%; height:100%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('projectorPollBox').style.display = 'none';
+                }
             }
         });
 
