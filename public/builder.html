@@ -4,94 +4,189 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>TriviaMania - Standard Quiz Builder</title>
+    <title>TriviaMania - Quiz Builder & AI Generator</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-bg: rgba(15, 23, 42, 0.95);
             --neon-blue: #00f3ff;
+            --neon-green: #00ff66;
             --neon-yellow: #ffee00;
+            --neon-red: #ff0055;
             --text: #ffffff;
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-image: radial-gradient(circle at 50% 0%, #1a103c 0%, #05050a 70%); }
-        header { background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 243, 255, 0.3); }
-        header h1 { font-size: 1.5rem; color: var(--neon-blue); }
-        .nav-links { display: flex; gap: 0.75rem; }
-        .nav-links a { color: var(--neon-blue); text-decoration: none; padding: 0.5rem 1rem; background: rgba(0, 243, 255, 0.1); border-radius: 6px; border: 1px solid rgba(0, 243, 255, 0.3); font-size: 0.9rem; }
-        .container { flex: 1; padding: 2rem; max-width: 900px; width: 100%; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
-        .card h3 { margin-bottom: 1rem; color: var(--neon-blue); font-weight: 600; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-        select, input { width: 100%; padding: 0.75rem; background: rgba(5, 10, 20, 0.8); border: 1px solid rgba(0, 243, 255, 0.3); color: white; border-radius: 6px; margin-bottom: 0.5rem; }
-        button { background: linear-gradient(135deg, #0077ff, #00f3ff); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
-        button.success { background: linear-gradient(135deg, #00aa44, #00ff66); color: #000; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 2rem; min-height: 100vh; background-image: radial-gradient(circle at 50% 10%, #1a103c 0%, #05050a 85%); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
+        header h1 { color: var(--neon-blue); font-size: 1.5rem; }
+        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .card h3 { color: var(--neon-blue); margin-bottom: 1rem; }
+        input[type="text"], select, textarea { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.85rem; font-size: 1rem; margin-bottom: 1rem; }
+        button { padding: 0.75rem 1.5rem; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        button:hover { filter: brightness(1.2); }
+        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; width: 100%; }
+        .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; width: 100%; }
+        .preview-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 1rem; max-height: 250px; overflow-y: auto; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); }
     </style>
 </head>
 <body>
     <header>
-        <h1>📂 Standard Quiz Playlist Builder</h1>
-        <div class="nav-links">
-            <a href="/index.html">⚡ Live Controls</a>
-        </div>
+        <h1>📝 Quiz Builder & AI Generator</h1>
+        <a href="/" style="color: var(--neon-blue); text-decoration: none; font-weight: bold;">← Back to Host Control</a>
     </header>
+
     <div class="container">
+        <!-- AI GENERATOR CARD -->
         <div class="card">
-            <h3>Add Standard Quiz Round</h3>
-            <div class="form-group">
-                <label>Select Category (Loaded from GitHub):</label>
-                <select id="triviaGenreSelect">
-                    <option value="">Loading categories...</option>
-                </select>
+            <h3>🤖 Generate Quiz with AI</h3>
+            <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Topic or Theme (e.g. 90s Movies, Science, British History)</label>
+            <input type="text" id="aiTopicInput" placeholder="Enter topic...">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Number of Questions</label>
+                    <select id="aiCountSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Difficulty</label>
+                    <select id="aiDifficultySelect">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Round Custom Name:</label>
-                <input type="text" id="roundNameInput" value="General Knowledge Round">
+
+            <button class="btn-blue" onclick="generateAIQuiz()" style="margin-top: 0.5rem;">✨ Generate AI Round</button>
+        </div>
+
+        <!-- REVIEW & QUEUE CARD -->
+        <div class="card">
+            <h3>📋 Review & Add to Game Queue</h3>
+            <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Round Title / Name</label>
+            <input type="text" id="roundNameInput" value="AI Generated Round">
+
+            <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Parsed Questions Preview</label>
+            <div id="previewContainer" class="preview-box">
+                <p>No questions generated yet. Use the AI generator above or type questions below.</p>
             </div>
-            <div class="form-group">
-                <label>Question Count:</label>
-                <select id="questionCountSelect">
-                    <option value="5">5 Questions</option>
-                    <option value="10" selected>10 Questions</option>
-                    <option value="15">15 Questions</option>
-                    <option value="20">20 Questions</option>
-                </select>
-            </div>
-            <button class="success" onclick="addRoundToPlaylist()">➕ Add Round to Active Game Queue</button>
+
+            <label style="color: var(--text-muted); display: block; margin-bottom: 0.4rem; font-size: 0.9rem;">Raw Question Code / Text Format</label>
+            <textarea id="rawQuestionTextArea" style="height: 150px; font-family: monospace; font-size: 0.85rem;" placeholder="#Q What is the capital of France?&#10;A. London&#10;B. Paris&#10;C. Berlin&#10;D. Madrid&#10;^ Paris"></textarea>
+
+            <button class="btn-green" onclick="pushRoundToQueue()">🚀 Add Round Directly to Trivia Queue</button>
         </div>
     </div>
+
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
+        let parsedQuestionsCache = [];
 
-        async function loadCategories() {
+        async function generateAIQuiz() {
+            const topic = document.getElementById('aiTopicInput').value.trim();
+            const count = document.getElementById('aiCountSelect').value;
+            const difficulty = document.getElementById('aiDifficultySelect').value;
+
+            if (!topic) {
+                alert('Please enter a topic for the AI quiz.');
+                return;
+            }
+
+            alert('Generating smart trivia questions with Gemini... Please wait a moment.');
+
             try {
-                const res = await fetch('/api/categories');
-                const categories = await res.json();
-                const select = document.getElementById('triviaGenreSelect');
-                if (categories.length > 0) {
-                    select.innerHTML = categories.map(cat => '<option value="' + cat + '">' + cat.replace(/-/g, ' ').toUpperCase() + '</option>').join('');
+                const response = await fetch('/api/generate-ai-quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, count, difficulty })
+                });
+                const data = await response.json();
+
+                if (data.success && data.raw) {
+                    document.getElementById('rawQuestionTextArea').value = data.raw;
+                    document.getElementById('roundNameInput').value = `${topic} (${difficulty.toUpperCase()})`;
+                    parseRawTextToPreview(data.raw);
+                    alert('AI questions generated successfully!');
                 } else {
-                    select.innerHTML = '<option value="">No categories found. Add text files to /categories/</option>';
+                    alert('Failed to generate questions. Please try again.');
                 }
             } catch (err) {
-                console.error(err);
+                alert('Error connecting to AI generation service.');
             }
         }
-        loadCategories();
 
-        function addRoundToPlaylist() {
-            const genre = document.getElementById('triviaGenreSelect').value;
-            const name = document.getElementById('roundNameInput').value;
-            const count = parseInt(document.getElementById('questionCountSelect').value);
-            if (!genre) { alert('Please select a category!'); return; }
-            socket.emit('add-round', { genre, name, count });
-            alert('Standard round added to game playlist queue!');
-            window.location.href = '/index.html';
+        function parseRawTextToPreview(rawText) {
+            const lines = rawText.split(/\r?\n/);
+            parsedQuestionsCache = [];
+            let currentQ = null;
+            let previewHTML = '';
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                if (line.startsWith('#Q')) {
+                    if (currentQ) parsedQuestionsCache.push(currentQ);
+                    currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '' };
+                } else if (line.startsWith('^')) {
+                    if (currentQ) currentQ.answer = line.replace('^', '').trim();
+                } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
+                    if (currentQ) {
+                        const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
+                        currentQ.options.push(optText);
+                    }
+                }
+            }
+            if (currentQ) parsedQuestionsCache.push(currentQ);
+
+            if (parsedQuestionsCache.length > 0) {
+                previewHTML = parsedQuestionsCache.map((q, idx) => `
+                    <div style="margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                        <strong>Q${idx + 1}: ${q.question}</strong><br>
+                        <span style="color: var(--neon-blue);">Options: ${q.options.join(' | ')}</span><br>
+                        <span style="color: var(--neon-green);">Answer: ${q.answer}</span>
+                    </div>
+                `).join('');
+            } else {
+                previewHTML = '<p style="color: var(--neon-red);">Could not parse questions. Check format.</p>';
+            }
+
+            document.getElementById('previewContainer').innerHTML = previewHTML;
         }
+
+        // Live parse when typing in textarea manually
+        document.getElementById('rawQuestionTextArea').oninput = function() {
+            parseRawTextToPreview(this.value);
+        };
+
+        function pushRoundToQueue() {
+            const rawText = document.getElementById('rawQuestionTextArea').value;
+            parseRawTextToPreview(rawText);
+
+            if (parsedQuestionsCache.length === 0) {
+                alert('No valid questions found to add.');
+                return;
+            }
+
+            const roundName = document.getElementById('roundNameInput').value.trim() || 'Custom Round';
+            
+            // Send custom round configuration to server
+            socket.emit('add-custom-picture-round', {
+                name: roundName,
+                questions: parsedQuestionsCache
+            });
+        }
+
+        socket.on('state-update', (state) => {
+            // Optional state sync feedback if needed
+        });
     </script>
 </body>
 </html>
