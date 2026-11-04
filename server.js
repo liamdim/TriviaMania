@@ -53,7 +53,8 @@ let gameState = {
         pollOptions: samplePolls[0].options,
         votes: {}
     },
-    settings: { questionTime: 15 }
+    settings: { questionTime: 15 },
+    playerBingoCards: {}
 };
 
 let timerInterval = null;
@@ -79,7 +80,6 @@ function sanitizeText(text) {
     return clean;
 }
 
-// Simple Levenshtein Distance Fuzzy Matcher for text answers
 function calculateSimilarity(s1, s2) {
     let longer = s1;
     let shorter = s2;
@@ -115,6 +115,15 @@ function editDistance(s1, s2) {
     return costs[s2.length];
 }
 
+function checkBingoWin(marked) {
+    const lines = [
+        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+        [0,6,12,18,24], [4,8,12,16,20]
+    ];
+    return lines.some(line => line.every(index => marked[index]));
+}
+
 app.get('/api/categories', (req, res) => {
     const categoriesDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(categoriesDir)) return res.json([]);
@@ -126,65 +135,6 @@ app.get('/api/categories', (req, res) => {
         res.json(categories);
     } catch (err) {
         res.json([]);
-    }
-});
-
-app.post('/api/generate-bulk-trivia', async (req, res) => {
-    const { categoryName, count = 20 } = req.body;
-    if (!categoryName) return res.status(400).json({ error: 'Category name is required' });
-
-    const seed = Date.now() + Math.floor(Math.random() * 100000);
-    const prompt = `Generate exactly ${count} completely unique, varied, and fresh trivia questions about "${categoryName}" (Timestamp Seed ${seed}).
-    Return ONLY a valid JSON array of objects with keys:
-    - "question": string
-    - "options": array of 4 strings
-    - "answer": string
-    No markdown, just raw JSON array.`;
-
-    let attempts = 0;
-    let success = false;
-    let responseText = '';
-
-    while (attempts < 3 && !success) {
-        try {
-            attempts++;
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-            });
-            responseText = response.text.trim();
-            success = true;
-        } catch (err) {
-            if (attempts >= 3) return res.status(500).json({ error: 'AI server busy. Please try again.' });
-            await new Promise(resolve => setTimeout(resolve, 3000));
-        }
-    }
-
-    try {
-        if (responseText.startsWith('```json')) responseText = responseText.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (responseText.startsWith('```')) responseText = responseText.replace(/^```/, '').replace(/```$/, '').trim();
-
-        const items = JSON.parse(responseText);
-        let newContent = '';
-        items.forEach((item) => {
-            newContent += `#Q ${item.question}\n`;
-            if (item.options && Array.isArray(item.options)) {
-                item.options.forEach((opt, oIdx) => {
-                    const letters = ['A', 'B', 'C', 'D'];
-                    newContent += `${letters[oIdx] || 'A'} ${opt}\n`;
-                });
-            }
-            newContent += `^${item.answer}\n\n`;
-        });
-
-        const fileName = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const categoriesDir = path.join(__dirname, 'categories');
-        if (!fs.existsSync(categoriesDir)) fs.mkdirSync(categoriesDir, { recursive: true });
-        fs.writeFileSync(path.join(categoriesDir, fileName), newContent, 'utf8');
-
-        res.json({ success: true, count: items.length, fileName });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to process AI response: ' + err.message });
     }
 });
 
@@ -222,36 +172,6 @@ function parseCategoryFile(filename) {
         questions.push(currentQ);
     }
     return questions.sort(() => 0.5 - Math.random());
-}
-
-async function generateAIQuestions(type, count) {
-    let prompt = '';
-    const seed = Date.now() + Math.floor(Math.random() * 100000);
-    
-    if (type === 'lingo') {
-        prompt = `Generate exactly ${count} completely unique, randomized 5-letter English words (Timestamp Seed ${seed}) for a Lingo game. Return ONLY a valid JSON array of exactly ${count} objects with keys "word" (5 uppercase letters) and "hint" (short clever clue). No markdown, just raw JSON array.`;
-    } else if (type === 'scramble') {
-        prompt = `Generate exactly ${count} famous words, bands, movies, or cities (Timestamp Seed ${seed}) for word scramble. For each item, provide the correct answer ("word") AND 3 tricky multiple-choice options ("options" array containing 4 strings total: the correct answer and 3 deceptive decoy words that share similar letters or spelling patterns). Return ONLY a valid JSON array of exactly ${count} objects with keys "word", "scrambled" (randomly jumbled letters separated by spaces like "L E A B T S E"), "options" (array of 4 strings including the word), and "answer" (the correct word). No markdown, just raw JSON array.`;
-    } else if (type === 'higher-lower') {
-        prompt = `Generate exactly ${count} completely randomized and fresh trivia statistics questions (Timestamp Seed ${seed}). Return ONLY a valid JSON array of exactly ${count} objects with keys "fact" (statement comparison like "Google searches per second vs Wikipedia page views"), "options" (array ["Higher", "Lower"]), and "answer" ("Higher" or "Lower"). No markdown, just raw JSON array.`;
-    }
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-
-        let text = response.text ? response.text.trim() : '';
-        if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-        else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
-
-        const parsed = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed.slice(0, count);
-    } catch (err) {
-        console.error('AI generation error:', err.message);
-    }
-    return [];
 }
 
 function getCurrentRoundTimer() {
@@ -328,14 +248,38 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Native Music Bingo Round Handler
+    socket.on('add-music-bingo-round', (data) => {
+        const eventName = data.eventName || 'Music Bingo';
+        const tracks = data.tracks || [];
+        
+        if (tracks.length === 0) return;
+
+        const questions = tracks.map(track => ({
+            gameType: 'music-bingo',
+            question: `🎵 MUSIC BINGO: Listen & mark your card!`,
+            answer: track,
+            options: [],
+            fastestPlayerId: null
+        }));
+
+        gameState.playlist.push({
+            name: '🎵 ' + eventName,
+            genre: 'Music Bingo',
+            timer: 30,
+            questions: questions,
+            isMusicBingo: true,
+            trackPool: tracks
+        });
+
+        io.emit('state-update', gameState);
+        socket.emit('music-bingo-added', { success: true });
+    });
+
     socket.on('poll-vote', (option) => {
         if (!gameState.lobbySettings.votes) gameState.lobbySettings.votes = {};
         gameState.lobbySettings.votes[socket.id] = option;
         io.emit('state-update', gameState);
-    });
-
-    socket.on('trigger-new-poll', () => {
-        triggerNewPoll();
     });
 
     socket.on('mute-player', (targetId) => {
@@ -346,20 +290,6 @@ io.on('connection', (socket) => {
     socket.on('unmute-player', (targetId) => {
         delete gameState.mutedPlayers[targetId];
         io.emit('state-update', gameState);
-    });
-
-    socket.on('update-adverts-library', (newAdverts) => {
-        if (Array.isArray(newAdverts)) {
-            gameState.adverts = newAdverts;
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('update-round-timer', ({ index, timer }) => {
-        if (gameState.playlist[index]) {
-            gameState.playlist[index].timer = parseInt(timer);
-            io.emit('state-update', gameState);
-        }
     });
 
     socket.on('add-round', (roundConfig) => {
@@ -386,78 +316,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    socket.on('add-minigame-round', async (config) => {
-        const count = parseInt(config.count || 5);
-        const rawItems = await generateAIQuestions(config.type, count);
-        let questions = [];
-
-        if (config.type === 'lingo') {
-            questions = rawItems.map(item => ({
-                gameType: 'lingo',
-                question: '🔤 LINGO: Guess 5-letter word! Hint: ' + (item.hint || 'Clue'),
-                answer: (item.word || 'SHARK').toUpperCase(),
-                options: [],
-                fastestPlayerId: null
-            }));
-        } else if (config.type === 'scramble') {
-            questions = rawItems.map(item => {
-                const ans = (item.word || 'BEATLES').toUpperCase();
-                const scrambled = item.scrambled || ans.split('').sort(() => 0.5 - Math.random()).join(' ');
-                const opts = item.options ? [...item.options].sort(() => 0.5 - Math.random()) : [ans, 'BAND', 'MUSIC', 'STAGE'].sort(() => 0.5 - Math.random());
-                return {
-                    gameType: 'scramble',
-                    question: '🔀 WORD SCRAMBLE: [ ' + scrambled + ' ]',
-                    answer: ans,
-                    options: opts,
-                    fastestPlayerId: null
-                };
-            });
-        } else if (config.type === 'higher-lower') {
-            questions = rawItems.map(item => ({
-                gameType: 'higher-lower',
-                question: '⬆️ HIGHER OR LOWER: ' + (item.fact || 'Statistic'),
-                answer: item.answer || 'Higher',
-                options: ['Higher', 'Lower'],
-                fastestPlayerId: null
-            }));
-        }
-
-        if (questions.length > 0) {
-            gameState.playlist.push({
-                name: config.name || '🎮 AI Game Show: ' + config.type.toUpperCase(),
-                genre: 'AI Gen (' + config.type + ')',
-                timer: 15,
-                questions: questions
-            });
-            io.emit('state-update', gameState);
-            socket.emit('minigame-added', { success: true });
-        } else {
-            socket.emit('minigame-added', { success: false, error: 'AI returned empty data. Please try again.' });
-        }
-    });
-
-    socket.on('update-welcome-header', (headerText) => {
-        gameState.welcomeHeader = sanitizeText(headerText);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-venue-details', (details) => {
-        gameState.venueDetails = sanitizeText(details);
-        io.emit('state-update', gameState);
-    });
-
-    socket.on('update-emojis', (emojisArray) => {
-        if (Array.isArray(emojisArray)) {
-            gameState.customEmojis = emojisArray;
-            io.emit('state-update', gameState);
-        }
-    });
-
-    socket.on('player-reaction', (emoji) => {
-        const cleanEmoji = sanitizeText(emoji);
-        if (cleanEmoji) io.emit('trigger-floating-emoji', cleanEmoji);
-    });
-
     socket.on('player-chat', (message) => {
         if (gameState.mutedPlayers[socket.id]) return;
         const player = gameState.scores[socket.id];
@@ -470,28 +328,6 @@ io.on('connection', (socket) => {
         const cleanMsg = sanitizeText(message);
         if (!cleanMsg) return;
         io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
-    });
-
-    socket.on('broadcast-advert-screen', (adData) => {
-        gameState.activeScreenAdvert = adData;
-        io.emit('state-update', gameState);
-        io.emit('broadcast-advert-screen', adData);
-    });
-
-    socket.on('hide-advert-screen', () => {
-        gameState.activeScreenAdvert = null;
-        io.emit('state-update', gameState);
-        io.emit('hide-advert-screen');
-    });
-
-    socket.on('broadcast-advert-mobile', (adData) => {
-        gameState.activeMobileAdvert = adData;
-        io.emit('broadcast-advert-mobile', adData);
-    });
-
-    socket.on('hide-advert-mobile', () => {
-        gameState.activeMobileAdvert = null;
-        io.emit('hide-advert-mobile');
     });
 
     socket.on('move-round', ({ index, direction }) => {
@@ -530,6 +366,23 @@ io.on('connection', (socket) => {
         gameState.timerMax = getCurrentRoundTimer();
         gameState.timer = gameState.timerMax;
         
+        // Auto-generate music bingo cards if starting a music bingo round
+        const activeRound = gameState.playlist[gameState.currentRoundIndex];
+        if (activeRound && activeRound.isMusicBingo) {
+            const trackPool = activeRound.trackPool || [];
+            Object.keys(gameState.scores).forEach(socketId => {
+                let shuffledTracks = [...trackPool].sort(() => 0.5 - Math.random());
+                let cardTracks = shuffledTracks.slice(0, 24);
+                cardTracks.splice(12, 0, '★ FREE SPACE ★');
+                gameState.playerBingoCards[socketId] = {
+                    card: cardTracks,
+                    marked: Array(25).fill(false)
+                };
+                gameState.playerBingoCards[socketId].marked[12] = true;
+            });
+            io.emit('music-bingo-cards-assigned', gameState.playerBingoCards);
+        }
+
         Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
         io.emit('state-update', gameState);
         startQuestionTimer();
@@ -543,6 +396,23 @@ io.on('connection', (socket) => {
             gameState.status = 'QUESTION';
             gameState.timerMax = getCurrentRoundTimer();
             gameState.timer = gameState.timerMax;
+
+            const activeRound = gameState.playlist[gameState.currentRoundIndex];
+            if (activeRound && activeRound.isMusicBingo) {
+                const trackPool = activeRound.trackPool || [];
+                Object.keys(gameState.scores).forEach(socketId => {
+                    let shuffledTracks = [...trackPool].sort(() => 0.5 - Math.random());
+                    let cardTracks = shuffledTracks.slice(0, 24);
+                    cardTracks.splice(12, 0, '★ FREE SPACE ★');
+                    gameState.playerBingoCards[socketId] = {
+                        card: cardTracks,
+                        marked: Array(25).fill(false)
+                    };
+                    gameState.playerBingoCards[socketId].marked[12] = true;
+                });
+                io.emit('music-bingo-cards-assigned', gameState.playerBingoCards);
+            }
+
             Object.values(gameState.scores).forEach(p => p.hasAnsweredCurrent = false);
             triggerNewPoll();
             io.emit('state-update', gameState);
@@ -550,6 +420,20 @@ io.on('connection', (socket) => {
         } else {
             gameState.status = 'LEADERBOARD';
             io.emit('state-update', gameState);
+        }
+    });
+
+    // Mark tile handler for players tapping their digital bingo cards
+    socket.on('mark-bingo-tile', (index) => {
+        if (!gameState.playerBingoCards || !gameState.playerBingoCards[socket.id]) return;
+        let playerCard = gameState.playerBingoCards[socket.id];
+        
+        if (index >= 0 && index < 25) {
+            playerCard.marked[index] = !playerCard.marked[index];
+            if (checkBingoWin(playerCard.marked)) {
+                io.emit('bingo-winner', { name: gameState.scores[socket.id].name });
+            }
+            socket.emit('bingo-card-updated', playerCard);
         }
     });
 
@@ -581,10 +465,9 @@ io.on('connection', (socket) => {
         gameState.status = 'IDLE';
         gameState.currentRoundIndex = 0;
         gameState.currentQuestionIndex = 0;
-        gameState.activeScreenAdvert = null;
-        gameState.activeMobileAdvert = null;
         gameState.scores = {};
         gameState.mutedPlayers = {};
+        gameState.playerBingoCards = {};
         disconnectedPlayers = {};
         triggerNewPoll();
         io.emit('state-update', gameState);
