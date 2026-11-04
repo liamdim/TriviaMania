@@ -9,7 +9,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image and file uploads
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -143,39 +144,6 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to generate AI questions.' });
     }
 });
-
-// Playlist Import Route for Music Bingo
-app.post('/api/import-playlist', async (req, res) => {
-    const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
-
-    try {
-        let importedTracks = [
-            "Bohemian Rhapsody - Queen",
-            "Billie Jean - Michael Jackson",
-            "Like a Prayer - Madonna",
-            "Smells Like Teen Spirit - Nirvana",
-            "Hey Ya! - OutKast",
-            "Dancing Queen - ABBA",
-            "Mr. Brightside - The Killers",
-            "Superstition - Stevie Wonder",
-            "Wannabe - Spice Girls",
-            "Uptown Funk - Mark Ronson ft. Bruno Mars",
-            "Hotel California - Eagles",
-            "Don't Stop Believin' - Journey"
-        ];
-
-        res.json({ success: true, tracks: importedTracks });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to import playlist from link.' });
-    }
-});
-
-function getCurrentRoundTimer() {
-    const round = gameState.playlist[gameState.currentRoundIndex];
-    if (round && round.timer) return parseInt(round.timer);
-    return gameState.settings.questionTime || 15;
-}
 
 io.on('connection', (socket) => {
     socket.emit('state-update', gameState);
@@ -456,6 +424,12 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 });
+
+function getCurrentRoundTimer() {
+    const round = gameState.playlist[gameState.currentRoundIndex];
+    if (round && round.timer) return parseInt(round.timer);
+    return gameState.settings.questionTime || 15;
+}
 
 function startQuestionTimer() {
     if (timerInterval) clearInterval(timerInterval);
