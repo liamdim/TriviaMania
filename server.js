@@ -145,6 +145,42 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     }
 });
 
+// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER ---
+app.get('/api/load-categories', (req, res) => {
+    const catsDir = path.join(__dirname, 'categories');
+    
+    if (!fs.existsSync(catsDir)) {
+        fs.mkdirSync(catsDir, { recursive: true });
+        return res.json({ success: true, categories: [] });
+    }
+
+    fs.readdir(catsDir, (err, files) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: 'Could not read categories directory.' });
+        }
+
+        const categories = [];
+        files.forEach(file => {
+            if (path.extname(file).toLowerCase() === '.json') {
+                try {
+                    const filePath = path.join(catsDir, file);
+                    const content = fs.readFileSync(filePath, 'utf8');
+                    const parsed = JSON.parse(content);
+                    categories.push({
+                        filename: file,
+                        name: parsed.name || path.basename(file, '.json'),
+                        questions: parsed.questions || []
+                    });
+                } catch (e) {
+                    console.error(`Error parsing category file ${file}:`, e);
+                }
+            }
+        });
+
+        res.json({ success: true, categories });
+    });
+});
+
 io.on('connection', (socket) => {
     socket.emit('state-update', gameState);
 
@@ -229,7 +265,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // --- LOBBY & PROJECTOR TEXT UPDATES ---
     socket.on('update-projector-text', ({ header, details }) => {
         if (header !== undefined) gameState.welcomeHeader = sanitizeText(header);
         if (details !== undefined) gameState.venueDetails = sanitizeText(details);
@@ -253,7 +288,6 @@ io.on('connection', (socket) => {
         triggerNewPoll();
     });
 
-    // --- CUSTOM EMOJIS UPDATE (MAX 10) ---
     socket.on('update-custom-emojis', (emojis) => {
         if (Array.isArray(emojis) && emojis.length > 0) {
             gameState.customEmojis = emojis.slice(0, 10).map(e => sanitizeText(e));
@@ -261,7 +295,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ADVERTS STUDIO HANDLERS ---
     socket.on('save-new-advert', (adObj) => {
         if (adObj && (adObj.text || adObj.image)) {
             gameState.adverts.push({
