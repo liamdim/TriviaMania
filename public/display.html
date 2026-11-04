@@ -6,6 +6,7 @@
     <link rel="icon" href="data:,">
     <title>TriviaMania - Big Screen Projector</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --bg-color: #05050a;
@@ -18,12 +19,12 @@
             --text-muted: #8b9bb4;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); padding: 3rem; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; background-image: radial-gradient(circle at 50% 20%, #1a103c 0%, #05050a 80%); }
-        header { text-align: center; margin-bottom: 2rem; }
-        header h1 { color: var(--neon-blue); font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 0 0 20px rgba(0,243,255,0.4); }
-        header p { color: var(--text-muted); font-size: 1.5rem; }
-        .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .card { background: var(--panel-bg); border-radius: 16px; padding: 3rem; border: 2px solid rgba(0, 243, 255, 0.4); box-shadow: 0 12px 48px rgba(0,0,0,0.6); max-width: 900px; width: 100%; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 2.5rem; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; background-image: radial-gradient(circle at 50% 20%, #1a103c 0%, #05050a 80%); }
+        header { text-align: center; margin-bottom: 1.5rem; }
+        header h1 { color: var(--neon-blue); font-size: 2.8rem; margin-bottom: 0.3rem; text-shadow: 0 0 20px rgba(0,243,255,0.4); }
+        header p { color: var(--text-muted); font-size: 1.3rem; }
+        .main-stage { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .card { background: var(--panel-bg); border-radius: 16px; padding: 2.5rem; border: 2px solid rgba(0, 243, 255, 0.4); box-shadow: 0 12px 48px rgba(0,0,0,0.6); max-width: 1000px; width: 100%; text-align: center; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -35,8 +36,10 @@
 
     <div class="main-stage">
         <div id="projectorCard" class="card">
-            <h2 id="projectorTitle" style="color: var(--neon-yellow); font-size: 2.5rem; margin-bottom: 1.5rem;">Waiting for Host to Start...</h2>
-            <div id="projectorContent" style="font-size: 1.8rem; line-height: 1.5;">Scan the QR code on your tables or navigate to the player page to join!</div>
+            <h2 id="projectorTitle" style="color: var(--neon-yellow); font-size: 2.2rem; margin-bottom: 1rem;">Waiting for Host to Start...</h2>
+            <div id="projectorContent" style="font-size: 1.5rem; line-height: 1.4;">
+                <!-- Dynamically populated IDLE / LOBBY view -->
+            </div>
         </div>
     </div>
 
@@ -49,6 +52,7 @@
 
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
+        let qrInitialized = false;
 
         socket.on('state-update', (state) => {
             if (state.welcomeHeader) document.getElementById('welcomeHeaderDisplay').innerText = state.welcomeHeader;
@@ -73,27 +77,30 @@
             const content = document.getElementById('projectorContent');
 
             if (state.status === 'QUESTION' && state.playlist[state.currentRoundIndex]) {
+                qrInitialized = false;
                 const round = state.playlist[state.currentRoundIndex];
                 const q = round.questions[state.currentQuestionIndex];
                 if (q) {
                     title.innerText = `Question ${state.currentQuestionIndex + 1} (${state.timer}s)`;
                     content.innerHTML = `
-                        <p style="margin-bottom: 1.5rem; font-weight: bold;">${q.question}</p>
+                        <p style="margin-bottom: 1.5rem; font-weight: bold; font-size: 1.8rem;">${q.question}</p>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
-                            ${q.options.map((opt, idx) => `<div style="background: rgba(0,243,255,0.1); padding: 1rem; border-radius: 8px; border: 1px solid var(--neon-blue);">${['A','B','C','D'][idx]}. ${opt}</div>`).join('')}
+                            ${q.options.map((opt, idx) => `<div style="background: rgba(0,243,255,0.1); padding: 1.2rem; border-radius: 10px; border: 1px solid var(--neon-blue); font-size: 1.5rem;">${['A','B','C','D'][idx]}. ${opt}</div>`).join('')}
                         </div>
                     `;
                 }
             } else if (state.status === 'INTERMISSION') {
+                qrInitialized = false;
                 title.innerText = '☕ Round Complete!';
-                content.innerHTML = 'Check your mobile screens for current standings. Next round starting soon!';
+                content.innerHTML = '<p style="font-size: 1.8rem; color: var(--text-muted);">Check your mobile screens for current standings. Next round starting soon!</p>';
             } else if (state.status === 'LEADERBOARD') {
+                qrInitialized = false;
                 title.innerText = '🏆 Final Leaderboard';
                 const scores = Object.values(state.scores || {}).sort((a,b) => b.score - a.score);
                 content.innerHTML = `
-                    <div style="max-height: 350px; overflow-y: auto; text-align: left; width: 100%;">
+                    <div style="max-height: 400px; overflow-y: auto; text-align: left; width: 100%;">
                         ${scores.slice(0, 10).map((p, idx) => `
-                            <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.5rem;">
                                 <span>#${idx + 1} ${p.name}</span>
                                 <span style="color: var(--neon-green);">${p.score} pts</span>
                             </div>
@@ -101,10 +108,59 @@
                     </div>
                 `;
             } else {
-                title.innerText = 'Waiting for Host to Start...';
-                content.innerHTML = 'Scan the QR code on your tables or navigate to the player page to join!';
+                // IDLE / LOBBY SCREEN (Show QR, Fact, Poll)
+                title.innerText = '📱 Scan to Join & Play!';
+                
+                let factHTML = '';
+                if (state.lobbySettings && state.lobbySettings.showFact && state.lobbySettings.factText) {
+                    factHTML = `<div style="margin-top: 1.2rem; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.3); padding: 1rem; border-radius: 10px; font-size: 1.2rem; color: var(--neon-blue);">💡 ${state.lobbySettings.factText}</div>`;
+                }
+
+                let pollHTML = '';
+                if (state.lobbySettings && state.lobbySettings.showPoll && state.lobbySettings.pollQuestion) {
+                    pollHTML = `
+                        <div style="margin-top: 1rem; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px; text-align: left;">
+                            <strong style="color: var(--neon-yellow); font-size: 1.2rem; display: block; margin-bottom: 0.5rem;">📊 Practice Poll: ${state.lobbySettings.pollQuestion}</strong>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 1rem; color: var(--text-muted);">
+                                ${state.lobbySettings.pollOptions.map(opt => `<div style="background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px;">• ${opt}</div>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                content.innerHTML = `
+                    <div style="display: flex; gap: 2rem; align-items: center; justify-content: center;">
+                        <div style="background: white; padding: 15px; border-radius: 12px; display: inline-block;">
+                            <div id="projectorQR"></div>
+                        </div>
+                        <div style="text-align: left; max-width: 500px;">
+                            <p style="font-size: 1.4rem; color: white; margin-bottom: 0.5rem;">1. Point your phone camera at the QR code.</p>
+                            <p style="font-size: 1.4rem; color: white; margin-bottom: 0.5rem;">2. Enter your team name and join the arena.</p>
+                            <p id="projectorJoinUrl" style="color: var(--neon-yellow); font-size: 1rem; word-break: break-all; margin-top: 0.5rem;"></p>
+                        </div>
+                    </div>
+                    ${factHTML}
+                    ${pollHTML}
+                `;
+
+                // Render QR code once if not already rendered
+                const playerUrl = window.location.origin + '/player.html';
+                document.getElementById('projectorJoinUrl').innerText = playerUrl;
+                const qrContainer = document.getElementById('projectorQR');
+                if (qrContainer && qrContainer.innerHTML.trim() === '') {
+                    new QRCode(qrContainer, {
+                        text: playerUrl,
+                        width: 180,
+                        height: 180,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
             }
         });
     </script>
+    <!-- Include QR code library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
