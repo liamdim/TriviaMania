@@ -293,6 +293,44 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- ADVERTS STUDIO HANDLERS ---
+    socket.on('save-new-advert', (adObj) => {
+        if (adObj && (adObj.text || adObj.image)) {
+            gameState.adverts.push({
+                text: sanitizeText(adObj.text || ''),
+                image: adObj.image || ''
+            });
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('delete-advert', (index) => {
+        if (gameState.adverts && gameState.adverts[index]) {
+            gameState.adverts.splice(index, 1);
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('broadcast-advert-screen', (adData) => {
+        gameState.activeScreenAdvert = adData ? { text: sanitizeText(adData.text), image: adData.image || '' } : null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('broadcast-advert-mobile', (adData) => {
+        gameState.activeMobileAdvert = adData ? { text: sanitizeText(adData.text), image: adData.image || '' } : null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('hide-advert-screen', () => {
+        gameState.activeScreenAdvert = null;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('hide-advert-mobile', () => {
+        gameState.activeMobileAdvert = null;
+        io.emit('state-update', gameState);
+    });
+
     socket.on('add-custom-picture-round', (roundObj) => {
         if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
         gameState.playlist.push({
