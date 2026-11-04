@@ -206,7 +206,7 @@ io.on('connection', (socket) => {
     socket.on('submit-answer', ({ answer, timeRemaining }) => {
         if (gameState.status !== 'QUESTION') return;
         const player = gameState.scores[socket.id];
-        if (!player || player.hasAnsweredCurrent) return;
+        if (!player || player.hasAnsweredCurrent) return; // Prevent changing answers
 
         const currentRound = gameState.playlist[gameState.currentRoundIndex];
         const currentQ = currentRound?.questions[gameState.currentQuestionIndex];
@@ -232,11 +232,21 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // Mute / Unmute Player Handlers
+    socket.on('mute-player', (targetId) => {
+        gameState.mutedPlayers[targetId] = true;
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('unmute-player', (targetId) => {
+        delete gameState.mutedPlayers[targetId];
+        io.emit('state-update', gameState);
+    });
+
     socket.on('trigger-new-poll', () => { triggerNewPoll(); });
     socket.on('hide-poll', () => { gameState.lobbySettings.showPoll = false; io.emit('state-update', gameState); });
     socket.on('trigger-new-fact', () => { generateNewFact(); });
 
-    // Custom Emoji Reactions Update Handler
     socket.on('update-custom-emojis', (emojis) => {
         if (Array.isArray(emojis) && emojis.length > 0) {
             gameState.customEmojis = emojis.slice(0, 10).map(e => sanitizeText(e));
@@ -245,6 +255,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('player-chat', (message) => {
+        if (gameState.mutedPlayers[socket.id]) return; // Block muted players
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
         const cleanMsg = sanitizeText(message);
@@ -384,7 +395,7 @@ io.on('connection', (socket) => {
     socket.on('next-question', () => { advanceToNextQuestion(); });
     socket.on('stop-game', () => { gameState.status = 'PAUSED'; io.emit('state-update', gameState); });
     socket.on('restart-game', () => { gameState.status = 'IDLE'; gameState.currentRoundIndex = 0; gameState.currentQuestionIndex = 0; io.emit('state-update', gameState); });
-    socket.on('stop-reset', () => { gameState.status = 'IDLE'; gameState.currentRoundIndex = 0; gameState.currentQuestionIndex = 0; gameState.scores = {}; io.emit('state-update', gameState); });
+    socket.on('stop-reset', () => { gameState.status = 'IDLE'; gameState.currentRoundIndex = 0; gameState.currentQuestionIndex = 0; gameState.scores = {}; gameState.mutedPlayers = {}; io.emit('state-update', gameState); });
 });
 
 function startQuestionTimer() {
