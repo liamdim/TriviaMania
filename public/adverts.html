@@ -65,35 +65,35 @@
     <script>
         const socket = io({ transports: ['websocket', 'polling'] });
         let advertsCache = [];
-        let uploadedImageBase64 = '';
 
-        // Convert uploaded image file to Base64 string for storage
-        document.getElementById('adImageFile').onchange = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(uploadEvent) {
-                uploadedImageBase64 = uploadEvent.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        function saveNewAdvert() {
+        async function saveNewAdvert() {
             const text = document.getElementById('adTextInput').value.trim();
-            if (!text && !uploadedImageBase64) {
+            const fileInput = document.getElementById('adImageFile');
+            let imageBase64 = '';
+
+            // Read file on-demand with async/await to prevent race conditions
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                imageBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            if (!text && !imageBase64) {
                 alert('Please enter text or upload an image for the advert.');
                 return;
             }
 
             socket.emit('save-new-advert', {
                 text: text,
-                image: uploadedImageBase64
+                image: imageBase64
             });
 
             // Reset form
             document.getElementById('adTextInput').value = '';
-            document.getElementById('adImageFile').value = '';
-            uploadedImageBase64 = '';
+            fileInput.value = '';
             alert('Advert saved successfully!');
         }
 
