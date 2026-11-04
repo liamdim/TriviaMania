@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image and file uploads
+    maxHttpBufferSize: 50 * 1024 * 1024
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -59,6 +59,9 @@ let gameState = {
 
 let timerInterval = null;
 let disconnectedPlayers = {};
+
+// Keep track of used question indices per category filename to prevent repeats until pool is exhausted
+let categoryHistory = {};
 
 function triggerNewPoll() {
     const randomPoll = samplePolls[Math.floor(Math.random() * samplePolls.length)];
@@ -115,7 +118,7 @@ function editDistance(s1, s2) {
     return costs[s2.length];
 }
 
-// --- AI QUIZ GENERATOR ENDPOINT (Updated to gemini-3.8-flash) ---
+// --- AI QUIZ GENERATOR ENDPOINT ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
     
@@ -149,7 +152,6 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     }
 });
 
-// --- PARSE RAW TEXT FILE INTO QUESTIONS ARRAY ---
 function parseRawTextQuestions(text) {
     const lines = text.split(/\r?\n/);
     const questions = [];
@@ -174,7 +176,7 @@ function parseRawTextQuestions(text) {
     return questions;
 }
 
-// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER (Supports both JSON and Raw Text Files) ---
+// --- LOAD LOCAL CATEGORIES ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(catsDir)) {
@@ -205,7 +207,6 @@ app.get('/api/load-categories', (req, res) => {
                     let categoryName = file.replace(/-/g, ' ').toUpperCase();
 
                     try {
-                        // Try parsing as JSON first
                         const parsed = JSON.parse(content);
                         if (Array.isArray(parsed)) {
                             questionsArr = parsed;
@@ -216,7 +217,6 @@ app.get('/api/load-categories', (req, res) => {
                             questionsArr = parsed.data;
                         }
                     } catch (jsonErr) {
-                        // If it fails JSON parse, parse it as a raw text file (#Q format)
                         questionsArr = parseRawTextQuestions(content);
                     }
 
@@ -388,14 +388,50 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // --- ADD ROUND WITH NON-REPEATING QUESTION SELECTION & TIMER ---
     socket.on('add-custom-picture-round', (roundObj) => {
         if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
+
+        const fileKey = roundObj.filename || roundObj.name;
+        if (!categoryHistory[fileKey]) {
+            categoryHistory[fileKey] = [];
+        }
+
+        let allQuestions = [...roundObj.questions];
+        let usedIndices = categoryHistory[fileKey];
+
+        // If all questions have been used, reset tracking pool
+        if (usedIndices.length >= allQuestions.length) {
+            usedIndices = [];
+            categoryHistory[fileKey] = [];
+        }
+
+        // Filter out already used questions
+        let availableIndices = allQuestions
+            .map((_, idx) => idx)
+            .filter(idx => !usedIndices.includes(idx));
+
+        // Shuffle available indices
+        availableIndices.sort(() => Math.random() - 0.5);
+
+        // Determine how many questions to pick (5, 10, 15, 20, or all available)
+        const requestedCount = parseInt(roundObj.questionCount) || 10;
+        const countToPick = Math.min(requestedCount, availableIndices.length);
+
+        const chosenIndices = availableIndices.slice(0, countToPick);
+        
+        // Mark these indices as used
+        categoryHistory[fileKey].push(...chosenIndices);
+
+        const selectedQuestions = chosenIndices.map(idx => allQuestions[idx]);
+
         gameState.playlist.push({
             name: roundObj.name || '🖼️ Custom Round',
             genre: roundObj.genre || 'Custom Round',
-            timer: roundObj.timer || 20,
-            questions: roundObj.questions
+            timer: parseInt(roundObj.timer) || 15,
+            questions: selectedQuestions
         });
+
         io.emit('state-update', gameState);
     });
 
