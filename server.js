@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 50 * 1024 * 1024
+    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image and file uploads
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -149,7 +149,7 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     }
 });
 
-// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER ---
+// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER (Extension-agnostic) ---
 app.get('/api/load-categories', (req, res) => {
     const catsDir = path.join(__dirname, 'categories');
     
@@ -165,13 +165,16 @@ app.get('/api/load-categories', (req, res) => {
 
         const categories = [];
         files.forEach(file => {
-            if (path.extname(file).toLowerCase() === '.json') {
-                try {
-                    const filePath = path.join(catsDir, file);
+            if (file.startsWith('.')) return;
+
+            try {
+                const filePath = path.join(catsDir, file);
+                const stats = fs.statSync(filePath);
+                
+                if (stats.isFile()) {
                     const content = fs.readFileSync(filePath, 'utf8');
                     const parsed = JSON.parse(content);
                     
-                    // Support different JSON structures (array of questions or object with questions)
                     let questionsArr = [];
                     if (Array.isArray(parsed)) {
                         questionsArr = parsed;
@@ -183,12 +186,12 @@ app.get('/api/load-categories', (req, res) => {
 
                     categories.push({
                         filename: file,
-                        name: parsed.name || parsed.title || path.basename(file, '.json'),
+                        name: parsed.name || parsed.title || file.replace(/-/g, ' ').toUpperCase(),
                         questions: questionsArr
                     });
-                } catch (e) {
-                    console.error(`Error parsing category file ${file}:`, e);
                 }
+            } catch (e) {
+                console.error(`Error parsing category file ${file}:`, e);
             }
         });
 
@@ -347,7 +350,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // --- ADD CUSTOM ROUND / MINI GAME TO QUEUE ---
     socket.on('add-custom-picture-round', (roundObj) => {
         if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
         gameState.playlist.push({
