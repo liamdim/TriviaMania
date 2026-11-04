@@ -68,8 +68,22 @@ let gameState = {
     settings: { questionTime: 15 }
 };
 
+// Auto-load playlist savegame if it exists
+const saveFile = path.join(__dirname, 'savegame.json');
+if (fs.existsSync(saveFile)) {
+    try {
+        const saved = JSON.parse(fs.readFileSync(saveFile, 'utf8'));
+        if (saved.playlist) gameState.playlist = saved.playlist;
+    } catch(e) {}
+}
+
+function persistGameState() {
+    try {
+        fs.writeFileSync(saveFile, JSON.stringify({ playlist: gameState.playlist }, null, 2));
+    } catch(e) {}
+}
+
 let timerInterval = null;
-let disconnectedPlayers = {};
 let categoryHistory = {};
 
 function triggerNewPoll() {
@@ -103,15 +117,13 @@ function sanitizeText(text) {
     return clean;
 }
 
-// --- ROBUST AI QUIZ GENERATOR ENDPOINT WITH AUTO-RETRY ---
+// --- AI QUIZ GENERATOR ENDPOINT ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
-    
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(400).json({ success: false, error: 'GEMINI_API_KEY is not set on the server.' });
         }
-
         const prompt = `Generate a ${difficulty} difficulty pub trivia round about "${topic}" containing exactly ${count} questions.
         You MUST format your response strictly as plain text using the following format for each question, with no extra conversational filler or markdown code blocks:
         
@@ -128,29 +140,21 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
 
         for (let modelName of modelsToTry) {
             try {
-                response = await ai.models.generateContent({
-                    model: modelName,
-                    contents: prompt
-                });
+                response = await ai.models.generateContent({ model: modelName, contents: prompt });
                 if (response && response.text) break;
             } catch (modelErr) {
-                console.warn(`Model ${modelName} failed or busy, trying next...`);
                 lastError = modelErr;
             }
         }
 
-        if (!response || !response.text) {
-            throw lastError || new Error('All Gemini models are currently busy. Please try again in a moment.');
-        }
-
+        if (!response || !response.text) throw lastError || new Error('All Gemini models busy.');
         res.json({ success: true, raw: response.text });
     } catch (err) {
-        console.error('AI Generation Error:', err);
-        res.status(500).json({ success: false, error: 'AI server is experiencing high demand (503). Please click Generate again in a few seconds!' });
+        res.status(500).json({ success: false, error: 'AI server is experiencing high demand (503). Please try again!' });
     }
 });
 
-// --- LOAD LOCAL CATEGORIES (JSON & Raw Text Support) ---
+// --- LOAD LOCAL CATEGORIES ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(catsDir)) catsDir = path.join(process.cwd(), 'categories');
@@ -160,7 +164,7 @@ app.get('/api/load-categories', (req, res) => {
     }
 
     fs.readdir(catsDir, (err, files) => {
-        if (err) return res.status(500).json({ success: false, error: 'Could not read categories directory.' });
+        if (err) return res.status(500).json({ success: false, error: 'Could not read categories.' });
         const categories = [];
         files.forEach(file => {
             if (file.startsWith('.')) return;
@@ -235,9 +239,24 @@ io.on('connection', (socket) => {
     socket.on('hide-poll', () => { gameState.lobbySettings.showPoll = false; io.emit('state-update', gameState); });
     socket.on('trigger-new-fact', () => { generateNewFact(); });
 
+    // --- CHAT SYSTEM HANDLERS ---
+    socket.on('player-chat', (message) => {
+        const player = gameState.scores[socket.id];
+        const name = player ? player.name : 'Player';
+        const cleanMsg = sanitizeText(message);
+        if (cleanMsg) {
+            gameState.chatHistory.push({ name, text: cleanMsg });
+            if (gameState.chatHistory.length > 50) gameState.chatHistory.shift();
+            io.emit('chat-message', { name, text: cleanMsg });
+        }
+    });
+
     socket.on('host-chat-broadcast', (message) => {
         const cleanMsg = sanitizeText(message);
-        if (cleanMsg) io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
+        if (cleanMsg) {
+            gameState.chatHistory.push({ name: 'HOST 📢', text: cleanMsg });
+            io.emit('chat-message', { name: 'HOST 📢', text: cleanMsg });
+        }
     });
 
     socket.on('add-custom-picture-round', (roundObj) => {
@@ -256,6 +275,7 @@ io.on('connection', (socket) => {
             timer: parseInt(roundObj.timer) || 15,
             questions: picked.map(i => allQ[i])
         });
+        persistGameState();
         io.emit('state-update', gameState);
     });
 
@@ -267,6 +287,29 @@ io.on('connection', (socket) => {
             timer: miniGameObj.timer || 15,
             questions: miniGameObj.questions
         });
+        persistGameState();
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('move-round', ({ index, direction }) => {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex >= 0 && targetIndex < gameState.playlist.length) {
+            const item = gameState.playlist.splice(index, 1)[0];
+            gameState.playlist.splice(targetIndex, 0, item);
+            persistGameState();
+            io.emit('state-update', gameState);
+        }
+    });
+
+    socket.on('delete-round', (index) => {
+        gameState.playlist.splice(index, 1);
+        persistGameState();
+        io.emit('state-update', gameState);
+    });
+
+    socket.on('clear-playlist', () => {
+        gameState.playlist = [];
+        persistGameState();
         io.emit('state-update', gameState);
     });
 
