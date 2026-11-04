@@ -76,181 +76,27 @@
             alert('Fast Fingers added to your live trivia queue!');
         }
 
-In this step, we will update `public/index.html` to include a navigation link directly to your Mini-Games Studio.
-
-### 2. Updated Code for `public/index.html` (Host Dashboard)
-
-Replace your entire **`public/index.html`** file with this complete version:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:,">
-    <title>TriviaMania - Host Control Dashboard</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        :root {
-            --bg-color: #05050a;
-            --panel-bg: rgba(15, 23, 42, 0.95);
-            --neon-blue: #00f3ff;
-            --neon-green: #00ff66;
-            --neon-yellow: #ffee00;
-            --neon-red: #ff0055;
-            --text: #ffffff;
-            --text-muted: #8b9bb4;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text); padding: 2rem; min-height: 100vh; background-image: radial-gradient(circle at 50% 10%, #1a103c 0%, #05050a 85%); }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
-        header h1 { color: var(--neon-blue); font-size: 1.8rem; }
-        .nav-links { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .nav-links a { color: var(--neon-yellow); text-decoration: none; font-weight: bold; background: rgba(255,238,0,0.1); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid rgba(255,238,0,0.3); }
-        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 1200px; margin: 0 auto; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        .card h3 { color: var(--neon-blue); margin-bottom: 1rem; font-size: 1.2rem; }
-        button { padding: 0.75rem 1.2rem; border-radius: 8px; border: none; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
-        button:hover { filter: brightness(1.2); }
-        .btn-green { background: linear-gradient(135deg, #00aa44, var(--neon-green)); color: #000; }
-        .btn-blue { background: linear-gradient(135deg, #0077ff, var(--neon-blue)); color: white; }
-        .btn-red { background: linear-gradient(135deg, #aa0033, var(--neon-red)); color: white; }
-        .btn-yellow { background: linear-gradient(135deg, #aa8800, var(--neon-yellow)); color: #000; }
-        input[type="text"] { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; margin-bottom: 0.75rem; }
-        .playlist-item { background: rgba(5,10,20,0.8); border: 1px solid rgba(0,243,255,0.2); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>🎮 TriviaMania - Host Control Dashboard</h1>
-        <div class="nav-links">
-            <a href="/builder.html">📝 Quiz Builder</a>
-            <a href="/minigames.html">🎮 Mini-Games Studio</a>
-            <a href="/adverts.html">📢 Adverts Manager</a>
-            <a href="/display.html" target="_blank">📺 Big Screen Projector</a>
-        </div>
-    </header>
-
-    <div class="container">
-        <!-- LIVE GAME CONTROLS -->
-        <div class="card">
-            <h3>⚡ Live Game Controls</h3>
-            <p style="margin-bottom: 0.5rem; color: var(--text-muted);">Current Status: <strong id="gameStatusDisplay" style="color: var(--neon-yellow);">IDLE</strong></p>
-            <p style="margin-bottom: 1rem; color: var(--text-muted);">Current Round / Question: <strong id="roundProgressDisplay" style="color: var(--neon-blue);">None</strong></p>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
-                <button class="btn-green" onclick="socket.emit('start-round')">▶ Start Game / Round</button>
-                <button class="btn-blue" onclick="socket.emit('next-question')">⏭ Next Question</button>
-                <button class="btn-yellow" onclick="socket.emit('start-next-round')">⏩ Next Round</button>
-                <button class="btn-red" onclick="socket.emit('stop-game')">⏸ Pause Game</button>
-            </div>
-            
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <button class="btn-blue" style="flex: 1;" onclick="socket.emit('trigger-new-poll')">📊 Open Poll</button>
-                <button class="btn-red" style="flex: 1;" onclick="socket.emit('hide-poll')">❌ Hide Poll</button>
-            </div>
-            <button class="btn-red" style="width: 100%;" onclick="if(confirm('Full reset game?')) socket.emit('stop-reset')">🔄 Full Reset</button>
-        </div>
-
-        <!-- PLAYLIST QUEUE -->
-        <div class="card">
-            <h3>🎶 Active Trivia Playlist Queue</h3>
-            <div id="playlistContainer" style="max-height: 220px; overflow-y: auto; margin-bottom: 1rem;">
-                <p style="color: var(--text-muted);">Playlist is empty. Add rounds from Quiz Builder or Mini-Games!</p>
-            </div>
-            <button class="btn-red" style="padding: 0.5rem; font-size: 0.85rem;" onclick="socket.emit('clear-playlist')">🗑️ Clear Entire Queue</button>
-        </div>
-
-        <!-- PROJECTOR & LOBBY STUDIO -->
-        <div class="card">
-            <h3>📺 Projector & Lobby Settings</h3>
-            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Welcome Header</label>
-            <input type="text" id="welcomeHeaderInput" placeholder="Welcome header...">
-            
-            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Venue Details / Subtext</label>
-            <input type="text" id="venueDetailsInput" placeholder="Venue details...">
-            <button class="btn-blue" style="padding: 0.5rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="updateProjectorText()">💾 Save Projector Text</button>
-
-            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Random Fact Display</label>
-            <div id="currentFactDisplay" style="background: rgba(0,0,0,0.4); padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; color: var(--neon-blue); margin-bottom: 0.4rem;">Loading fact...</div>
-            <button class="btn-blue" style="padding: 0.4rem; font-size: 0.85rem;" onclick="socket.emit('trigger-new-fact')">💡 New Fact</button>
-        </div>
-
-        <!-- HOST CHAT BROADCAST & CONNECTED TEAMS -->
-        <div class="card">
-            <h3>📢 Host Chat Broadcast</h3>
-            <input type="text" id="hostChatInput" placeholder="Broadcast message to all players..." onkeypress="if(event.key==='Enter') sendHostBroadcast()">
-            <button class="btn-green" style="padding: 0.5rem; font-size: 0.85rem; margin-bottom: 1rem;" onclick="sendHostBroadcast()">Broadcast Message</button>
-
-            <h3 style="font-size: 1rem;">👥 Connected Teams (<span id="playerCountDisplay">0</span>)</h3>
-            <div id="playersListContainer" style="max-height: 120px; overflow-y: auto;">
-                <p style="color: var(--text-muted);">No teams connected yet.</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const socket = io({ transports: ['websocket', 'polling'] });
-
-        socket.on('state-update', (state) => {
-            document.getElementById('gameStatusDisplay').innerText = state.status;
-            document.getElementById('playerCountDisplay').innerText = Object.keys(state.scores || {}).length;
-
-            if (state.welcomeHeader && document.activeElement !== document.getElementById('welcomeHeaderInput')) {
-                document.getElementById('welcomeHeaderInput').value = state.welcomeHeader;
-            }
-            if (state.venueDetails && document.activeElement !== document.getElementById('venueDetailsInput')) {
-                document.getElementById('venueDetailsInput').value = state.venueDetails;
-            }
-            if (state.lobbySettings && state.lobbySettings.factText) {
-                document.getElementById('currentFactDisplay').innerText = state.lobbySettings.factText;
-            }
-
-            const plContainer = document.getElementById('playlistContainer');
-            if (state.playlist && state.playlist.length > 0) {
-                plContainer.innerHTML = state.playlist.map((round, idx) => `
-                    <div class="playlist-item">
-                        <div>
-                            <strong style="color: var(--neon-blue);">${idx + 1}. ${round.name}</strong>
-                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block;">${round.questions.length} Qs | Timer: ${round.timer}s</span>
-                        </div>
-                        <div style="display: flex; gap: 0.3rem;">
-                            <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('move-round', {index: ${idx}, direction: 'up'})">▲</button>
-                            <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('move-round', {index: ${idx}, direction: 'down'})">▼</button>
-                            <button class="btn-red" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="socket.emit('delete-round', ${idx})">❌</button>
-                        </div>
-                    </div>
-                `).join('');
-                document.getElementById('roundProgressDisplay').innerText = `Round ${state.currentRoundIndex + 1} of ${state.playlist.length}`;
-            } else {
-                plContainer.innerHTML = '<p style="color: var(--text-muted);">Playlist is empty. Add rounds from Quiz Builder or Mini-Games!</p>';
-                document.getElementById('roundProgressDisplay').innerText = 'None';
-            }
-
-            const pContainer = document.getElementById('playersListContainer');
-            const scores = Object.entries(state.scores || {});
-            pContainer.innerHTML = scores.length > 0 ? scores.map(([id, p]) => `
-                <div style="display: flex; justify-content: space-between; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 3px; font-size: 0.85rem;">
-                    <span>${p.name}</span>
-                    <span style="color: var(--neon-green); font-weight: bold;">${p.score} pts</span>
-                </div>
-            `).join('') : '<p style="color: var(--text-muted);">No teams connected yet.</p>';
-        });
-
-        function updateProjectorText() {
-            const header = document.getElementById('welcomeHeaderInput').value;
-            const details = document.getElementById('venueDetailsInput').value;
-            socket.emit('update-projector-text', { header, details });
-            alert('Projector text updated!');
+        function pushGuessTheYear() {
+            socket.emit('add-mini-game-round', {
+                name: '📅 Guess the Year Round',
+                timer: 15,
+                questions: [
+                    { question: 'In what year was the first iPhone released?', options: ['2005', '2007', '2009', '2011'], answer: '2007' },
+                    { question: 'In what year did the Titanic sink?', options: ['1910', '1912', '1915', '1920'], answer: '1912' }
+                ]
+            });
+            alert('Guess the Year added to your live trivia queue!');
         }
 
-        function sendHostBroadcast() {
-            const input = document.getElementById('hostChatInput');
-            if (!input.value.trim()) return;
-            socket.emit('host-chat-broadcast', input.value.trim());
-            input.value = '';
-            alert('Broadcast sent!');
+        function pushHigherLower() {
+            socket.emit('add-mini-game-round', {
+                name: '📈 Higher or Lower Round',
+                timer: 15,
+                questions: [
+                    { question: 'Did Avatar (2009) make more or less than Avengers: Endgame at the box office?', options: ['More', 'Less'], answer: 'More' }
+                ]
+            });
+            alert('Higher or Lower added to your live trivia queue!');
         }
     </script>
 </body>
