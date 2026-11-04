@@ -22,8 +22,7 @@
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(10, 15, 30, 0.9); padding: 1rem 2rem; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.3); }
         header h1 { color: var(--neon-blue); font-size: 1.5rem; }
         .container { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); grid-column: span 1; }
-        .card.full { grid-column: span 2; }
+        .card { background: var(--panel-bg); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
         .card h3 { color: var(--neon-blue); margin-bottom: 1rem; }
         textarea, input[type="file"] { width: 100%; background: rgba(5,10,20,0.9); border: 1px solid rgba(0,243,255,0.4); color: white; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; margin-bottom: 0.75rem; }
         button { padding: 0.75rem 1.2rem; border-radius: 8px; border: none; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
@@ -89,11 +88,7 @@
                 return;
             }
 
-            socket.emit('save-new-advert', {
-                text: text,
-                image: imageBase64
-            });
-
+            socket.emit('save-new-advert', { text: text, image: imageBase64 });
             document.getElementById('adTextInput').value = '';
             fileInput.value = '';
             alert('Advert saved successfully!');
@@ -103,27 +98,22 @@
             if (state.adverts) {
                 advertsCache = state.adverts;
                 const container = document.getElementById('advertsLibraryContainer');
-                
-                if (state.adverts.length > 0) {
-                    container.innerHTML = state.adverts.map((ad, idx) => `
-                        <div class="ad-item">
-                            <div>
-                                <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
-                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">${ad.text ? ad.text.substring(0, 50) + '...' : '[Image Advert]'}</p>
-                                ${ad.image ? '<span style="color: var(--neon-green); font-size: 0.75rem;">🖼️ Has Image</span>' : ''}
-                            </div>
-                            <div style="display: flex; gap: 0.4rem; flex-direction: column;">
-                                <div style="display: flex; gap: 0.3rem;">
-                                    <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="broadcastAd(${idx}, 'screen')">📺 Screen</button>
-                                    <button class="btn-green" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="broadcastAd(${idx}, 'mobile')">📱 Mobile</button>
-                                </div>
-                                <button class="btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="socket.emit('delete-advert', ${idx})">❌ Delete</button>
-                            </div>
+                container.innerHTML = state.adverts.length > 0 ? state.adverts.map((ad, idx) => `
+                    <div class="ad-item">
+                        <div>
+                            <strong style="color: var(--neon-blue);">Advert #${idx + 1}</strong>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">${ad.text ? ad.text.substring(0, 50) + '...' : '[Image Advert]'}</p>
+                            ${ad.image ? '<span style="color: var(--neon-green); font-size: 0.75rem;">🖼️ Has Image</span>' : ''}
                         </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<p style="color: var(--text-muted);">No saved adverts found.</p>';
-                }
+                        <div style="display: flex; gap: 0.4rem; flex-direction: column;">
+                            <div style="display: flex; gap: 0.3rem;">
+                                <button class="btn-blue" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="broadcastAd(${idx}, 'screen')">📺 Screen</button>
+                                <button class="btn-green" style="padding: 0.3rem 0.5rem; font-size: 0.75rem;" onclick="broadcastAd(${idx}, 'mobile')">📱 Mobile</button>
+                            </div>
+                            <button class="btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="socket.emit('delete-advert', ${idx})">❌ Delete</button>
+                        </div>
+                    </div>
+                `).join('') : '<p style="color: var(--text-muted);">No saved adverts found.</p>';
             }
         });
 
