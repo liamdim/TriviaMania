@@ -115,7 +115,7 @@ function editDistance(s1, s2) {
     return costs[s2.length];
 }
 
-// --- AI QUIZ GENERATOR ENDPOINT ---
+// --- AI QUIZ GENERATOR ENDPOINT (Updated to gemini-3.8-flash) ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
     
@@ -137,7 +137,7 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
         Ensure all questions make complete factual sense, have distinct answers, and avoid ambiguity.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: prompt
         });
 
@@ -149,7 +149,32 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     }
 });
 
-// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER (Robust path resolution) ---
+// --- PARSE RAW TEXT FILE INTO QUESTIONS ARRAY ---
+function parseRawTextQuestions(text) {
+    const lines = text.split(/\r?\n/);
+    const questions = [];
+    let currentQ = null;
+
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+        if (line.startsWith('#Q')) {
+            if (currentQ) questions.push(currentQ);
+            currentQ = { question: line.replace('#Q', '').trim(), options: [], answer: '' };
+        } else if (line.startsWith('^')) {
+            if (currentQ) currentQ.answer = line.replace('^', '').trim();
+        } else if (/^[A-D]\s/.test(line) || /^[A-D]\./.test(line)) {
+            if (currentQ) {
+                const optText = line.replace(/^[A-D][\.\s]+/, '').trim();
+                currentQ.options.push(optText);
+            }
+        }
+    }
+    if (currentQ) questions.push(currentQ);
+    return questions;
+}
+
+// --- LOAD LOCAL CATEGORIES FROM "categories" FOLDER (Supports both JSON and Raw Text Files) ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(catsDir)) {
@@ -176,25 +201,35 @@ app.get('/api/load-categories', (req, res) => {
                 
                 if (stats.isFile()) {
                     const content = fs.readFileSync(filePath, 'utf8');
-                    const parsed = JSON.parse(content);
-                    
                     let questionsArr = [];
-                    if (Array.isArray(parsed)) {
-                        questionsArr = parsed;
-                    } else if (parsed.questions && Array.isArray(parsed.questions)) {
-                        questionsArr = parsed.questions;
-                    } else if (parsed.data && Array.isArray(parsed.data)) {
-                        questionsArr = parsed.data;
+                    let categoryName = file.replace(/-/g, ' ').toUpperCase();
+
+                    try {
+                        // Try parsing as JSON first
+                        const parsed = JSON.parse(content);
+                        if (Array.isArray(parsed)) {
+                            questionsArr = parsed;
+                        } else if (parsed.questions && Array.isArray(parsed.questions)) {
+                            questionsArr = parsed.questions;
+                            categoryName = parsed.name || parsed.title || categoryName;
+                        } else if (parsed.data && Array.isArray(parsed.data)) {
+                            questionsArr = parsed.data;
+                        }
+                    } catch (jsonErr) {
+                        // If it fails JSON parse, parse it as a raw text file (#Q format)
+                        questionsArr = parseRawTextQuestions(content);
                     }
 
-                    categories.push({
-                        filename: file,
-                        name: parsed.name || parsed.title || file.replace(/-/g, ' ').toUpperCase(),
-                        questions: questionsArr
-                    });
+                    if (questionsArr.length > 0) {
+                        categories.push({
+                            filename: file,
+                            name: categoryName,
+                            questions: questionsArr
+                        });
+                    }
                 }
             } catch (e) {
-                console.error(`Error parsing category file ${file}:`, e);
+                console.error(`Error processing category file ${file}:`, e);
             }
         });
 
