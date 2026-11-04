@@ -125,14 +125,17 @@
         }
 
         function loadCategoryToQueue(cat) {
+            if (!cat.questions || cat.questions.length === 0) {
+                alert('This category file has no valid questions.');
+                return;
+            }
             socket.emit('add-custom-picture-round', {
                 name: cat.name,
                 questions: cat.questions
             });
-            alert(`Successfully added "${cat.name}" to the trivia queue!`);
+            alert(`Successfully added "${cat.name}" (${cat.questions.length} questions) to the trivia queue!`);
         }
 
-        // Fetch categories on page load
         window.addEventListener('DOMContentLoaded', fetchLocalCategories);
 
         async function generateAIQuiz() {
@@ -161,7 +164,7 @@
                     parseRawTextToPreview(data.raw);
                     alert('AI questions generated successfully!');
                 } else {
-                    alert('Failed to generate questions. Please try again.');
+                    alert('Failed to generate questions: ' + (data.error || 'Unknown error'));
                 }
             } catch (err) {
                 alert('Error connecting to AI generation service.');
