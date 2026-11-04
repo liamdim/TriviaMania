@@ -31,14 +31,12 @@
         .btn-option:active { background: var(--neon-blue); color: #000; }
         .hidden { display: none !important; }
         
-        /* Compact Emoji Grid */
         .emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 0.25rem; }
-        .emoji-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(0,243,255,0.2); font-size: 1.25rem; padding: 0.3rem; text-align: center; border-radius: 6px; cursor: pointer; transition: 0.1s; }
+        .emoji-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(0,243,255,0.2); font-size: 1.25rem; padding: 0.3rem; text-align: center; border-radius: 6px; cursor: pointer; }
         .emoji-box:active { background: var(--neon-blue); transform: scale(0.95); }
 
         .chat-feed { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,243,255,0.2); border-radius: 6px; height: 90px; overflow-y: auto; padding: 6px; font-size: 0.8rem; margin-bottom: 0.4rem; color: var(--text-muted); }
         
-        /* Floating Emojis Animation */
         .floating-emoji { position: fixed; bottom: 20px; font-size: 2.2rem; animation: floatUp 2s ease-out forwards; z-index: 999; pointer-events: none; }
         @keyframes floatUp {
             0% { transform: translateY(0) scale(0.5); opacity: 1; }
@@ -51,8 +49,8 @@
         <!-- LOGIN SCREEN -->
         <div id="loginCard" class="card" style="margin-top: auto; margin-bottom: auto;">
             <h3>📱 Join TriviaMania</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Enter your team or player name to join the game!</p>
-            <input type="text" id="playerNameInput" placeholder="Team / Player Name..." onkeypress="if(event.key==='Enter') joinGame()">
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Enter your team name to join the game!</p>
+            <input type="text" id="playerNameInput" placeholder="Team Name..." onkeypress="if(event.key==='Enter') joinGame()">
             <button class="btn-green" onclick="joinGame()">🚀 Join Arena</button>
         </div>
 
@@ -74,7 +72,7 @@
                 <div id="answerFeedback" style="text-align: center; font-weight: bold; margin-top: 0.75rem; font-size: 1rem;"></div>
             </div>
 
-            <!-- WAITING / INTERMISSION & MOBILE LEADERBOARD -->
+            <!-- WAITING / INTERMISSION & LEADERBOARD -->
             <div id="waitingContainer" style="text-align: center; padding: 0.5rem 0;">
                 <h3 style="color: var(--neon-yellow); font-size: 1rem;" id="waitingTitle">⏳ Get Ready!</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;" id="waitingSubtext">You are in the waiting room. The host will start shortly.</p>
@@ -86,7 +84,7 @@
             </div>
         </div>
 
-        <!-- LOBBY POLL CARD (Hides automatically on quiz start) -->
+        <!-- LOBBY POLL CARD -->
         <div id="pollCard" class="card hidden">
             <h3 id="pollQuestionTitle" style="font-size: 0.95rem;">📊 Live Crowd Poll</h3>
             <div id="pollOptionsContainer"></div>
@@ -102,14 +100,14 @@
             </div>
         </div>
 
-        <!-- COMPACT EMOJI GRID UNDER CHAT -->
+        <!-- EMOJI GRID -->
         <div class="card" style="padding: 0.6rem;">
             <h3 style="font-size: 0.85rem; margin-bottom: 0.3rem; color: var(--text-muted);">Quick Reactions:</h3>
             <div id="emojiGridContainer" class="emoji-grid"></div>
         </div>
     </div>
 
-    <!-- MOBILE ADVERT OVERLAY POPUP -->
+    <!-- MOBILE ADVERT OVERLAY -->
     <div id="mobileAdOverlay" class="hidden" style="position: fixed; top: 10px; left: 10px; right: 10px; bottom: 10px; z-index: 1000; background: rgba(5,10,20,0.95); border: 2px solid var(--neon-blue); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem; text-align: center; border-radius: 12px;">
         <h3 style="color: var(--neon-yellow); margin-bottom: 0.75rem; font-size: 1.2rem;">📢 Special Announcement</h3>
         <div id="mobileAdContent" style="font-size: 0.95rem; margin-bottom: 1rem; max-height: 40vh; overflow-y: auto; color: white;"></div>
@@ -161,13 +159,12 @@
                 const lbList = document.getElementById('miniLeaderboardList');
                 lbList.innerHTML = scoresArr.length > 0 ? scoresArr.slice(0, 5).map((p, idx) => `
                     <div style="display: flex; justify-content: space-between; padding: 1px 0; ${p.name === myName ? 'color: var(--neon-green); font-weight: bold;' : ''}">
-                        <span>${idx + 1}. ${p.name}</span>
+                        <span>#${idx + 1} ${p.name}</span>
                         <span>${p.score} pts</span>
                     </div>
                 `).join('') : 'No scores recorded yet.';
             }
 
-            // Poll visibility (shows when host triggers it, hides when quiz starts)
             if (state.lobbySettings && state.lobbySettings.showPoll) {
                 document.getElementById('pollCard').classList.remove('hidden');
                 document.getElementById('pollQuestionTitle').innerText = '📊 ' + state.lobbySettings.pollQuestion;
@@ -258,11 +255,6 @@
             if (!val) return;
             submitAnswer(val);
         }
-
-        socket.on('answer-result', (res) => {
-            const fb = document.getElementById('answerFeedback');
-            fb.innerHTML = res.correct ? `<span style="color: var(--neon-green);">✅ Correct! +${res.points} pts</span>` : `<span style="color: var(--neon-red);">❌ Incorrect. Correct was: ${res.correctAnswer}</span>`;
-        });
 
         function votePoll(option) {
             hasVotedCurrentPoll = true;
