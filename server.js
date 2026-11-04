@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image and file uploads
+    maxHttpBufferSize: 50 * 1024 * 1024
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -120,6 +120,10 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
     
     try {
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(400).json({ success: false, error: 'GEMINI_API_KEY is not set on the server.' });
+        }
+
         const prompt = `Generate a ${difficulty} difficulty pub trivia round about "${topic}" containing exactly ${count} questions.
         You MUST format your response strictly as plain text using the following format for each question, with no extra conversational filler or markdown code blocks:
         
@@ -141,7 +145,7 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
         res.json({ success: true, raw: textOutput });
     } catch (err) {
         console.error('AI Generation Error:', err);
-        res.status(500).json({ success: false, error: 'Failed to generate AI questions.' });
+        res.status(500).json({ success: false, error: err.message || 'Failed to generate AI questions.' });
     }
 });
 
@@ -166,10 +170,21 @@ app.get('/api/load-categories', (req, res) => {
                     const filePath = path.join(catsDir, file);
                     const content = fs.readFileSync(filePath, 'utf8');
                     const parsed = JSON.parse(content);
+                    
+                    // Support different JSON structures (array of questions or object with questions)
+                    let questionsArr = [];
+                    if (Array.isArray(parsed)) {
+                        questionsArr = parsed;
+                    } else if (parsed.questions && Array.isArray(parsed.questions)) {
+                        questionsArr = parsed.questions;
+                    } else if (parsed.data && Array.isArray(parsed.data)) {
+                        questionsArr = parsed.data;
+                    }
+
                     categories.push({
                         filename: file,
-                        name: parsed.name || path.basename(file, '.json'),
-                        questions: parsed.questions || []
+                        name: parsed.name || parsed.title || path.basename(file, '.json'),
+                        questions: questionsArr
                     });
                 } catch (e) {
                     console.error(`Error parsing category file ${file}:`, e);
@@ -332,12 +347,13 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
+    // --- ADD CUSTOM ROUND / MINI GAME TO QUEUE ---
     socket.on('add-custom-picture-round', (roundObj) => {
         if (!roundObj || !roundObj.questions || roundObj.questions.length === 0) return;
         gameState.playlist.push({
             name: roundObj.name || '🖼️ Custom Round',
-            genre: 'Custom Round',
-            timer: 20,
+            genre: roundObj.genre || 'Custom Round',
+            timer: roundObj.timer || 20,
             questions: roundObj.questions
         });
         io.emit('state-update', gameState);
