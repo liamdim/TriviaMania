@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: { origin: "*" },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 50 * 1024 * 1024
+    maxHttpBufferSize: 50 * 1024 * 1024 // 50MB limit for image uploads
 });
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -116,12 +116,15 @@ function sanitizeText(text) {
     return clean;
 }
 
+// --- ROBUST AI QUIZ GENERATOR ENDPOINT WITH AUTO-RETRY ---
 app.post('/api/generate-ai-quiz', async (req, res) => {
     const { topic, count = 10, difficulty = 'medium' } = req.body;
+    
     try {
         if (!process.env.GEMINI_API_KEY) {
             return res.status(400).json({ success: false, error: 'GEMINI_API_KEY is not set on the server.' });
         }
+
         const prompt = `Generate a ${difficulty} difficulty pub trivia round about "${topic}" containing exactly ${count} questions.
         You MUST format your response strictly as plain text using the following format for each question, with no extra conversational filler or markdown code blocks:
         
@@ -148,10 +151,12 @@ app.post('/api/generate-ai-quiz', async (req, res) => {
         if (!response || !response.text) throw lastError || new Error('All Gemini models busy.');
         res.json({ success: true, raw: response.text });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'AI server is experiencing high demand (503). Please try again!' });
+        console.error('AI Generation Error:', err);
+        res.status(500).json({ success: false, error: 'AI server is experiencing high demand (503). Please click Generate again!' });
     }
 });
 
+// --- LOAD LOCAL CATEGORIES ---
 app.get('/api/load-categories', (req, res) => {
     let catsDir = path.join(__dirname, 'categories');
     if (!fs.existsSync(catsDir)) catsDir = path.join(process.cwd(), 'categories');
@@ -206,7 +211,7 @@ io.on('connection', (socket) => {
     socket.on('submit-answer', ({ answer, timeRemaining }) => {
         if (gameState.status !== 'QUESTION') return;
         const player = gameState.scores[socket.id];
-        if (!player || player.hasAnsweredCurrent) return; // Prevent changing answers
+        if (!player || player.hasAnsweredCurrent) return;
 
         const currentRound = gameState.playlist[gameState.currentRoundIndex];
         const currentQ = currentRound?.questions[gameState.currentQuestionIndex];
@@ -232,7 +237,6 @@ io.on('connection', (socket) => {
         io.emit('state-update', gameState);
     });
 
-    // Mute / Unmute Player Handlers
     socket.on('mute-player', (targetId) => {
         gameState.mutedPlayers[targetId] = true;
         io.emit('state-update', gameState);
@@ -255,7 +259,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('player-chat', (message) => {
-        if (gameState.mutedPlayers[socket.id]) return; // Block muted players
+        if (gameState.mutedPlayers[socket.id]) return;
         const player = gameState.scores[socket.id];
         const name = player ? player.name : 'Player';
         const cleanMsg = sanitizeText(message);
@@ -286,10 +290,20 @@ io.on('connection', (socket) => {
         let picked = available.slice(0, parseInt(roundObj.questionCount) || 10);
         categoryHistory[fileKey].push(...picked);
 
+        let processedQuestions = picked.map(i => {
+            let q = JSON.parse(JSON.stringify(allQ[i]));
+            if (q.options && q.options.length > 0 && q.answer) {
+                let correctAnswerText = q.answer.trim();
+                q.options.sort(() => Math.random() - 0.5);
+                q.answer = correctAnswerText;
+            }
+            return q;
+        });
+
         gameState.playlist.push({
             name: roundObj.name || 'Custom Round',
             timer: parseInt(roundObj.timer) || 15,
-            questions: picked.map(i => allQ[i])
+            questions: processedQuestions
         });
         persistGameState();
         io.emit('state-update', gameState);
